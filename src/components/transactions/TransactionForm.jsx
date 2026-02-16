@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { format } from 'date-fns';
 import { nb } from 'date-fns/locale';
 import { CalendarIcon, Upload, Loader2, X } from 'lucide-react';
-import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/components/shared/FormatUtils';
+import { useQuery } from '@tanstack/react-query';
 
 export default function TransactionForm({ teamId, editData, onClose, onSaved }) {
   const [form, setForm] = useState(editData || {
@@ -24,7 +24,13 @@ export default function TransactionForm({ teamId, editData, onClose, onSaved }) 
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const categories = form.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  const { data: allCategories = [] } = useQuery({
+    queryKey: ['categories', teamId],
+    queryFn: () => base44.entities.Category.filter({ team_id: teamId }),
+    enabled: !!teamId,
+  });
+
+  const categories = allCategories.filter(c => c.type === form.type).map(c => c.name);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];

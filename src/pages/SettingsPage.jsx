@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { Save, Trash2, UserPlus, Shield, AlertTriangle, Loader2, CheckCircle, Users, Eye, EyeOff } from 'lucide-react';
+import { Save, Trash2, UserPlus, Shield, AlertTriangle, Loader2, CheckCircle, Users, Eye, EyeOff, Tag, Plus as PlusIcon, Pencil } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,7 @@ const SPORTS = ['Fotball', 'Håndball', 'Ski', 'Svømming', 'Friidrett', 'Basket
 
 export default function SettingsPage() {
   const { currentTeam, refreshTeams, user } = useTeam();
+  const queryClient = useQueryClient();
   const [form, setForm] = useState(currentTeam ? {
     name: currentTeam.name,
     sport_type: currentTeam.sport_type,
@@ -37,6 +38,16 @@ export default function SettingsPage() {
   const [showDelete, setShowDelete] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [editCategory, setEditCategory] = useState(null);
+  const [categoryForm, setCategoryForm] = useState({ name: '', type: 'expense' });
+  const [savingCategory, setSavingCategory] = useState(false);
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories', currentTeam?.id],
+    queryFn: () => base44.entities.Category.filter({ team_id: currentTeam.id }),
+    enabled: !!currentTeam,
+  });
 
   const handleSave = async () => {
     if (!currentTeam) return;
@@ -78,9 +89,42 @@ export default function SettingsPage() {
     for (const b of budgets) await base44.entities.Budget.delete(b.id);
     const players = await base44.entities.Player.filter({ team_id: currentTeam.id });
     for (const p of players) await base44.entities.Player.delete(p.id);
+    const cats = await base44.entities.Category.filter({ team_id: currentTeam.id });
+    for (const c of cats) await base44.entities.Category.delete(c.id);
     await base44.entities.Team.delete(currentTeam.id);
     setDeleting(false);
     window.location.reload();
+  };
+
+  const openNewCategory = () => {
+    setEditCategory(null);
+    setCategoryForm({ name: '', type: 'expense' });
+    setShowCategoryForm(true);
+  };
+
+  const openEditCategory = (cat) => {
+    setEditCategory(cat);
+    setCategoryForm({ name: cat.name, type: cat.type });
+    setShowCategoryForm(true);
+  };
+
+  const handleSaveCategory = async () => {
+    if (!categoryForm.name) return;
+    setSavingCategory(true);
+    const data = { team_id: currentTeam.id, name: categoryForm.name, type: categoryForm.type, is_default: false };
+    if (editCategory?.id) {
+      await base44.entities.Category.update(editCategory.id, data);
+    } else {
+      await base44.entities.Category.create(data);
+    }
+    setSavingCategory(false);
+    setShowCategoryForm(false);
+    queryClient.invalidateQueries({ queryKey: ['categories', currentTeam?.id] });
+  };
+
+  const handleDeleteCategory = async (id) => {
+    await base44.entities.Category.delete(id);
+    queryClient.invalidateQueries({ queryKey: ['categories', currentTeam?.id] });
   };
 
   if (!currentTeam) return <p className="text-center py-12 text-slate-500">Velg et lag for å se innstillinger.</p>;
@@ -127,6 +171,52 @@ export default function SettingsPage() {
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
             {saved ? 'Lagret!' : 'Lagre endringer'}
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* Categories */}
+      <Card className="border-0 shadow-md dark:bg-slate-900">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Tag className="w-4 h-4 text-emerald-500" /> Kategorier
+              </CardTitle>
+              <CardDescription>Tilpass inntekts- og utgiftskategorier</CardDescription>
+            </div>
+            <Button onClick={openNewCategory} size="sm" variant="outline" className="gap-2">
+              <PlusIcon className="w-3.5 h-3.5" /> Ny
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {['income', 'expense'].map(type => (
+              <div key={type}>
+                <p className="text-xs font-semibold text-slate-500 mb-2 uppercase">{type === 'income' ? 'Inntekter' : 'Utgifter'}</p>
+                <div className="space-y-2">
+                  {categories.filter(c => c.type === type).map(cat => (
+                    <div key={cat.id} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 group">
+                      <span className="text-sm">{cat.name}</span>
+                      {!cat.is_default && (
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openEditCategory(cat)}>
+                            <Pencil className="w-3 h-3" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500" onClick={() => handleDeleteCategory(cat.id)}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {categories.filter(c => c.type === type).length === 0 && (
+                    <p className="text-xs text-slate-400 py-2">Ingen kategorier lagt til</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
@@ -242,6 +332,37 @@ export default function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
+
+      <Dialog open={showCategoryForm} onOpenChange={setShowCategoryForm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editCategory ? 'Rediger kategori' : 'Ny kategori'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label>Navn</Label>
+              <Input value={categoryForm.name} onChange={e => setCategoryForm({ ...categoryForm, name: e.target.value })} placeholder="F.eks. Cupper" />
+            </div>
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select value={categoryForm.type} onValueChange={v => setCategoryForm({ ...categoryForm, type: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="income">Inntekt</SelectItem>
+                  <SelectItem value="expense">Utgift</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setShowCategoryForm(false)} className="flex-1">Avbryt</Button>
+              <Button onClick={handleSaveCategory} disabled={savingCategory || !categoryForm.name} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
+                {savingCategory ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Lagre
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showDelete} onOpenChange={setShowDelete}>
         <DialogContent>

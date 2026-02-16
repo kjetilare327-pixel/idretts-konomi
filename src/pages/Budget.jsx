@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTeam } from '@/components/shared/TeamContext';
-import { formatNOK, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/components/shared/FormatUtils';
+import { formatNOK } from '@/components/shared/FormatUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +38,12 @@ export default function BudgetPage() {
     enabled: !!currentTeam,
   });
 
+  const { data: allCategories = [] } = useQuery({
+    queryKey: ['categories', currentTeam?.id],
+    queryFn: () => base44.entities.Category.filter({ team_id: currentTeam.id }),
+    enabled: !!currentTeam,
+  });
+
   const spentByCategory = useMemo(() => {
     const now = new Date();
     const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -48,7 +54,7 @@ export default function BudgetPage() {
     return map;
   }, [transactions]);
 
-  const categories = form.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  const categories = allCategories.filter(c => c.type === form.type).map(c => c.name);
 
   const openNew = () => {
     setEditData(null);
