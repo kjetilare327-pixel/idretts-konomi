@@ -18,6 +18,7 @@ import {
   LogOut,
   Shield,
   Users,
+  ScrollText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,12 +30,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const NAV_ITEMS = [
-  { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'player'] },
-  { name: 'Spillere', page: 'Players', icon: Users, roles: ['admin', 'player'] },
-  { name: 'Transaksjoner', page: 'Transactions', icon: Receipt, roles: ['admin'] },
-  { name: 'Budsjett', page: 'Budget', icon: PiggyBank, roles: ['admin'] },
-  { name: 'Rapporter', page: 'Reports', icon: FileBarChart, roles: ['admin'] },
-  { name: 'Innstillinger', page: 'SettingsPage', icon: Settings, roles: ['admin'] },
+  { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'kasserer', 'styreleder', 'revisor', 'player'] },
+  { name: 'Spillere', page: 'Players', icon: Users, roles: ['admin', 'kasserer', 'styreleder', 'revisor', 'player'] },
+  { name: 'Transaksjoner', page: 'Transactions', icon: Receipt, roles: ['admin', 'kasserer', 'revisor'] },
+  { name: 'Budsjett', page: 'Budget', icon: PiggyBank, roles: ['admin', 'kasserer', 'revisor'] },
+  { name: 'Rapporter', page: 'Reports', icon: FileBarChart, roles: ['admin', 'kasserer', 'styreleder', 'revisor'] },
+  { name: 'Revisjonslogg', page: 'AuditLog', icon: ScrollText, roles: ['admin', 'styreleder', 'revisor'] },
+  { name: 'Innstillinger', page: 'SettingsPage', icon: Settings, roles: ['admin', 'kasserer', 'styreleder'] },
 ];
 
 function InnerLayout({ children, currentPageName }) {
@@ -42,6 +44,14 @@ function InnerLayout({ children, currentPageName }) {
   const { currentTeam, teams, selectTeam, user, isTeamAdmin } = useTeam();
   const { darkMode, toggleDark } = useTheme();
   const isAdmin = isTeamAdmin();
+  
+  const getUserRole = () => {
+    if (!currentTeam || !user) return 'player';
+    const member = currentTeam.members?.find(m => m.email === user.email);
+    return member?.role || 'player';
+  };
+  
+  const userRole = getUserRole();
 
   const noLayoutPages = ['Onboarding', 'GdprConsent'];
   if (noLayoutPages.includes(currentPageName)) {
@@ -101,7 +111,7 @@ function InnerLayout({ children, currentPageName }) {
         )}
 
         <nav className="flex-1 px-3 py-4 space-y-1">
-          {NAV_ITEMS.filter(item => !item.roles || item.roles.includes(isAdmin ? 'admin' : 'player')).map(item => {
+          {NAV_ITEMS.filter(item => !item.roles || item.roles.includes(userRole)).map(item => {
             const active = currentPageName === item.page;
             return (
               <Link
@@ -157,7 +167,7 @@ function InnerLayout({ children, currentPageName }) {
                 ))}
               </div>
             )}
-            {NAV_ITEMS.filter(item => !item.roles || item.roles.includes(isAdmin ? 'admin' : 'player')).map(item => (
+            {NAV_ITEMS.filter(item => !item.roles || item.roles.includes(userRole)).map(item => (
               <Link
                 key={item.page}
                 to={createPageUrl(item.page)}
