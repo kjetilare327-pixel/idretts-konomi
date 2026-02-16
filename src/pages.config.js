@@ -50,10 +50,10 @@
 import Budget from './pages/Budget';
 import Dashboard from './pages/Dashboard';
 import Onboarding from './pages/Onboarding';
+import Players from './pages/Players';
 import Reports from './pages/Reports';
 import SettingsPage from './pages/SettingsPage';
 import Transactions from './pages/Transactions';
-import Players from './pages/Players';
 import __Layout from './Layout.jsx';
 
 
@@ -61,10 +61,10 @@ export const PAGES = {
     "Budget": Budget,
     "Dashboard": Dashboard,
     "Onboarding": Onboarding,
+    "Players": Players,
     "Reports": Reports,
     "SettingsPage": SettingsPage,
     "Transactions": Transactions,
-    "Players": Players,
 }
 
 export const pagesConfig = {

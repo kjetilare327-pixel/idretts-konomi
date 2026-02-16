@@ -24,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Users, Plus, Pencil, Trash2, Mail, CheckCircle, AlertCircle, Clock, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Users, Plus, Pencil, Trash2, Mail, CheckCircle, AlertCircle, Clock, Loader2, Eye, EyeOff, Bell, FileText, TrendingDown, TrendingUp } from 'lucide-react';
 
 export default function Players() {
   const { currentTeam, isTeamAdmin, playerProfile } = useTeam();
@@ -34,10 +34,18 @@ export default function Players() {
   const [form, setForm] = useState({ full_name: '', user_email: '', role: 'player', balance: '0', payment_status: 'paid', phone: '', notes: '' });
   const [saving, setSaving] = useState(false);
   const [inviting, setInviting] = useState(false);
+  const [sendingReminder, setSendingReminder] = useState(null);
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
 
   const { data: players = [], isLoading } = useQuery({
     queryKey: ['players', currentTeam?.id],
     queryFn: () => base44.entities.Player.filter({ team_id: currentTeam.id }),
+    enabled: !!currentTeam,
+  });
+
+  const { data: allTransactions = [] } = useQuery({
+    queryKey: ['transactions', currentTeam?.id],
+    queryFn: () => base44.entities.Transaction.filter({ team_id: currentTeam.id }),
     enabled: !!currentTeam,
   });
 
@@ -109,6 +117,21 @@ export default function Players() {
       alert('Feil ved invitasjon: ' + e.message);
     }
     setInviting(false);
+  };
+
+  const handleSendReminder = async (player) => {
+    setSendingReminder(player.id);
+    try {
+      await base44.integrations.Core.SendEmail({
+        to: player.user_email,
+        subject: `Betalingspåminnelse – ${currentTeam.name}`,
+        body: `Hei ${player.full_name},\n\nDu har ${formatNOK(player.balance)} utestående for ${currentTeam.name}.\n\nVennligst betal til kasserer.\n\nMvh\n${currentTeam.name}`,
+      });
+      alert(`Påminnelse sendt til ${player.full_name}`);
+    } catch (e) {
+      alert('Feil ved sending: ' + e.message);
+    }
+    setSendingReminder(null);
   };
 
   const statusConfig = {
@@ -264,8 +287,9 @@ export default function Players() {
               ) : players.map(p => {
                 const config = statusConfig[p.payment_status] || statusConfig.paid;
                 const Icon = config.icon;
+                const needsReminder = p.payment_status === 'unpaid' || p.payment_status === 'partial';
                 return (
-                  <TableRow key={p.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                  <TableRow key={p.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 cursor-pointer" onClick={() => setSelectedPlayer(p)}>
                     <TableCell className="font-medium">{p.full_name}</TableCell>
                     <TableCell className="text-sm text-slate-500">{p.user_email}</TableCell>
                     <TableCell>
@@ -282,15 +306,20 @@ export default function Players() {
                         {p.role === 'parent' ? 'Forelder' : 'Spiller'}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={e => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
+                        {needsReminder && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600" onClick={() => handleSendReminder(p)} disabled={sendingReminder === p.id}>
+                            {sendingReminder === p.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Bell className="w-3.5 h-3.5" />}
+                          </Button>
+                        )}
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleInvite(p)} disabled={inviting}>
                           <Mail className="w-3.5 h-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(p)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); openEdit(p); }}>
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => handleDelete(p.id)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={(e) => { e.stopPropagation(); handleDelete(p.id); }}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>
@@ -302,6 +331,115 @@ export default function Players() {
           </Table>
         </div>
       </Card>
+
+      {/* Player details modal */}
+      <Dialog open={!!selectedPlayer} onOpenChange={() => setSelectedPlayer(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {selectedPlayer && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl">{selectedPlayer.full_name}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-5 pt-2">
+                {/* Info */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-slate-500">E-post</p>
+                    <p className="font-medium text-sm">{selectedPlayer.user_email}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Telefon</p>
+                    <p className="font-medium text-sm">{selectedPlayer.phone || '–'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Rolle</p>
+                    <Badge variant="secondary" className="text-xs">{selectedPlayer.role === 'parent' ? 'Forelder' : 'Spiller'}</Badge>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Status</p>
+                    <div className="flex items-center gap-2">
+                      {(() => {
+                        const config = statusConfig[selectedPlayer.payment_status] || statusConfig.paid;
+                        const Icon = config.icon;
+                        return (
+                          <>
+                            <Icon className={`w-4 h-4 ${config.color}`} />
+                            <span className="text-xs font-medium">{config.label}</span>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Balance */}
+                <Card className={`border-0 ${selectedPlayer.balance > 0 ? 'bg-red-50 dark:bg-red-500/10' : 'bg-emerald-50 dark:bg-emerald-500/10'}`}>
+                  <CardContent className="p-4">
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Saldo</p>
+                    <p className={`text-3xl font-bold ${selectedPlayer.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                      {selectedPlayer.balance > 0 ? `Skylder ${formatNOK(selectedPlayer.balance)}` : selectedPlayer.balance < 0 ? `Kreditt ${formatNOK(-selectedPlayer.balance)}` : 'Ingen utestående'}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Transactions */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-sm flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-emerald-500" /> Transaksjonshistorikk
+                    </h3>
+                  </div>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {allTransactions
+                      .filter(tx => tx.player_id === selectedPlayer.id)
+                      .sort((a, b) => new Date(b.date) - new Date(a.date))
+                      .map(tx => (
+                        <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-sm">
+                          <div className="flex items-center gap-3">
+                            {tx.type === 'income' ? (
+                              <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
+                                <TrendingDown className="w-4 h-4 text-emerald-600" />
+                              </div>
+                            ) : (
+                              <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-500/20 flex items-center justify-center">
+                                <TrendingUp className="w-4 h-4 text-red-600" />
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-medium">{tx.description || tx.category}</p>
+                              <p className="text-xs text-slate-500">{new Date(tx.date).toLocaleDateString('nb-NO')}</p>
+                            </div>
+                          </div>
+                          <p className={`font-semibold ${tx.type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
+                            {tx.type === 'income' ? '-' : '+'}{formatNOK(tx.amount)}
+                          </p>
+                        </div>
+                      ))}
+                    {allTransactions.filter(tx => tx.player_id === selectedPlayer.id).length === 0 && (
+                      <p className="text-center py-8 text-slate-400 text-sm">Ingen transaksjoner ennå</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                {(selectedPlayer.payment_status === 'unpaid' || selectedPlayer.payment_status === 'partial') && (
+                  <Button onClick={() => handleSendReminder(selectedPlayer)} disabled={sendingReminder === selectedPlayer.id} className="w-full bg-amber-600 hover:bg-amber-700 gap-2">
+                    {sendingReminder === selectedPlayer.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+                    Send betalingspåminnelse
+                  </Button>
+                )}
+
+                {selectedPlayer.notes && (
+                  <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-sm">
+                    <p className="text-xs text-slate-500 mb-1">Notater</p>
+                    <p>{selectedPlayer.notes}</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-lg">

@@ -76,6 +76,8 @@ export default function SettingsPage() {
     for (const tx of txs) await base44.entities.Transaction.delete(tx.id);
     const budgets = await base44.entities.Budget.filter({ team_id: currentTeam.id });
     for (const b of budgets) await base44.entities.Budget.delete(b.id);
+    const players = await base44.entities.Player.filter({ team_id: currentTeam.id });
+    for (const p of players) await base44.entities.Player.delete(p.id);
     await base44.entities.Team.delete(currentTeam.id);
     setDeleting(false);
     window.location.reload();
