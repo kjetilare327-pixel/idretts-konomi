@@ -24,13 +24,21 @@ export default function TransactionForm({ teamId, editData, onClose, onSaved }) 
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const { data: allCategories = [] } = useQuery({
+  const { data: allCategories = [], isLoading: loadingCategories } = useQuery({
     queryKey: ['categories', teamId],
     queryFn: () => base44.entities.Category.filter({ team_id: teamId }),
     enabled: !!teamId,
   });
 
   const categories = allCategories.filter(c => c.type === form.type).map(c => c.name);
+  
+  // Debug log
+  React.useEffect(() => {
+    if (allCategories.length > 0) {
+      console.log('Categories loaded:', allCategories);
+      console.log('Filtered categories:', categories);
+    }
+  }, [allCategories, categories]);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -76,7 +84,13 @@ export default function TransactionForm({ teamId, editData, onClose, onSaved }) 
           <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
             <SelectTrigger><SelectValue placeholder="Velg..." /></SelectTrigger>
             <SelectContent>
-              {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              {loadingCategories ? (
+                <SelectItem value="_loading" disabled>Laster...</SelectItem>
+              ) : categories.length === 0 ? (
+                <SelectItem value="_empty" disabled>Ingen kategorier funnet</SelectItem>
+              ) : (
+                categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -93,11 +107,21 @@ export default function TransactionForm({ teamId, editData, onClose, onSaved }) 
             <PopoverTrigger asChild>
               <Button variant="outline" className="w-full justify-start text-left font-normal">
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {form.date ? format(new Date(form.date), 'PPP', { locale: nb }) : 'Velg dato'}
+                {form.date ? format(new Date(form.date), 'dd.MM.yyyy', { locale: nb }) : 'Velg dato'}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar mode="single" selected={form.date ? new Date(form.date) : undefined} onSelect={d => setForm({ ...form, date: d ? format(d, 'yyyy-MM-dd') : '' })} />
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar 
+                mode="single" 
+                selected={form.date ? new Date(form.date) : undefined} 
+                onSelect={d => {
+                  if (d) {
+                    setForm({ ...form, date: format(d, 'yyyy-MM-dd') });
+                  }
+                }}
+                locale={nb}
+                initialFocus
+              />
             </PopoverContent>
           </Popover>
         </div>
