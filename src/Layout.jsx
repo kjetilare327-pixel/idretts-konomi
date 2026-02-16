@@ -17,6 +17,7 @@ import {
   ChevronDown,
   LogOut,
   Shield,
+  Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,17 +29,19 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const NAV_ITEMS = [
-  { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
-  { name: 'Transaksjoner', page: 'Transactions', icon: Receipt },
-  { name: 'Budsjett', page: 'Budget', icon: PiggyBank },
-  { name: 'Rapporter', page: 'Reports', icon: FileBarChart },
-  { name: 'Innstillinger', page: 'SettingsPage', icon: Settings },
+  { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'player'] },
+  { name: 'Spillere', page: 'Players', icon: Users, roles: ['admin', 'player'] },
+  { name: 'Transaksjoner', page: 'Transactions', icon: Receipt, roles: ['admin'] },
+  { name: 'Budsjett', page: 'Budget', icon: PiggyBank, roles: ['admin'] },
+  { name: 'Rapporter', page: 'Reports', icon: FileBarChart, roles: ['admin'] },
+  { name: 'Innstillinger', page: 'SettingsPage', icon: Settings, roles: ['admin'] },
 ];
 
 function InnerLayout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { currentTeam, teams, selectTeam, user } = useTeam();
+  const { currentTeam, teams, selectTeam, user, isTeamAdmin } = useTeam();
   const { darkMode, toggleDark } = useTheme();
+  const isAdmin = isTeamAdmin();
 
   const noLayoutPages = ['Onboarding', 'GdprConsent'];
   if (noLayoutPages.includes(currentPageName)) {
@@ -98,7 +101,7 @@ function InnerLayout({ children, currentPageName }) {
         )}
 
         <nav className="flex-1 px-3 py-4 space-y-1">
-          {NAV_ITEMS.map(item => {
+          {NAV_ITEMS.filter(item => !item.roles || item.roles.includes(isAdmin ? 'admin' : 'player')).map(item => {
             const active = currentPageName === item.page;
             return (
               <Link
@@ -154,7 +157,7 @@ function InnerLayout({ children, currentPageName }) {
                 ))}
               </div>
             )}
-            {NAV_ITEMS.map(item => (
+            {NAV_ITEMS.filter(item => !item.roles || item.roles.includes(isAdmin ? 'admin' : 'player')).map(item => (
               <Link
                 key={item.page}
                 to={createPageUrl(item.page)}

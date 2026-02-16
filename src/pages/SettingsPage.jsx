@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Save, Trash2, UserPlus, Shield, AlertTriangle, Loader2, CheckCircle, Users } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Save, Trash2, UserPlus, Shield, AlertTriangle, Loader2, CheckCircle, Users, Eye, EyeOff } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ export default function SettingsPage() {
     sport_type: currentTeam.sport_type,
     estimated_members: String(currentTeam.estimated_members || ''),
     nif_number: currentTeam.nif_number || '',
+    show_player_names: currentTeam.show_player_names !== false,
   } : {});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -118,6 +120,32 @@ export default function SettingsPage() {
               <Label>NIF-nummer</Label>
               <Input value={form.nif_number || ''} onChange={e => setForm({ ...form, nif_number: e.target.value })} />
             </div>
+          </div>
+          <Button onClick={handleSave} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+            {saved ? 'Lagret!' : 'Lagre endringer'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Privacy settings */}
+      <Card className="border-0 shadow-md dark:bg-slate-900">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            {form.show_player_names ? <Eye className="w-4 h-4 text-emerald-500" /> : <EyeOff className="w-4 h-4 text-slate-500" />} Personvern
+          </CardTitle>
+          <CardDescription>Kontroller hva spillere/foreldre kan se</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+            <div>
+              <p className="font-medium text-sm">Vis spillernavn i betalingsstatus</p>
+              <p className="text-xs text-slate-500 mt-1">Hvis av, vises kun "Spiller A", "Spiller B", etc.</p>
+            </div>
+            <Switch 
+              checked={form.show_player_names} 
+              onCheckedChange={v => setForm({ ...form, show_player_names: v })} 
+            />
           </div>
           <Button onClick={handleSave} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}

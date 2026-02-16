@@ -17,8 +17,9 @@ import SubscriptionBanner from '@/components/dashboard/SubscriptionBanner';
 import AiHint from '@/components/dashboard/AiHint';
 
 export default function Dashboard() {
-  const { currentTeam, teams, loading: teamLoading } = useTeam();
+  const { currentTeam, teams, loading: teamLoading, isTeamAdmin, playerProfile } = useTeam();
   const navigate = useNavigate();
+  const isAdmin = isTeamAdmin();
 
   const { data: transactions = [], isLoading: txLoading } = useQuery({
     queryKey: ['transactions', currentTeam?.id],
@@ -74,14 +75,34 @@ export default function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-slate-500">{currentTeam?.name} – Økonomisk oversikt</p>
+          <p className="text-sm text-slate-500">{currentTeam?.name} – {isAdmin ? 'Økonomisk oversikt' : 'Min økonomi'}</p>
         </div>
-        <Button onClick={() => navigate(createPageUrl('Transactions'))} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
-          Ny transaksjon <ArrowRight className="w-4 h-4" />
-        </Button>
+        {isAdmin && (
+          <Button onClick={() => navigate(createPageUrl('Transactions'))} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+            Ny transaksjon <ArrowRight className="w-4 h-4" />
+          </Button>
+        )}
       </div>
 
-      <SubscriptionBanner team={currentTeam} />
+      {!isAdmin && playerProfile && (
+        <Card className="border-0 shadow-md dark:bg-slate-900">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-500">Din saldo</p>
+                <p className={`text-3xl font-bold ${playerProfile.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                  {playerProfile.balance > 0 ? `Skylder ${formatNOK(playerProfile.balance)}` : playerProfile.balance < 0 ? `Kreditt ${formatNOK(-playerProfile.balance)}` : 'Ingen utestående'}
+                </p>
+              </div>
+              <Button onClick={() => navigate(createPageUrl('Players'))} variant="outline" className="gap-2">
+                Se detaljer <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {isAdmin && <SubscriptionBanner team={currentTeam} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Total saldo" value={formatNOK(stats.balance)} icon={Wallet} variant={stats.balance >= 0 ? 'green' : 'red'} />
