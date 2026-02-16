@@ -1,0 +1,239 @@
+import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useTeam } from '@/components/shared/TeamContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Save, Trash2, UserPlus, Shield, AlertTriangle, Loader2, CheckCircle, Users } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+
+const SPORTS = ['Fotball', 'Håndball', 'Ski', 'Svømming', 'Friidrett', 'Basketball', 'Volleyball', 'Ishockey', 'Tennis', 'Annet'];
+
+export default function SettingsPage() {
+  const { currentTeam, refreshTeams, user } = useTeam();
+  const [form, setForm] = useState(currentTeam ? {
+    name: currentTeam.name,
+    sport_type: currentTeam.sport_type,
+    estimated_members: String(currentTeam.estimated_members || ''),
+    nif_number: currentTeam.nif_number || '',
+  } : {});
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('viewer');
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  const handleSave = async () => {
+    if (!currentTeam) return;
+    setSaving(true);
+    await base44.entities.Team.update(currentTeam.id, {
+      ...form,
+      estimated_members: Number(form.estimated_members) || 0,
+    });
+    await refreshTeams();
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleInvite = async () => {
+    if (!inviteEmail || !currentTeam) return;
+    const members = [...(currentTeam.members || [])];
+    if (members.find(m => m.email === inviteEmail)) return;
+    members.push({ email: inviteEmail, role: inviteRole });
+    await base44.entities.Team.update(currentTeam.id, { members });
+    await refreshTeams();
+    setInviteEmail('');
+  };
+
+  const removeMember = async (email) => {
+    if (!currentTeam) return;
+    const members = (currentTeam.members || []).filter(m => m.email !== email);
+    await base44.entities.Team.update(currentTeam.id, { members });
+    await refreshTeams();
+  };
+
+  const handleDeleteTeam = async () => {
+    if (deleteConfirm !== currentTeam?.name) return;
+    setDeleting(true);
+    // Delete related data first
+    const txs = await base44.entities.Transaction.filter({ team_id: currentTeam.id });
+    for (const tx of txs) await base44.entities.Transaction.delete(tx.id);
+    const budgets = await base44.entities.Budget.filter({ team_id: currentTeam.id });
+    for (const b of budgets) await base44.entities.Budget.delete(b.id);
+    await base44.entities.Team.delete(currentTeam.id);
+    setDeleting(false);
+    window.location.reload();
+  };
+
+  if (!currentTeam) return <p className="text-center py-12 text-slate-500">Velg et lag for å se innstillinger.</p>;
+
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Innstillinger</h1>
+        <p className="text-sm text-slate-500">Administrer laget og kontoinnstillinger</p>
+      </div>
+
+      {/* Team details */}
+      <Card className="border-0 shadow-md dark:bg-slate-900">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Shield className="w-4 h-4 text-emerald-500" /> Laginformasjon
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Lagsnavn</Label>
+            <Input value={form.name || ''} onChange={e => setForm({ ...form, name: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label>Idrettstype</Label>
+            <Select value={form.sport_type || ''} onValueChange={v => setForm({ ...form, sport_type: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Antall medlemmer</Label>
+              <Input type="number" value={form.estimated_members || ''} onChange={e => setForm({ ...form, estimated_members: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>NIF-nummer</Label>
+              <Input value={form.nif_number || ''} onChange={e => setForm({ ...form, nif_number: e.target.value })} />
+            </div>
+          </div>
+          <Button onClick={handleSave} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+            {saved ? 'Lagret!' : 'Lagre endringer'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Members */}
+      <Card className="border-0 shadow-md dark:bg-slate-900">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Users className="w-4 h-4 text-emerald-500" /> Medlemmer
+          </CardTitle>
+          <CardDescription>Gi tilgang til andre kasserere eller styremedlemmer</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Input placeholder="E-postadresse" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} className="flex-1" />
+            <Select value={inviteRole} onValueChange={setInviteRole}>
+              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="viewer">Visning</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={handleInvite} variant="outline" className="gap-1">
+              <UserPlus className="w-4 h-4" /> Legg til
+            </Button>
+          </div>
+          <div className="space-y-2">
+            {(currentTeam.members || []).map(m => (
+              <div key={m.email} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center text-xs font-bold text-emerald-700">
+                    {m.email?.[0]?.toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{m.email}</p>
+                    <Badge variant="secondary" className="text-xs">{m.role === 'admin' ? 'Administrator' : 'Visning'}</Badge>
+                  </div>
+                </div>
+                {m.email !== user?.email && (
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => removeMember(m.email)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Subscription */}
+      <Card className="border-0 shadow-md dark:bg-slate-900">
+        <CardHeader>
+          <CardTitle className="text-base">Abonnement</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+            <div>
+              <p className="font-medium">
+                Status: <Badge variant="secondary" className={
+                  currentTeam.subscription_status === 'active' ? 'bg-emerald-100 text-emerald-800' :
+                  currentTeam.subscription_status === 'trial' ? 'bg-blue-100 text-blue-800' :
+                  'bg-red-100 text-red-800'
+                }>
+                  {currentTeam.subscription_status === 'active' ? 'Aktiv' :
+                   currentTeam.subscription_status === 'trial' ? 'Prøveperiode' : 'Utløpt'}
+                </Badge>
+              </p>
+              <p className="text-sm text-slate-500 mt-1">59 kr/mnd – Moms inkludert</p>
+            </div>
+            {(currentTeam.subscription_status === 'trial' || currentTeam.subscription_status === 'expired') && (
+              <Button className="bg-emerald-600 hover:bg-emerald-700">Oppgrader nå</Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* GDPR / Delete */}
+      <Card className="border-0 shadow-md border-red-200 dark:border-red-500/20 dark:bg-slate-900">
+        <CardHeader>
+          <CardTitle className="text-base text-red-600 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" /> Faresone
+          </CardTitle>
+          <CardDescription>GDPR: Du kan slette all data knyttet til dette laget permanent.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="destructive" onClick={() => setShowDelete(true)} className="gap-2">
+            <Trash2 className="w-4 h-4" /> Slett lag og all data
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Dialog open={showDelete} onOpenChange={setShowDelete}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Slett {currentTeam.name}?</DialogTitle>
+            <DialogDescription>
+              Dette vil permanent slette laget, alle transaksjoner og budsjett. Denne handlingen kan ikke angres.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <Label>Skriv lagnavnet for å bekrefte: <strong>{currentTeam.name}</strong></Label>
+            <Input value={deleteConfirm} onChange={e => setDeleteConfirm(e.target.value)} placeholder={currentTeam.name} />
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setShowDelete(false)} className="flex-1">Avbryt</Button>
+              <Button variant="destructive" onClick={handleDeleteTeam} disabled={deleteConfirm !== currentTeam.name || deleting} className="flex-1">
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Slett permanent
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
