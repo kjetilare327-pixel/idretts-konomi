@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useTeam } from '@/components/shared/TeamContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import RoleManagement from '@/components/settings/RoleManagement';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -141,6 +142,11 @@ export default function SettingsPage() {
         <h1 className="text-2xl font-bold tracking-tight">Innstillinger</h1>
         <p className="text-sm text-slate-500">Administrer laget og kontoinnstillinger</p>
       </div>
+
+      {/* Role management */}
+      {currentTeam?.members?.some(m => m.email === user?.email && m.role === 'admin') && (
+        <RoleManagement teamId={currentTeam?.id} />
+      )}
 
       {/* Team details */}
       <Card className="border-0 shadow-md dark:bg-slate-900">
