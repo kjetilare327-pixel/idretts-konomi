@@ -11,7 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Plus, MapPin, Clock, Users, CheckCircle2, XCircle, HelpCircle } from 'lucide-react';
+import { Calendar, Plus, MapPin, Clock, Users, CheckCircle2, XCircle, HelpCircle, UserCog, Map } from 'lucide-react';
+import RecurringEventForm from '../components/events/RecurringEventForm';
+import EventRoleAssignment from '../components/events/EventRoleAssignment';
+import EventLocationMap from '../components/events/EventLocationMap';
 
 export default function EventManagement() {
   const { currentTeam, isTeamAdmin, playerProfile } = useTeam();
@@ -20,7 +23,9 @@ export default function EventManagement() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [form, setForm] = useState({
     title: '', description: '', type: 'training', date: '', start_time: '', end_time: '',
-    location: '', opponent: '', max_participants: 0
+    location: '', opponent: '', max_participants: 0, is_recurring: false,
+    recurrence_pattern: 'weekly', recurrence_end_date: '', assigned_roles: [],
+    location_lat: null, location_lng: null
   });
 
   const { data: events = [] } = useQuery({
@@ -44,15 +49,61 @@ export default function EventManagement() {
   const handleCreate = async () => {
     if (!form.title || !form.date || !form.start_time) return;
     
-    await base44.entities.Event.create({
-      ...form,
-      team_id: currentTeam.id,
-      status: 'scheduled',
-      max_participants: form.max_participants || null
-    });
+    if (form.is_recurring && form.recurrence_end_date) {
+      // Create recurring events
+      const startDate = new Date(form.date);
+      const endDate = new Date(form.recurrence_end_date);
+      const events = [];
+      
+      let currentDate = new Date(startDate);
+      while (currentDate <= endDate) {
+        events.push({
+          ...form,
+          team_id: currentTeam.id,
+          date: currentDate.toISOString().split('T')[0],
+          status: 'scheduled',
+          max_participants: form.max_participants || null,
+          is_recurring: true
+        });
+        
+        // Increment date based on pattern
+        switch (form.recurrence_pattern) {
+          case 'daily':
+            currentDate.setDate(currentDate.getDate() + 1);
+            break;
+          case 'weekly':
+            currentDate.setDate(currentDate.getDate() + 7);
+            break;
+          case 'biweekly':
+            currentDate.setDate(currentDate.getDate() + 14);
+            break;
+          case 'monthly':
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            break;
+        }
+      }
+      
+      // Create all events
+      for (const event of events) {
+        await base44.entities.Event.create(event);
+      }
+    } else {
+      // Create single event
+      await base44.entities.Event.create({
+        ...form,
+        team_id: currentTeam.id,
+        status: 'scheduled',
+        max_participants: form.max_participants || null
+      });
+    }
     
     setShowForm(false);
-    setForm({ title: '', description: '', type: 'training', date: '', start_time: '', end_time: '', location: '', opponent: '', max_participants: 0 });
+    setForm({ 
+      title: '', description: '', type: 'training', date: '', start_time: '', end_time: '', 
+      location: '', opponent: '', max_participants: 0, is_recurring: false,
+      recurrence_pattern: 'weekly', recurrence_end_date: '', assigned_roles: [],
+      location_lat: null, location_lng: null
+    });
     queryClient.invalidateQueries({ queryKey: ['events'] });
   };
 
@@ -193,6 +244,16 @@ export default function EventManagement() {
                             <div className="flex items-center gap-1 text-slate-500">
                               <MapPin className="w-4 h-4" />
                               {event.location}
+                              {event.location_lat && event.location_lng && (
+                                <a
+                                  href={`https://www.google.com/maps?q=${event.location_lat},${event.location_lng}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="ml-1 text-indigo-600 hover:underline"
+                                >
+                                  <Map className="w-3 h-3 inline" />
+                                </a>
+                              )}
                             </div>
                           )}
                           {event.opponent && (
@@ -201,6 +262,16 @@ export default function EventManagement() {
                             </div>
                           )}
                         </div>
+                        {event.assigned_roles && event.assigned_roles.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {event.assigned_roles.map((role, idx) => (
+                              <Badge key={idx} variant="outline" className="gap-1">
+                                <UserCog className="w-3 h-3" />
+                                {role.role}: {role.player_name}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2 text-sm">
                             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -466,6 +537,13 @@ export default function EventManagement() {
                 />
               </div>
             )}
+
+            <RecurringEventForm form={form} setForm={setForm} />
+            
+            <EventRoleAssignment form={form} setForm={setForm} players={players} />
+
+            <EventLocationMap form={form} setForm={setForm} />
+
             <div className="flex gap-3 pt-2">
               <Button variant="outline" onClick={() => setShowForm(false)} className="flex-1">
                 Avbryt
