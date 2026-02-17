@@ -3,6 +3,9 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { useTeam } from '@/components/shared/TeamContext';
 import { formatNOK, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/components/shared/FormatUtils';
+import MembershipTrendChart from '../components/reports/MembershipTrendChart';
+import YearOverYearChart from '../components/reports/YearOverYearChart';
+import LiquidityImpactChart from '../components/reports/LiquidityImpactChart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -118,6 +121,16 @@ export default function Reports() {
     });
     return Object.entries(trend).map(([month, data]) => ({ month, ...data, net: data.income - data.expense }));
   }, [transactions, year]);
+
+  const filteredTx = useMemo(() => {
+    return transactions.filter(t => {
+      if (!t.date) return false;
+      const d = new Date(t.date);
+      if (String(d.getFullYear()) !== year) return false;
+      if (period === 'month' && String(d.getMonth()) !== month) return false;
+      return true;
+    });
+  }, [transactions, period, year, month]);
 
   const pieData = useMemo(() => {
     return Object.entries(summary.expenseByCategory).map(([name, value]) => ({ name, value }));
@@ -510,6 +523,14 @@ export default function Reports() {
           </CardContent>
         </Card>
       </div>
+
+      {/* New visualizations */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <MembershipTrendChart players={players} />
+        <YearOverYearChart transactions={transactions} />
+      </div>
+
+      <LiquidityImpactChart transactions={filteredTx} budgets={budgets} />
 
       {/* NIF summary */}
       <Card className="border-0 shadow-md dark:bg-slate-900">
