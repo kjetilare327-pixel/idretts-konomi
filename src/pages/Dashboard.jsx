@@ -17,6 +17,7 @@ import SubscriptionBanner from '@/components/dashboard/SubscriptionBanner';
 import AiHint from '@/components/dashboard/AiHint';
 import ProfileCompletionPrompt from '@/components/onboarding/ProfileCompletionPrompt';
 import ReferralKpiWidget from '@/components/dashboard/ReferralKpiWidget';
+import PushNotifications from '@/components/mobile/PushNotifications';
 
 export default function Dashboard() {
   const { currentTeam, teams, loading: teamLoading, isTeamAdmin, playerProfile, refreshPlayerProfile } = useTeam();
@@ -97,6 +98,8 @@ export default function Dashboard() {
           onDismiss={() => setShowProfilePrompt(false)}
         />
       )}
+
+      <PushNotifications />
 
       {!isAdmin && playerProfile && (
         <Card className="border-0 shadow-md dark:bg-slate-900">

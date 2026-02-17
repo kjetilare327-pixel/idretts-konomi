@@ -5,6 +5,8 @@ import { useTeam } from '@/components/shared/TeamContext';
 import { formatNOK, formatDate, ALL_CATEGORIES } from '@/components/shared/FormatUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import ReceiptScanner from '../components/transactions/ReceiptScanner';
+import CSVImporter from '../components/transactions/CSVImporter';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -75,6 +77,16 @@ export default function Transactions() {
 
   if (!currentTeam) return <p className="text-center py-12 text-slate-500">Velg et lag for å se transaksjoner.</p>;
 
+  const isAdmin = true; // Simplified for now
+
+  const [form, setForm] = useState({
+    amount: 0,
+    date: new Date().toISOString().split('T')[0],
+    category: 'Diverse',
+    description: '',
+    attachment_url: ''
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -86,6 +98,28 @@ export default function Transactions() {
           <Plus className="w-4 h-4" /> Ny transaksjon
         </Button>
       </div>
+
+      {/* Smart data import */}
+      {isAdmin && (
+        <div className="grid md:grid-cols-2 gap-4">
+          <ReceiptScanner 
+            teamId={currentTeam.id} 
+            onDataExtracted={(data) => {
+              setForm({
+                ...form,
+                amount: data.amount,
+                date: data.date,
+                category: data.category,
+                description: data.description,
+                attachment_url: data.attachment_url
+              });
+              setEditData(data);
+              setShowForm(true);
+            }}
+          />
+          <CSVImporter teamId={currentTeam.id} />
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
