@@ -4,6 +4,8 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import MemberSegmentation from '@/components/members/MemberSegmentation';
 import AIMemberSegmentation from '@/components/members/AIMemberSegmentation';
+import MemberCardGenerator from '@/components/members/MemberCardGenerator';
+import StatusMessageManager from '@/components/members/StatusMessageManager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -134,6 +136,12 @@ export default function MemberManagement() {
 
       {/* Custom member segmentation */}
       <MemberSegmentation teamId={currentTeam?.id} />
+
+      {/* Status-based messaging */}
+      {isTeamAdmin() && <StatusMessageManager />}
+
+      {/* Member card generator */}
+      <MemberCardGenerator />
 
       {/* Segments overview */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

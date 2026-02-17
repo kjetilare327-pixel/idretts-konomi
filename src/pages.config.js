@@ -64,6 +64,7 @@ import Reports from './pages/Reports';
 import SettingsPage from './pages/SettingsPage';
 import Transactions from './pages/Transactions';
 import VolunteerManagement from './pages/VolunteerManagement';
+import AccountingIntegration from './pages/AccountingIntegration';
 import __Layout from './Layout.jsx';
 
 
@@ -85,6 +86,7 @@ export const PAGES = {
     "SettingsPage": SettingsPage,
     "Transactions": Transactions,
     "VolunteerManagement": VolunteerManagement,
+    "AccountingIntegration": AccountingIntegration,
 }
 
 export const pagesConfig = {
