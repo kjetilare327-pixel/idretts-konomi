@@ -20,6 +20,13 @@ Deno.serve(async (req) => {
     const claim = await base44.entities.Claim.get(claim_id);
     const player = await base44.entities.Player.get(claim.player_id);
     const team = await base44.entities.Team.get(claim.team_id);
+    
+    // Generer betalingslenke hvis ikke finnes
+    if (!claim.vipps_payment_link || !claim.kid_reference) {
+      const linkResponse = await base44.functions.invoke('generatePaymentLink', { claim_id });
+      claim.kid_reference = linkResponse.data.kid_reference;
+      claim.vipps_payment_link = linkResponse.data.vipps_link;
+    }
 
     const doc = new jsPDF();
     
@@ -76,10 +83,26 @@ Deno.serve(async (req) => {
     doc.text('Totalt å betale:', 20, 145);
     doc.text(`${claim.amount} kr`, 150, 145);
     
-    // Footer
+    // Betalingsinformasjon
+    doc.setFontSize(10);
+    doc.text('Betalingsinformasjon:', 20, 160);
     doc.setFontSize(9);
-    doc.text('Vennligst betal innen forfallsdato.', 20, 165);
-    doc.text(`Ved spørsmål, kontakt ${team.name}`, 20, 172);
+    
+    if (claim.vipps_payment_link) {
+      doc.text('Betal med Vipps:', 20, 168);
+      doc.setTextColor(0, 102, 204);
+      doc.textWithLink('Klikk her for å betale', 20, 175, { url: claim.vipps_payment_link });
+      doc.setTextColor(0, 0, 0);
+    }
+    
+    doc.text('Eller betal til bankkonto med KID:', 20, 185);
+    doc.text(`KID-nummer: ${claim.kid_reference}`, 20, 192);
+    doc.text(`Mottaker: ${team.name}`, 20, 199);
+    
+    // Footer
+    doc.setFontSize(8);
+    doc.text('Vennligst betal innen forfallsdato.', 20, 215);
+    doc.text(`Ved spørsmål, kontakt ${team.name}`, 20, 222);
     
     const pdfBytes = doc.output('arraybuffer');
     
