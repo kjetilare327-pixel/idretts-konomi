@@ -58,6 +58,9 @@ import Reports from './pages/Reports';
 import SettingsPage from './pages/SettingsPage';
 import Transactions from './pages/Transactions';
 import MemberManagement from './pages/MemberManagement';
+import PaymentPortal from './pages/PaymentPortal';
+import VolunteerManagement from './pages/VolunteerManagement';
+import EventManagement from './pages/EventManagement';
 import __Layout from './Layout.jsx';
 
 
@@ -73,6 +76,9 @@ export const PAGES = {
     "SettingsPage": SettingsPage,
     "Transactions": Transactions,
     "MemberManagement": MemberManagement,
+    "PaymentPortal": PaymentPortal,
+    "VolunteerManagement": VolunteerManagement,
+    "EventManagement": EventManagement,
 }
 
 export const pagesConfig = {
