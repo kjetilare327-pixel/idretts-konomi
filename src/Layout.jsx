@@ -22,6 +22,7 @@ import {
   Mail,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import NotificationCenter from './components/notifications/NotificationCenter';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -139,6 +140,9 @@ function InnerLayout({ children, currentPageName }) {
         </nav>
 
         <div className="p-4 border-t border-inherit space-y-2">
+          <div className="px-3 py-2">
+            <NotificationCenter userEmail={user?.email} teamId={currentTeam?.id} />
+          </div>
           <button onClick={toggleDark} className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm ${darkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}>
             {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             {darkMode ? 'Lyst tema' : 'Mørkt tema'}
@@ -153,16 +157,19 @@ function InnerLayout({ children, currentPageName }) {
       {/* Mobile header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40">
         <div className={`flex items-center justify-between px-4 py-3 border-b ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
-              <Shield className="w-4 h-4 text-white" />
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
+                <Shield className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-bold text-sm">IdrettsØkonomi</span>
             </div>
-            <span className="font-bold text-sm">IdrettsØkonomi</span>
+            <div className="flex items-center gap-2">
+              <NotificationCenter userEmail={user?.email} teamId={currentTeam?.id} />
+              <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2">
+                {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
-          <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2">
-            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
         {mobileOpen && (
           <div className={`border-b ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} px-4 py-3 space-y-1`}>
             {teams.length > 1 && (
