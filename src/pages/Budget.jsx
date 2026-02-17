@@ -114,6 +114,8 @@ export default function BudgetPage() {
         </Button>
       </div>
 
+      <AiBudgetPlanner teamId={currentTeam?.id} onApplyBudget={() => queryClient.invalidateQueries({ queryKey: ['budgets'] })} />
+
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="border-0 shadow-md dark:bg-slate-900">
