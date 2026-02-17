@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, TrendingDown, AlertTriangle, Target, DollarSign, Calendar, Sparkles, Activity, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { formatNOK } from '../components/shared/FormatUtils';
+import CashFlowPredictor from '../components/analytics/CashFlowPredictor';
 
 export default function AdvancedAnalytics() {
   const { currentTeam, isTeamAdmin } = useTeam();
@@ -320,6 +321,9 @@ export default function AdvancedAnalytics() {
           </CardContent>
         </Card>
       )}
+
+      {/* Cash Flow Predictor */}
+      <CashFlowPredictor teamId={currentTeam.id} />
 
       <Tabs defaultValue="trends" className="space-y-6">
         <TabsList>
