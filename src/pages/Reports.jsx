@@ -18,6 +18,8 @@ import BudgetVsActualReport from '../components/reports/BudgetVsActualReport';
 import CashFlowProjection from '../components/reports/CashFlowProjection';
 import NIFAnnualReport from '../components/reports/NIFAnnualReport';
 import ExpensePredictions from '../components/budget/ExpensePredictions';
+import MemberEngagementReport from '../components/reports/MemberEngagementReport';
+import FinancialYearlyReport from '../components/reports/FinancialYearlyReport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
