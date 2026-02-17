@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/table';
 import { Plus, Search, ArrowUpDown, Trash2, Pencil, ArrowUpRight, ArrowDownRight, Paperclip, Loader2 } from 'lucide-react';
 import TransactionForm from '@/components/transactions/TransactionForm';
+import ReceiptScanner from '@/components/transactions/ReceiptScanner';
+import CSVImporter from '@/components/transactions/CSVImporter';
 
 export default function Transactions() {
   const { currentTeam } = useTeam();
