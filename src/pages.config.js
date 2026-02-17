@@ -61,9 +61,9 @@ import PaymentPortal from './pages/PaymentPortal';
 import Players from './pages/Players';
 import ReferralProgram from './pages/ReferralProgram';
 import Reports from './pages/Reports';
+import SettingsPage from './pages/SettingsPage';
 import Transactions from './pages/Transactions';
 import VolunteerManagement from './pages/VolunteerManagement';
-import SettingsPage from './pages/SettingsPage';
 import __Layout from './Layout.jsx';
 
 
@@ -82,9 +82,9 @@ export const PAGES = {
     "Players": Players,
     "ReferralProgram": ReferralProgram,
     "Reports": Reports,
+    "SettingsPage": SettingsPage,
     "Transactions": Transactions,
     "VolunteerManagement": VolunteerManagement,
-    "SettingsPage": SettingsPage,
 }
 
 export const pagesConfig = {
