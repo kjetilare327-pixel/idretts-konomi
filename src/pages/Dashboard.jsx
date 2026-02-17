@@ -111,7 +111,7 @@ export default function Dashboard() {
         <StatCard title="Denne mnd" value={formatNOK(stats.monthIncome - stats.monthExpense)} subtitle={`${formatNOK(stats.monthIncome)} inn / ${formatNOK(stats.monthExpense)} ut`} icon={Wallet} variant="blue" />
       </div>
 
-      <AiHint transactions={transactions} budgets={budgets} />
+      <AiHint teamId={currentTeam?.id} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">

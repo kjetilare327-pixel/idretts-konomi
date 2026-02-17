@@ -50,13 +50,13 @@
 import AuditLog from './pages/AuditLog';
 import BankReconciliation from './pages/BankReconciliation';
 import Budget from './pages/Budget';
+import Communications from './pages/Communications';
 import Dashboard from './pages/Dashboard';
 import Onboarding from './pages/Onboarding';
 import Players from './pages/Players';
 import Reports from './pages/Reports';
 import SettingsPage from './pages/SettingsPage';
 import Transactions from './pages/Transactions';
-import Communications from './pages/Communications';
 import __Layout from './Layout.jsx';
 
 
@@ -64,13 +64,13 @@ export const PAGES = {
     "AuditLog": AuditLog,
     "BankReconciliation": BankReconciliation,
     "Budget": Budget,
+    "Communications": Communications,
     "Dashboard": Dashboard,
     "Onboarding": Onboarding,
     "Players": Players,
     "Reports": Reports,
     "SettingsPage": SettingsPage,
     "Transactions": Transactions,
-    "Communications": Communications,
 }
 
 export const pagesConfig = {
