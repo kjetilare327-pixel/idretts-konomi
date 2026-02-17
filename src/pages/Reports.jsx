@@ -43,6 +43,12 @@ export default function Reports() {
     enabled: !!currentTeam,
   });
 
+  const allCategories = useMemo(() => {
+    const cats = new Set();
+    transactions.forEach(t => cats.add(t.category));
+    return Array.from(cats);
+  }, [transactions]);
+
   const { data: claims = [] } = useQuery({
     queryKey: ['claims', currentTeam?.id],
     queryFn: () => base44.entities.Claim.filter({ team_id: currentTeam.id }),
