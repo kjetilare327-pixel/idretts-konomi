@@ -18,6 +18,10 @@ import AiHint from '@/components/dashboard/AiHint';
 import ProfileCompletionPrompt from '@/components/onboarding/ProfileCompletionPrompt';
 import ReferralKpiWidget from '@/components/dashboard/ReferralKpiWidget';
 import PushNotifications from '@/components/mobile/PushNotifications';
+import EngagementTrendWidget from '@/components/dashboard/EngagementTrendWidget';
+import FinancialSummaryWidget from '@/components/dashboard/FinancialSummaryWidget';
+import OutstandingClaimsWidget from '@/components/dashboard/OutstandingClaimsWidget';
+import NotificationCenter from '@/components/notifications/NotificationCenter';
 
 export default function Dashboard() {
   const { currentTeam, teams, loading: teamLoading, isTeamAdmin, playerProfile, refreshPlayerProfile } = useTeam();
@@ -81,11 +85,14 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-sm text-slate-500">{currentTeam?.name} – {isAdmin ? 'Økonomisk oversikt' : 'Min økonomi'}</p>
         </div>
-        {isAdmin && (
-          <Button onClick={() => navigate(createPageUrl('Transactions'))} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
-            Ny transaksjon <ArrowRight className="w-4 h-4" />
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {isAdmin && <NotificationCenter />}
+          {isAdmin && (
+            <Button onClick={() => navigate(createPageUrl('Transactions'))} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+              Ny transaksjon <ArrowRight className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {playerProfile && showProfilePrompt && (!playerProfile.phone || !playerProfile.notes) && (
@@ -127,6 +134,14 @@ export default function Dashboard() {
         <StatCard title="Utgifter (total)" value={formatNOK(stats.totalExpense)} icon={TrendingDown} variant="red" />
         <StatCard title="Denne mnd" value={formatNOK(stats.monthIncome - stats.monthExpense)} subtitle={`${formatNOK(stats.monthIncome)} inn / ${formatNOK(stats.monthExpense)} ut`} icon={Wallet} variant="blue" />
       </div>
+
+      {isAdmin && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <EngagementTrendWidget teamId={currentTeam?.id} />
+          <FinancialSummaryWidget teamId={currentTeam?.id} />
+          <OutstandingClaimsWidget teamId={currentTeam?.id} />
+        </div>
+      )}
 
       <AiHint teamId={currentTeam?.id} />
 
