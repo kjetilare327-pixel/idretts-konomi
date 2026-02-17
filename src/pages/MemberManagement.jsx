@@ -3,6 +3,7 @@ import { useTeam } from '../components/shared/TeamContext';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import MemberSegmentation from '@/components/members/MemberSegmentation';
+import AIMemberSegmentation from '@/components/members/AIMemberSegmentation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -128,7 +129,10 @@ export default function MemberManagement() {
         </p>
       </div>
 
-      {/* Member segmentation */}
+      {/* AI-powered member segmentation */}
+      <AIMemberSegmentation teamId={currentTeam?.id} />
+
+      {/* Custom member segmentation */}
       <MemberSegmentation teamId={currentTeam?.id} />
 
       {/* Segments overview */}
