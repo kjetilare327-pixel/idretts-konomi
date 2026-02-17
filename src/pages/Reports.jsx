@@ -641,8 +641,8 @@ export default function Reports() {
           <InteractiveScenarioAnalysis 
             teamId={currentTeam?.id}
             currentFinancials={{
-              totalIncome: totalIncome,
-              totalExpenses: totalExpenses,
+              totalIncome: summary.totalIncome,
+              totalExpenses: summary.totalExpense,
               memberCount: (players || []).length
             }}
           />
