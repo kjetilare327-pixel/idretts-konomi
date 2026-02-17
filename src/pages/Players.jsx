@@ -25,6 +25,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Users, Plus, Pencil, Trash2, Mail, CheckCircle, AlertCircle, Clock, Loader2, Eye, EyeOff, Bell, FileText, TrendingDown, TrendingUp } from 'lucide-react';
+import PlayerProfileCard from '../components/players/PlayerProfileCard';
 
 export default function Players() {
   const { currentTeam, isTeamAdmin, playerProfile } = useTeam();
@@ -144,41 +145,21 @@ export default function Players() {
 
   // Player view (ikke admin)
   if (!isAdmin) {
-    const myBalance = playerProfile?.balance || 0;
-    const myStatus = playerProfile?.payment_status || 'paid';
-    const StatusIcon = statusConfig[myStatus]?.icon || CheckCircle;
-
     return (
       <div className="space-y-6 max-w-4xl">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Min økonomi</h1>
-          <p className="text-sm text-slate-500">Din betalingsstatus for {currentTeam.name}</p>
+          <h1 className="text-2xl font-bold tracking-tight">Min profil</h1>
+          <p className="text-sm text-slate-500">Din profil og betalingsstatus for {currentTeam.name}</p>
         </div>
 
-        {/* Min status */}
-        <Card className="border-0 shadow-md dark:bg-slate-900">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-6">
-              <div className={`w-16 h-16 rounded-2xl ${statusConfig[myStatus]?.bg} flex items-center justify-center`}>
-                <StatusIcon className={`w-8 h-8 ${statusConfig[myStatus]?.color}`} />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-slate-500">Din saldo</p>
-                <p className={`text-3xl font-bold ${myBalance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                  {myBalance > 0 ? `Skylder ${formatNOK(myBalance)}` : myBalance < 0 ? `Kreditt ${formatNOK(-myBalance)}` : 'Ingen utestående'}
-                </p>
-                <Badge className={`${statusConfig[myStatus]?.bg} ${statusConfig[myStatus]?.color} border-0 mt-2`}>
-                  {statusConfig[myStatus]?.label}
-                </Badge>
-              </div>
-            </div>
-            {myBalance > 0 && (
-              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-500/10 rounded-lg text-sm text-blue-700 dark:text-blue-300">
-                💡 Kontakt kasserer for betalingsdetaljer
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* My profile */}
+        {playerProfile && (
+          <PlayerProfileCard 
+            player={playerProfile} 
+            onUpdate={() => queryClient.invalidateQueries({ queryKey: ['players'] })} 
+            isOwnProfile={true}
+          />
+        )}
 
         {/* Lagets betalingsoversikt */}
         <Card className="border-0 shadow-md dark:bg-slate-900">
