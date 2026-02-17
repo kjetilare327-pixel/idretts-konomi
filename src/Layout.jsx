@@ -24,6 +24,8 @@ import {
 import { Button } from '@/components/ui/button';
 import NotificationCenter from './components/notifications/NotificationCenter';
 import SupportChatbot from './components/support/SupportChatbot';
+import OfflineManager from './components/mobile/OfflineManager';
+import PushNotifications from './components/mobile/PushNotifications';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -80,7 +82,28 @@ function InnerLayout({ children, currentPageName }) {
         }
         .dark { --bg-card: #1e293b; --bg-surface: #0f172a; --text-muted: #94a3b8; }
         :not(.dark) { --bg-card: #ffffff; --bg-surface: #f8fafc; --text-muted: #64748b; }
+
+        /* Mobile-first touch optimizations */
+        @media (max-width: 768px) {
+          * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+          }
+
+          button, a {
+            min-height: 44px;
+            min-width: 44px;
+          }
+        }
+
+        /* Smooth scrolling */
+        html {
+          scroll-behavior: smooth;
+          -webkit-overflow-scrolling: touch;
+        }
       `}</style>
+
+      <OfflineManager />
 
       {/* Sidebar – desktop */}
       <aside className={`hidden lg:flex flex-col w-64 border-r ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} fixed h-full z-30`}>
@@ -121,14 +144,14 @@ function InnerLayout({ children, currentPageName }) {
           </div>
         )}
 
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {NAV_ITEMS.filter(item => !item.roles || item.roles.includes(userRole)).map(item => {
             const active = currentPageName === item.page;
             return (
               <Link
                 key={item.page}
                 to={createPageUrl(item.page)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all touch-manipulation ${
                   active
                     ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
                     : darkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -142,6 +165,9 @@ function InnerLayout({ children, currentPageName }) {
         </nav>
 
         <div className="p-4 border-t border-inherit space-y-2">
+          <div className="px-3 py-2">
+            <PushNotifications />
+          </div>
           <div className="px-3 py-2">
             <NotificationCenter userEmail={user?.email} teamId={currentTeam?.id} />
           </div>
