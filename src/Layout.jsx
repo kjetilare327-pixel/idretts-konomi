@@ -33,6 +33,7 @@ import {
 const NAV_ITEMS = [
   { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'kasserer', 'styreleder', 'revisor', 'player'] },
   { name: 'Mine betalinger', page: 'PaymentPortal', icon: Receipt, roles: ['player'] },
+  { name: 'Henvisningsprogram', page: 'ReferralProgram', icon: Users, roles: ['admin', 'kasserer', 'styreleder', 'player'] },
   { name: 'Arrangementer', page: 'EventManagement', icon: LayoutDashboard, roles: ['admin', 'kasserer', 'styreleder', 'player'] },
   { name: 'Dugnad', page: 'VolunteerManagement', icon: Users, roles: ['admin', 'kasserer', 'styreleder', 'player'] },
   { name: 'Medlemmer', page: 'MemberManagement', icon: Users, roles: ['admin', 'kasserer', 'styreleder'] },
