@@ -16,6 +16,7 @@ import TopExpenses from '@/components/dashboard/TopExpenses';
 import SubscriptionBanner from '@/components/dashboard/SubscriptionBanner';
 import AiHint from '@/components/dashboard/AiHint';
 import ProfileCompletionPrompt from '@/components/onboarding/ProfileCompletionPrompt';
+import ReferralKpiWidget from '@/components/dashboard/ReferralKpiWidget';
 
 export default function Dashboard() {
   const { currentTeam, teams, loading: teamLoading, isTeamAdmin, playerProfile, refreshPlayerProfile } = useTeam();
@@ -125,6 +126,8 @@ export default function Dashboard() {
       </div>
 
       <AiHint teamId={currentTeam?.id} />
+
+      {isAdmin && <ReferralKpiWidget teamId={currentTeam?.id} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
