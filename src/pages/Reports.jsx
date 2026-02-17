@@ -6,6 +6,10 @@ import { formatNOK, INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/components/s
 import MembershipTrendChart from '../components/reports/MembershipTrendChart';
 import YearOverYearChart from '../components/reports/YearOverYearChart';
 import LiquidityImpactChart from '../components/reports/LiquidityImpactChart';
+import GdprCompliancePanel from '../components/reports/GdprCompliancePanel';
+import PredictiveAnalytics from '../components/reports/PredictiveAnalytics';
+import ScenarioAnalysis from '../components/reports/ScenarioAnalysis';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -217,8 +221,8 @@ export default function Reports() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Rapporter</h1>
-          <p className="text-sm text-slate-500">Generer og eksporter økonomiske rapporter</p>
+          <h1 className="text-2xl font-bold tracking-tight">Rapporter & Analyse</h1>
+          <p className="text-sm text-slate-500">Økonomiske rapporter, prognoser og GDPR-overholdelse</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={exportCSV} className="gap-2">
@@ -232,6 +236,16 @@ export default function Reports() {
           </Button>
         </div>
       </div>
+
+      <Tabs defaultValue="reports" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="reports">Rapporter</TabsTrigger>
+          <TabsTrigger value="predictive">Prognoser</TabsTrigger>
+          <TabsTrigger value="scenario">Scenarioer</TabsTrigger>
+          <TabsTrigger value="gdpr">GDPR</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="reports" className="space-y-6">{/* Existing reports content */}
 
       {/* Period selector */}
       <div className="flex flex-wrap gap-3">
@@ -558,6 +572,20 @@ export default function Reports() {
           <p className="text-xs text-slate-500 mt-3">Momsfritak for idrettsaktivitet er forhåndsmerket.</p>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="predictive" className="space-y-6">
+          <PredictiveAnalytics teamId={currentTeam?.id} />
+        </TabsContent>
+
+        <TabsContent value="scenario" className="space-y-6">
+          <ScenarioAnalysis teamId={currentTeam?.id} />
+        </TabsContent>
+
+        <TabsContent value="gdpr" className="space-y-6">
+          <GdprCompliancePanel teamId={currentTeam?.id} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
