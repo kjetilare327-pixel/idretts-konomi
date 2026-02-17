@@ -195,33 +195,33 @@ export default function SettingsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {['income', 'expense'].map(type => (
-              <div key={type}>
-                <p className="text-xs font-semibold text-slate-500 mb-2 uppercase">{type === 'income' ? 'Inntekter' : 'Utgifter'}</p>
-                <div className="space-y-2">
-                  {categories.filter(c => c.type === type).map(cat => (
-                    <div key={cat.id} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 group">
-                      <span className="text-sm">{cat.name}</span>
-                      {!cat.is_default && (
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openEditCategory(cat)}>
-                            <Pencil className="w-3 h-3" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500" onClick={() => handleDeleteCategory(cat.id)}>
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  {categories.filter(c => c.type === type).length === 0 && (
-                    <p className="text-xs text-slate-400 py-2">Ingen kategorier lagt til</p>
-                  )}
+                <div key={type}>
+                  <p className="text-xs font-semibold text-slate-500 mb-2 uppercase">{type === 'income' ? 'Inntekter' : 'Utgifter'}</p>
+                  <div className="space-y-2">
+                    {categories.filter(c => c.type === type).map(cat => (
+                      <div key={cat.id} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 group">
+                        <span className="text-sm">{cat.name}</span>
+                        {!cat.is_default && (
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openEditCategory(cat)}>
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500" onClick={() => handleDeleteCategory(cat.id)}>
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {categories.filter(c => c.type === type).length === 0 && (
+                      <p className="text-xs text-slate-400 py-2">Ingen kategorier lagt til</p>
+                    )}
                   </div>
-                  </div>
-                  ))}
-                  </div>
-                  )}
-                  </CardContent>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
                   </Card>
 
                   {/* Privacy settings */}
