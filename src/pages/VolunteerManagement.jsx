@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Users, Plus, Calendar, Clock, MapPin, CheckCircle2, UserPlus } from 'lucide-react';
+import { Users, Plus, Calendar, Clock, MapPin, CheckCircle2, UserPlus, DollarSign, TrendingUp } from 'lucide-react';
 
 export default function VolunteerManagement() {
   const { currentTeam, isTeamAdmin, playerProfile } = useTeam();
@@ -36,6 +36,12 @@ export default function VolunteerManagement() {
   const { data: players = [] } = useQuery({
     queryKey: ['players', currentTeam?.id],
     queryFn: () => base44.entities.Player.filter({ team_id: currentTeam.id }),
+    enabled: !!currentTeam,
+  });
+
+  const { data: events = [] } = useQuery({
+    queryKey: ['events', currentTeam?.id],
+    queryFn: () => base44.entities.Event.filter({ team_id: currentTeam.id }),
     enabled: !!currentTeam,
   });
 
@@ -88,6 +94,19 @@ export default function VolunteerManagement() {
     queryClient.invalidateQueries({ queryKey: ['volunteer-assignments'] });
   };
 
+  const handleMarkAttendance = async (taskId, playerId) => {
+    const assignment = assignments.find(a => a.task_id === taskId && a.player_id === playerId);
+    
+    if (assignment) {
+      await base44.entities.VolunteerAssignment.update(assignment.id, {
+        status: 'completed',
+        hours_worked: tasks.find(t => t.id === taskId)?.hours_estimated || 2
+      });
+    }
+    
+    queryClient.invalidateQueries({ queryKey: ['volunteer-assignments'] });
+  };
+
   const getTaskStats = (taskId) => {
     const taskAssignments = assignments.filter(a => a.task_id === taskId);
     return {
@@ -103,13 +122,22 @@ export default function VolunteerManagement() {
   const openTasks = tasks.filter(t => t.status === 'open' || t.status === 'in_progress');
   const completedTasks = tasks.filter(t => t.status === 'completed');
 
+  // Økonomirelaterte arrangementer (kun turneringer og cuper som koster penger)
+  const economicEvents = events.filter(e => 
+    e.type === 'tournament' || e.type === 'social'
+  ).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  const upcomingEconomicEvents = economicEvents.filter(e => 
+    new Date(e.date) >= new Date() && e.status === 'scheduled'
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Dugnad & Frivillig arbeid</h1>
+          <h1 className="text-3xl font-bold mb-2">Dugnad & Arrangementer (økonomi)</h1>
           <p className="text-slate-600 dark:text-slate-400">
-            {isAdmin ? 'Administrer dugnadsoppgaver' : 'Se og meld deg på dugnader'}
+            {isAdmin ? 'Administrer dugnader og økonomirelaterte arrangementer' : 'Meld deg på dugnader og arrangementer'}
           </p>
         </div>
         {isAdmin && (
@@ -120,6 +148,55 @@ export default function VolunteerManagement() {
         )}
       </div>
 
+      {/* Economic events (tournaments/cups with fees) */}
+      {upcomingEconomicEvents.length > 0 && (
+        <Card className="border-0 shadow-md dark:bg-slate-900 border-l-4 border-l-amber-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-amber-500" />
+              Arrangementer med deltakeravgift
+            </CardTitle>
+            <CardDescription>Turneringer og cuper som krever betaling</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {upcomingEconomicEvents.map(event => (
+                <div key={event.id} className="p-4 rounded-lg border bg-amber-50 dark:bg-amber-950/20">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-semibold">{event.title}</h3>
+                        <Badge className="bg-amber-100 text-amber-700">
+                          {event.type === 'tournament' ? 'Turnering' : 'Sosialt'}
+                        </Badge>
+                      </div>
+                      <div className="flex gap-4 text-sm text-slate-600 dark:text-slate-400">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4" />
+                          {new Date(event.date).toLocaleDateString('nb-NO')}
+                        </span>
+                        {event.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-4 h-4" />
+                            {event.location}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {isAdmin && (
+                      <Button size="sm" variant="outline" className="gap-2">
+                        <DollarSign className="w-4 h-4" />
+                        Opprett krav
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Open tasks */}
       <Card className="border-0 shadow-md dark:bg-slate-900">
         <CardHeader>
@@ -127,6 +204,7 @@ export default function VolunteerManagement() {
             <Users className="w-5 h-5 text-purple-500" />
             Aktive dugnader ({openTasks.length})
           </CardTitle>
+          <CardDescription>Registrer oppmøte for dugnad for å spore inntekter og refusjoner</CardDescription>
         </CardHeader>
         <CardContent>
           {openTasks.length > 0 ? (
@@ -135,6 +213,7 @@ export default function VolunteerManagement() {
                 const stats = getTaskStats(task.id);
                 const isFull = stats.signedUp >= task.volunteers_needed;
                 const isSignedUp = playerProfile && assignments.some(a => a.task_id === task.id && a.player_id === playerProfile.id);
+                const taskAssignments = assignments.filter(a => a.task_id === task.id);
 
                 return (
                   <div key={task.id} className="p-4 rounded-lg border bg-slate-50 dark:bg-slate-800">
@@ -196,15 +275,41 @@ export default function VolunteerManagement() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleComplete(task.id)}
+                            onClick={() => setShowForm(true)}
                             className="gap-2"
                           >
-                            <CheckCircle2 className="w-4 h-4" />
-                            Marker fullført
+                            <Users className="w-4 h-4" />
+                            Registrer oppmøte
                           </Button>
                         )}
                       </div>
                     </div>
+
+                    {/* Attendance registration for admins */}
+                    {isAdmin && task.status === 'in_progress' && taskAssignments.length > 0 && (
+                      <div className="mt-4 pt-4 border-t space-y-2">
+                        <h4 className="text-sm font-medium mb-2">Hvem møtte opp?</h4>
+                        {taskAssignments.map(assignment => {
+                          const player = players.find(p => p.id === assignment.player_id);
+                          const isCompleted = assignment.status === 'completed';
+                          
+                          return player ? (
+                            <div key={assignment.id} className="flex items-center justify-between p-2 rounded bg-white dark:bg-slate-900">
+                              <span className="text-sm">{player.full_name}</span>
+                              <Button
+                                size="sm"
+                                variant={isCompleted ? 'default' : 'outline'}
+                                onClick={() => handleMarkAttendance(task.id, player.id)}
+                                className="gap-1"
+                              >
+                                <CheckCircle2 className="w-3 h-3" />
+                                {isCompleted ? 'Møtt opp' : 'Registrer'}
+                              </Button>
+                            </div>
+                          ) : null;
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -215,26 +320,36 @@ export default function VolunteerManagement() {
         </CardContent>
       </Card>
 
-      {/* Completed tasks */}
+      {/* Completed tasks with attendance tracking */}
       {isAdmin && completedTasks.length > 0 && (
         <Card className="border-0 shadow-md dark:bg-slate-900">
           <CardHeader>
             <CardTitle>Fullførte dugnader ({completedTasks.length})</CardTitle>
+            <CardDescription>Oppmøte registrert for økonomisk dokumentasjon</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {completedTasks.slice(0, 5).map(task => {
                 const stats = getTaskStats(task.id);
+                const taskAssignments = assignments.filter(a => a.task_id === task.id && a.status === 'completed');
+                const totalHours = taskAssignments.reduce((sum, a) => sum + (a.hours_worked || 0), 0);
+                
                 return (
                   <div key={task.id} className="p-3 rounded-lg border bg-emerald-50 dark:bg-emerald-950/30">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="flex-1">
                         <h3 className="font-medium">{task.title}</h3>
                         <p className="text-xs text-slate-500">
-                          {new Date(task.date).toLocaleDateString('nb-NO')} • {stats.completed} deltakere
+                          {new Date(task.date).toLocaleDateString('nb-NO')} • {stats.completed} deltakere • {totalHours} timer totalt
                         </p>
                       </div>
-                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-purple-100 text-purple-700">
+                          <TrendingUp className="w-3 h-3 mr-1" />
+                          Dugnadsinntekt
+                        </Badge>
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                      </div>
                     </div>
                   </div>
                 );

@@ -57,11 +57,11 @@ import MemberManagement from './pages/MemberManagement';
 import Onboarding from './pages/Onboarding';
 import PaymentPortal from './pages/PaymentPortal';
 import Players from './pages/Players';
+import ReferralProgram from './pages/ReferralProgram';
 import Reports from './pages/Reports';
 import SettingsPage from './pages/SettingsPage';
 import Transactions from './pages/Transactions';
 import VolunteerManagement from './pages/VolunteerManagement';
-import ReferralProgram from './pages/ReferralProgram';
 import __Layout from './Layout.jsx';
 
 
@@ -76,11 +76,11 @@ export const PAGES = {
     "Onboarding": Onboarding,
     "PaymentPortal": PaymentPortal,
     "Players": Players,
+    "ReferralProgram": ReferralProgram,
     "Reports": Reports,
     "SettingsPage": SettingsPage,
     "Transactions": Transactions,
     "VolunteerManagement": VolunteerManagement,
-    "ReferralProgram": ReferralProgram,
 }
 
 export const pagesConfig = {
