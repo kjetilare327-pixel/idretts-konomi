@@ -216,14 +216,15 @@ export default function SettingsPage() {
                   {categories.filter(c => c.type === type).length === 0 && (
                     <p className="text-xs text-slate-400 py-2">Ingen kategorier lagt til</p>
                   )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                  </div>
+                  </div>
+                  ))}
+                  </div>
+                  )}
+                  </CardContent>
+                  </Card>
 
-      {/* Privacy settings */}
+                  {/* Privacy settings */}
       <Card className="border-0 shadow-md dark:bg-slate-900">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
