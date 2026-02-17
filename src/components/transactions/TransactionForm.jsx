@@ -24,21 +24,19 @@ export default function TransactionForm({ teamId, editData, onClose, onSaved }) 
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const { data: allCategories = [], isLoading: loadingCategories } = useQuery({
+  const { data: allCategories = [] } = useQuery({
     queryKey: ['categories', teamId],
     queryFn: () => base44.entities.Category.filter({ team_id: teamId }),
     enabled: !!teamId,
   });
 
-  const categories = allCategories.filter(c => c.type === form.type).map(c => c.name);
+  // Fallback til standard kategorier hvis ingen finnes i databasen
+  const defaultIncomeCategories = ['Kontingent', 'Sponsorinntekter', 'Dugnad', 'Treningstilskudd', 'Andre inntekter'];
+  const defaultExpenseCategories = ['Utstyr', 'Reisekostnader', 'Arrangement', 'Treningskostnader', 'Administrasjon', 'Andre utgifter'];
   
-  // Debug log
-  React.useEffect(() => {
-    if (allCategories.length > 0) {
-      console.log('Categories loaded:', allCategories);
-      console.log('Filtered categories:', categories);
-    }
-  }, [allCategories, categories]);
+  const categories = allCategories.length > 0
+    ? allCategories.filter(c => c.type === form.type).map(c => c.name)
+    : (form.type === 'income' ? defaultIncomeCategories : defaultExpenseCategories);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -82,15 +80,9 @@ export default function TransactionForm({ teamId, editData, onClose, onSaved }) 
         <div className="space-y-2">
           <Label>Kategori *</Label>
           <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
-            <SelectTrigger><SelectValue placeholder="Velg..." /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Velg kategori" /></SelectTrigger>
             <SelectContent>
-              {loadingCategories ? (
-                <SelectItem value="_loading" disabled>Laster...</SelectItem>
-              ) : categories.length === 0 ? (
-                <SelectItem value="_empty" disabled>Ingen kategorier funnet</SelectItem>
-              ) : (
-                categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)
-              )}
+              {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
