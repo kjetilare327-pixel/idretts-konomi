@@ -105,13 +105,15 @@ export default function TransactionForm({ teamId, editData, onClose, onSaved }) 
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar 
                 mode="single" 
-                selected={form.date ? new Date(form.date) : undefined} 
+                selected={form.date ? new Date(form.date + 'T12:00:00') : undefined} 
                 onSelect={d => {
                   if (d) {
-                    setForm({ ...form, date: format(d, 'yyyy-MM-dd') });
+                    const year = d.getFullYear();
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    setForm({ ...form, date: `${year}-${month}-${day}` });
                   }
                 }}
-                locale={nb}
                 initialFocus
               />
             </PopoverContent>
