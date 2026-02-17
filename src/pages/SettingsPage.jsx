@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useTeam } from '@/components/shared/TeamContext';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,7 +43,7 @@ export default function SettingsPage() {
   const [categoryForm, setCategoryForm] = useState({ name: '', type: 'expense' });
   const [savingCategory, setSavingCategory] = useState(false);
 
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+  const { data: categories = [] } = useQuery({
     queryKey: ['categories', currentTeam?.id],
     queryFn: () => base44.entities.Category.filter({ team_id: currentTeam.id }),
     enabled: !!currentTeam,
@@ -190,41 +190,37 @@ export default function SettingsPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {categoriesLoading ? (
-            <p className="text-center py-4 text-slate-500">Laster kategorier...</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {['income', 'expense'].map(type => (
-                <div key={type}>
-                  <p className="text-xs font-semibold text-slate-500 mb-2 uppercase">{type === 'income' ? 'Inntekter' : 'Utgifter'}</p>
-                  <div className="space-y-2">
-                    {categories.filter(c => c.type === type).map(cat => (
-                      <div key={cat.id} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 group">
-                        <span className="text-sm">{cat.name}</span>
-                        {!cat.is_default && (
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openEditCategory(cat)}>
-                              <Pencil className="w-3 h-3" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500" onClick={() => handleDeleteCategory(cat.id)}>
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    {categories.filter(c => c.type === type).length === 0 && (
-                      <p className="text-xs text-slate-400 py-2">Ingen kategorier lagt til</p>
-                    )}
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {['income', 'expense'].map(type => (
+              <div key={type}>
+                <p className="text-xs font-semibold text-slate-500 mb-2 uppercase">{type === 'income' ? 'Inntekter' : 'Utgifter'}</p>
+                <div className="space-y-2">
+                  {categories.filter(c => c.type === type).map(cat => (
+                    <div key={cat.id} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 group">
+                      <span className="text-sm">{cat.name}</span>
+                      {!cat.is_default && (
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openEditCategory(cat)}>
+                            <Pencil className="w-3 h-3" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500" onClick={() => handleDeleteCategory(cat.id)}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {categories.filter(c => c.type === type).length === 0 && (
+                    <p className="text-xs text-slate-400 py-2">Ingen kategorier lagt til</p>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
         </CardContent>
-                  </Card>
+      </Card>
 
-                  {/* Privacy settings */}
+      {/* Privacy settings */}
       <Card className="border-0 shadow-md dark:bg-slate-900">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
