@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import NotificationCenter from './components/notifications/NotificationCenter';
+import SupportChatbot from './components/support/SupportChatbot';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -215,16 +216,19 @@ function InnerLayout({ children, currentPageName }) {
           {children}
         </div>
       </main>
-    </div>
-  );
-}
 
-export default function Layout({ children, currentPageName }) {
-  return (
-    <ThemeProvider>
+      {/* Support chatbot */}
+      {currentTeam && <SupportChatbot teamId={currentTeam.id} />}
+      </div>
+      );
+      }
+
+      export default function Layout({ children, currentPageName }) {
+      return (
+      <ThemeProvider>
       <TeamProvider>
         <InnerLayout currentPageName={currentPageName}>{children}</InnerLayout>
       </TeamProvider>
-    </ThemeProvider>
-  );
-}
+      </ThemeProvider>
+      );
+      }
