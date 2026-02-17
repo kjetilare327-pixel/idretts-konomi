@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTeam } from '@/components/shared/TeamContext';
 import { formatNOK } from '@/components/shared/FormatUtils';
+import AiBudgetPlanner from '../components/budget/AiBudgetPlanner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

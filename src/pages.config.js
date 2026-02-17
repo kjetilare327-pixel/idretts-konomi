@@ -57,6 +57,7 @@ import Players from './pages/Players';
 import Reports from './pages/Reports';
 import SettingsPage from './pages/SettingsPage';
 import Transactions from './pages/Transactions';
+import MemberManagement from './pages/MemberManagement';
 import __Layout from './Layout.jsx';
 
 
@@ -71,6 +72,7 @@ export const PAGES = {
     "Reports": Reports,
     "SettingsPage": SettingsPage,
     "Transactions": Transactions,
+    "MemberManagement": MemberManagement,
 }
 
 export const pagesConfig = {
