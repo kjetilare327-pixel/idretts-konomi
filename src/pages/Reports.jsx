@@ -12,10 +12,6 @@ import ScenarioAnalysis from '../components/reports/ScenarioAnalysis';
 import RealtimeMetrics from '../components/reports/RealtimeMetrics';
 import InteractiveScenarioAnalysis from '../components/reports/InteractiveScenarioAnalysis';
 import CustomReportBuilder from '../components/reports/CustomReportBuilder';
-import ReportFilters from '../components/reports/ReportFilters';
-import ReportExport from '../components/reports/ReportExport';
-import BudgetVsActualReport from '../components/reports/BudgetVsActualReport';
-import CashFlowProjection from '../components/reports/CashFlowProjection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -641,8 +637,8 @@ export default function Reports() {
           <InteractiveScenarioAnalysis 
             teamId={currentTeam?.id}
             currentFinancials={{
-              totalIncome: summary.totalIncome,
-              totalExpenses: summary.totalExpense,
+              totalIncome: totalIncome,
+              totalExpenses: totalExpenses,
               memberCount: (players || []).length
             }}
           />
