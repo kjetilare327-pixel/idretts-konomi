@@ -49,6 +49,7 @@ const NAV_ITEMS = [
   { name: 'Automatisk fakturering', page: 'InvoiceAutomation', icon: Receipt, roles: ['admin', 'kasserer'] },
   { name: 'Kommunikasjon', page: 'Communications', icon: Mail, roles: ['admin', 'kasserer', 'styreleder'] },
   { name: 'Revisjonslogg', page: 'AuditLog', icon: ScrollText, roles: ['admin', 'styreleder', 'revisor'] },
+  { name: 'Regnskap', page: 'AccountingIntegration', icon: FileBarChart, roles: ['admin', 'kasserer'] },
   { name: 'Innstillinger', page: 'SettingsPage', icon: Settings, roles: ['admin', 'kasserer', 'styreleder'] },
 ];
 
