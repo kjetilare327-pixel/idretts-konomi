@@ -11,7 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Send, Loader2, Mail, Users, CheckCircle2, AlertCircle, Sparkles, TrendingUp } from 'lucide-react';
+import { Send, Loader2, Mail, Users, CheckCircle2, AlertCircle, Sparkles, TrendingUp, BarChart3 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import TemplateManager from '../components/communications/TemplateManager';
+import MessageTracker from '../components/communications/MessageTracker';
+import RecipientSegmentation from '../components/communications/RecipientSegmentation';
 
 const MESSAGE_TEMPLATES = {
   training_change: {
@@ -122,6 +126,18 @@ export default function Communications() {
     }
   };
 
+  const handleTemplateSelect = (template) => {
+    const body = template.body
+      .replace(/\{\{name\}\}/g, '[navn]')
+      .replace(/\{\{team\}\}/g, '[lag]')
+      .replace(/\{\{amount\}\}/g, '[beløp]')
+      .replace(/\{\{date\}\}/g, '[dato]')
+      .replace(/\{\{event\}\}/g, '[arrangement]');
+    
+    setSubject(template.subject);
+    setMessage(body);
+  };
+
   const handleSend = async () => {
     if (!subject || !message || recipients.length === 0) {
       setResult({ success: false, message: 'Vennligst fyll ut alle felt og velg mottakere' });
@@ -146,9 +162,36 @@ export default function Communications() {
             subject: subject,
             body: personalizedMessage.replace(/\n/g, '<br>')
           });
+
+          // Track sent message
+          await base44.entities.SentMessage.create({
+            team_id: currentTeam.id,
+            recipient_email: recipient.email,
+            recipient_name: recipient.name,
+            subject: subject,
+            body: personalizedMessage,
+            status: 'sent',
+            sent_at: new Date().toISOString(),
+            segment: recipientType
+          });
+
           successCount++;
         } catch (error) {
           console.error(`Failed to send to ${recipient.email}:`, error);
+          
+          // Track failed message
+          await base44.entities.SentMessage.create({
+            team_id: currentTeam.id,
+            recipient_email: recipient.email,
+            recipient_name: recipient.name,
+            subject: subject,
+            body: message,
+            status: 'failed',
+            sent_at: new Date().toISOString(),
+            error_message: error.message,
+            segment: recipientType
+          });
+
           failedCount++;
         }
       }
@@ -193,9 +236,27 @@ export default function Communications() {
       <div>
         <h1 className="text-3xl font-bold mb-2">Kommunikasjon</h1>
         <p className="text-slate-600 dark:text-slate-400">
-          Send e-post til spillere og foreldre
+          Send meldinger, administrer maler og spor leveringsstatus
         </p>
       </div>
+
+      <Tabs defaultValue="compose" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="compose">
+            <Send className="w-4 h-4 mr-2" />
+            Send melding
+          </TabsTrigger>
+          <TabsTrigger value="templates">
+            <Mail className="w-4 h-4 mr-2" />
+            Maler
+          </TabsTrigger>
+          <TabsTrigger value="tracking">
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Sporing
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="compose" className="space-y-6">{/* Existing compose content */}
 
       {result && (
         <Alert className={result.success ? 'border-green-200 bg-green-50 dark:bg-green-950' : 'border-red-200 bg-red-50 dark:bg-red-950'}>
@@ -397,23 +458,16 @@ export default function Communications() {
         </CardContent>
       </Card>
 
-      {/* Message Templates Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Tilgjengelige maler</CardTitle>
-          <CardDescription>Forhåndsdefinerte meldingsmaler for vanlige situasjoner</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.entries(MESSAGE_TEMPLATES).map(([key, tmpl]) => (
-              <div key={key} className="p-4 rounded-lg border bg-slate-50 dark:bg-slate-900">
-                <h3 className="font-semibold text-sm mb-1">{tmpl.name}</h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400">{tmpl.subject}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+        </TabsContent>
+
+        <TabsContent value="templates">
+          <TemplateManager teamId={currentTeam?.id} onSelectTemplate={handleTemplateSelect} />
+        </TabsContent>
+
+        <TabsContent value="tracking">
+          <MessageTracker teamId={currentTeam?.id} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
