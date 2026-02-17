@@ -62,6 +62,8 @@ import Reports from './pages/Reports';
 import SettingsPage from './pages/SettingsPage';
 import Transactions from './pages/Transactions';
 import VolunteerManagement from './pages/VolunteerManagement';
+import AdvancedAnalytics from './pages/AdvancedAnalytics';
+import InvoiceAutomation from './pages/InvoiceAutomation';
 import __Layout from './Layout.jsx';
 
 
@@ -81,6 +83,8 @@ export const PAGES = {
     "SettingsPage": SettingsPage,
     "Transactions": Transactions,
     "VolunteerManagement": VolunteerManagement,
+    "AdvancedAnalytics": AdvancedAnalytics,
+    "InvoiceAutomation": InvoiceAutomation,
 }
 
 export const pagesConfig = {

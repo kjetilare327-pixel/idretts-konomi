@@ -1,0 +1,82 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    const { claim_id, player_id, team_id } = await req.json();
+
+    if (!claim_id || !player_id || !team_id) {
+      return Response.json({ error: 'claim_id, player_id, and team_id required' }, { status: 400 });
+    }
+
+    // Get claim details
+    const claim = await base44.asServiceRole.entities.Claim.get(claim_id);
+    if (!claim) {
+      return Response.json({ error: 'Claim not found' }, { status: 404 });
+    }
+
+    // Get player details
+    const player = await base44.asServiceRole.entities.Player.get(player_id);
+    if (!player) {
+      return Response.json({ error: 'Player not found' }, { status: 404 });
+    }
+
+    // In a real implementation, you would integrate with Vipps API here
+    // For now, we'll simulate the payment process
+    
+    // Create Vipps payment link (simulated)
+    const vippsReference = `PAY-${Date.now()}-${claim_id.substring(0, 8)}`;
+    const vippsLink = `https://vipps.no/payment/${vippsReference}`;
+
+    // Update claim with Vipps link
+    await base44.asServiceRole.entities.Claim.update(claim_id, {
+      vipps_payment_link: vippsLink,
+      kid_reference: vippsReference
+    });
+
+    // Create pending payment record
+    const payment = await base44.asServiceRole.entities.Payment.create({
+      team_id,
+      player_id,
+      claim_id,
+      amount: claim.amount,
+      payment_method: 'vipps',
+      status: 'pending',
+      transaction_id: vippsReference,
+      vipps_payment_link: vippsLink
+    });
+
+    // Send email with payment link
+    await base44.asServiceRole.integrations.Core.SendEmail({
+      to: player.user_email,
+      subject: `Betalingslenke for: ${claim.description}`,
+      body: `
+        Hei ${player.full_name},
+
+        Her er din betalingslenke for: ${claim.description}
+
+        Beløp: ${claim.amount} NOK
+        Forfallsdato: ${new Date(claim.due_date).toLocaleDateString('nb-NO')}
+
+        Betal nå: ${vippsLink}
+
+        Referanse: ${vippsReference}
+
+        Med vennlig hilsen,
+        IdrettsØkonomi
+      `
+    });
+
+    return Response.json({
+      success: true,
+      payment_id: payment.id,
+      vipps_link: vippsLink,
+      reference: vippsReference,
+      message: 'Payment link created and sent to player'
+    });
+
+  } catch (error) {
+    console.error('Vipps payment error:', error);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+});
