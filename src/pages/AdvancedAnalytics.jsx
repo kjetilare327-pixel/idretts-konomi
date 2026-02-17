@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, TrendingDown, AlertTriangle, Target, DollarSign, Calendar, Sparkles, Activity, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, AlertTriangle, Target, DollarSign, Calendar, Sparkles, Activity, ArrowUpRight, ArrowDownRight, Clock } from 'lucide-react';
 import { formatNOK } from '../components/shared/FormatUtils';
 import CashFlowPredictor from '../components/analytics/CashFlowPredictor';
 

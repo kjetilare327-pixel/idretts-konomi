@@ -47,12 +47,14 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import AdvancedAnalytics from './pages/AdvancedAnalytics';
 import AuditLog from './pages/AuditLog';
 import BankReconciliation from './pages/BankReconciliation';
 import Budget from './pages/Budget';
 import Communications from './pages/Communications';
 import Dashboard from './pages/Dashboard';
 import EventManagement from './pages/EventManagement';
+import InvoiceAutomation from './pages/InvoiceAutomation';
 import MemberManagement from './pages/MemberManagement';
 import Onboarding from './pages/Onboarding';
 import PaymentPortal from './pages/PaymentPortal';
@@ -62,18 +64,18 @@ import Reports from './pages/Reports';
 import SettingsPage from './pages/SettingsPage';
 import Transactions from './pages/Transactions';
 import VolunteerManagement from './pages/VolunteerManagement';
-import AdvancedAnalytics from './pages/AdvancedAnalytics';
-import InvoiceAutomation from './pages/InvoiceAutomation';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "AdvancedAnalytics": AdvancedAnalytics,
     "AuditLog": AuditLog,
     "BankReconciliation": BankReconciliation,
     "Budget": Budget,
     "Communications": Communications,
     "Dashboard": Dashboard,
     "EventManagement": EventManagement,
+    "InvoiceAutomation": InvoiceAutomation,
     "MemberManagement": MemberManagement,
     "Onboarding": Onboarding,
     "PaymentPortal": PaymentPortal,
@@ -83,8 +85,6 @@ export const PAGES = {
     "SettingsPage": SettingsPage,
     "Transactions": Transactions,
     "VolunteerManagement": VolunteerManagement,
-    "AdvancedAnalytics": AdvancedAnalytics,
-    "InvoiceAutomation": InvoiceAutomation,
 }
 
 export const pagesConfig = {
