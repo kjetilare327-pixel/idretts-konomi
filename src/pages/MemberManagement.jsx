@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useTeam } from '../components/shared/TeamContext';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import MemberSegmentation from '@/components/members/MemberSegmentation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -126,6 +127,9 @@ export default function MemberManagement() {
           Administrer medlemmer, se detaljer og segmenter
         </p>
       </div>
+
+      {/* Member segmentation */}
+      <MemberSegmentation teamId={currentTeam?.id} />
 
       {/* Segments overview */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
