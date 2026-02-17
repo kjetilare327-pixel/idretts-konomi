@@ -106,8 +106,8 @@ function InnerLayout({ children, currentPageName }) {
       <OfflineManager />
 
       {/* Sidebar – desktop */}
-      <aside className={`hidden lg:flex flex-col w-64 border-r ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} fixed h-full z-30`}>
-        <div className="p-6 border-b border-inherit">
+      <aside className={`hidden lg:flex flex-col w-64 border-r ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} fixed h-screen z-30`}>
+        <div className="p-6 border-b border-inherit flex-shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center">
               <Shield className="w-5 h-5 text-white" />
@@ -121,7 +121,7 @@ function InnerLayout({ children, currentPageName }) {
 
         {/* Team selector */}
         {teams.length > 0 && (
-          <div className="px-4 py-3 border-b border-inherit">
+          <div className="px-4 py-3 border-b border-inherit flex-shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="w-full justify-between text-left font-medium text-sm h-auto py-2">
@@ -144,7 +144,7 @@ function InnerLayout({ children, currentPageName }) {
           </div>
         )}
 
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto min-h-0">
           {NAV_ITEMS.filter(item => !item.roles || item.roles.includes(userRole)).map(item => {
             const active = currentPageName === item.page;
             return (
@@ -164,7 +164,7 @@ function InnerLayout({ children, currentPageName }) {
           })}
         </nav>
 
-        <div className="p-4 border-t border-inherit space-y-2">
+        <div className="p-4 border-t border-inherit space-y-2 flex-shrink-0">
           <div className="px-3 py-2">
             <PushNotifications />
           </div>
@@ -199,7 +199,7 @@ function InnerLayout({ children, currentPageName }) {
             </div>
           </div>
         {mobileOpen && (
-          <div className={`border-b ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} px-4 py-3 space-y-1`}>
+          <div className={`border-b ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} px-4 py-3 space-y-1 max-h-[calc(100vh-60px)] overflow-y-auto`}>
             {teams.length > 1 && (
               <div className="pb-2 mb-2 border-b border-inherit">
                 {teams.map(t => (
