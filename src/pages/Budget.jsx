@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTeam } from '@/components/shared/TeamContext';
 import { formatNOK } from '@/components/shared/FormatUtils';
 import AiBudgetPlanner from '../components/budget/AiBudgetPlanner';
+import AiBudgetGenerator from '../components/budget/AiBudgetGenerator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -109,9 +110,12 @@ export default function BudgetPage() {
           <h1 className="text-2xl font-bold tracking-tight">Budsjett</h1>
           <p className="text-sm text-slate-500">Sett opp og følg budsjettet for {currentTeam.name}</p>
         </div>
-        <Button onClick={openNew} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
-          <Plus className="w-4 h-4" /> Legg til budsjettpost
-        </Button>
+        <div className="flex gap-3">
+          <AiBudgetGenerator teamId={currentTeam.id} />
+          <Button onClick={openNew} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+            <Plus className="w-4 h-4" /> Legg til budsjettpost
+          </Button>
+        </div>
       </div>
 
       <AiBudgetPlanner teamId={currentTeam?.id} onApplyBudget={() => queryClient.invalidateQueries({ queryKey: ['budgets'] })} />
