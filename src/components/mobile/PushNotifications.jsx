@@ -54,11 +54,11 @@ export default function PushNotifications() {
     localStorage.setItem('push_notifications_enabled', 'false');
   };
 
-  // Poll for new notifications (simplified version)
+  // Poll for new notifications
   const startNotificationPolling = () => {
     if (!currentTeam || !user) return;
 
-    // Check for new notifications every 5 minutes
+    // Check for new notifications every 30 seconds
     const interval = setInterval(async () => {
       try {
         const notifications = await base44.entities.Notification.filter({
@@ -69,8 +69,8 @@ export default function PushNotifications() {
 
         const recent = notifications.filter(n => {
           const created = new Date(n.created_date);
-          const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-          return created > fiveMinutesAgo;
+          const thirtySecondsAgo = new Date(Date.now() - 30 * 1000);
+          return created > thirtySecondsAgo;
         });
 
         recent.forEach(notif => {
@@ -84,6 +84,8 @@ export default function PushNotifications() {
             });
 
             notification.onclick = () => {
+              // Mark as read
+              base44.entities.Notification.update(notif.id, { read: true });
               if (notif.action_url) {
                 window.location.href = notif.action_url;
               }
@@ -94,7 +96,7 @@ export default function PushNotifications() {
       } catch (error) {
         console.error('Error checking notifications:', error);
       }
-    }, 5 * 60 * 1000); // Every 5 minutes
+    }, 30 * 1000); // Every 30 seconds
 
     return () => clearInterval(interval);
   };
