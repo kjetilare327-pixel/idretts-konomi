@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { useTeam } from '@/components/shared/TeamContext';
@@ -15,11 +15,13 @@ import BudgetDeviationBar from '@/components/dashboard/BudgetDeviationBar';
 import TopExpenses from '@/components/dashboard/TopExpenses';
 import SubscriptionBanner from '@/components/dashboard/SubscriptionBanner';
 import AiHint from '@/components/dashboard/AiHint';
+import ProfileCompletionPrompt from '@/components/onboarding/ProfileCompletionPrompt';
 
 export default function Dashboard() {
-  const { currentTeam, teams, loading: teamLoading, isTeamAdmin, playerProfile } = useTeam();
+  const { currentTeam, teams, loading: teamLoading, isTeamAdmin, playerProfile, refreshPlayerProfile } = useTeam();
   const navigate = useNavigate();
   const isAdmin = isTeamAdmin();
+  const [showProfilePrompt, setShowProfilePrompt] = useState(true);
 
   const { data: transactions = [], isLoading: txLoading } = useQuery({
     queryKey: ['transactions', currentTeam?.id],
@@ -83,6 +85,17 @@ export default function Dashboard() {
           </Button>
         )}
       </div>
+
+      {playerProfile && showProfilePrompt && (!playerProfile.phone || !playerProfile.notes) && (
+        <ProfileCompletionPrompt
+          player={playerProfile}
+          onComplete={() => {
+            setShowProfilePrompt(false);
+            refreshPlayerProfile();
+          }}
+          onDismiss={() => setShowProfilePrompt(false)}
+        />
+      )}
 
       {!isAdmin && playerProfile && (
         <Card className="border-0 shadow-md dark:bg-slate-900">
