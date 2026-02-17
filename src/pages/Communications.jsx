@@ -1,0 +1,331 @@
+import React, { useState, useMemo } from 'react';
+import { useTeam } from '../components/shared/TeamContext';
+import { base44 } from '@/api/base44Client';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Send, Loader2, Mail, Users, CheckCircle2, AlertCircle } from 'lucide-react';
+
+const MESSAGE_TEMPLATES = {
+  training_change: {
+    name: 'Treningsendring',
+    subject: 'Endring i treningsplan',
+    body: 'Hei [navn],\n\nVi ønsker å informere om en endring i treningsplanen:\n\n[detaljer]\n\nVennlig hilsen,\n[lag]'
+  },
+  match_invitation: {
+    name: 'Kampinvitasjon',
+    subject: 'Kampinvitasjon',
+    body: 'Hei [navn],\n\nDu er invitert til følgende kamp:\n\nMotstander: [motstander]\nDato: [dato]\nKlokkeslett: [tid]\nSted: [sted]\n\nBekreft deltakelse så snart som mulig.\n\nVennlig hilsen,\n[lag]'
+  },
+  payment_reminder: {
+    name: 'Betalingspåminnelse',
+    subject: 'Påminnelse om betaling',
+    body: 'Hei [navn],\n\nDette er en påminnelse om ubetalt saldo.\n\nBeløp: [beløp]\nForfallsdato: [forfallsdato]\n\nVennligst betal så snart som mulig.\n\nVennlig hilsen,\n[lag]'
+  },
+  general_info: {
+    name: 'Generell informasjon',
+    subject: 'Informasjon fra laget',
+    body: 'Hei [navn],\n\n[melding]\n\nVennlig hilsen,\n[lag]'
+  },
+  event_announcement: {
+    name: 'Arrangementsannonsering',
+    subject: 'Nytt arrangement',
+    body: 'Hei [navn],\n\nVi inviterer til følgende arrangement:\n\nArrangement: [arrangement]\nDato: [dato]\nKlokkeslett: [tid]\nSted: [sted]\n\nPåmelding til: [kontakt]\n\nVennlig hilsen,\n[lag]'
+  }
+};
+
+export default function Communications() {
+  const { currentTeam, user, isTeamAdmin } = useTeam();
+  const [template, setTemplate] = useState('');
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [selectedRecipients, setSelectedRecipients] = useState([]);
+  const [recipientType, setRecipientType] = useState('all');
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const { data: players = [] } = useQuery({
+    queryKey: ['players', currentTeam?.id],
+    queryFn: () => base44.entities.Player.filter({ team_id: currentTeam.id, status: 'active' }),
+    enabled: !!currentTeam,
+  });
+
+  const recipients = useMemo(() => {
+    if (recipientType === 'all') {
+      return players.map(p => ({ email: p.user_email, name: p.full_name, role: p.role }));
+    }
+    if (recipientType === 'players') {
+      return players.filter(p => p.role === 'player').map(p => ({ email: p.user_email, name: p.full_name, role: p.role }));
+    }
+    if (recipientType === 'parents') {
+      return players.filter(p => p.role === 'parent').map(p => ({ email: p.user_email, name: p.full_name, role: p.role }));
+    }
+    if (recipientType === 'unpaid') {
+      return players.filter(p => p.payment_status === 'unpaid' || p.payment_status === 'partial')
+        .map(p => ({ email: p.user_email, name: p.full_name, role: p.role }));
+    }
+    if (recipientType === 'custom') {
+      return selectedRecipients.map(email => {
+        const player = players.find(p => p.user_email === email);
+        return { email, name: player?.full_name || email, role: player?.role };
+      });
+    }
+    return [];
+  }, [recipientType, players, selectedRecipients]);
+
+  const handleTemplateChange = (templateKey) => {
+    setTemplate(templateKey);
+    if (templateKey && MESSAGE_TEMPLATES[templateKey]) {
+      setSubject(MESSAGE_TEMPLATES[templateKey].subject);
+      setMessage(MESSAGE_TEMPLATES[templateKey].body);
+    }
+  };
+
+  const toggleRecipient = (email) => {
+    setSelectedRecipients(prev => 
+      prev.includes(email) ? prev.filter(e => e !== email) : [...prev, email]
+    );
+  };
+
+  const handleSend = async () => {
+    if (!subject || !message || recipients.length === 0) {
+      setResult({ success: false, message: 'Vennligst fyll ut alle felt og velg mottakere' });
+      return;
+    }
+
+    setSending(true);
+    setResult(null);
+
+    try {
+      let successCount = 0;
+      let failedCount = 0;
+
+      for (const recipient of recipients) {
+        try {
+          const personalizedMessage = message
+            .replace(/\[navn\]/g, recipient.name)
+            .replace(/\[lag\]/g, currentTeam.name);
+
+          await base44.integrations.Core.SendEmail({
+            to: recipient.email,
+            subject: subject,
+            body: personalizedMessage.replace(/\n/g, '<br>')
+          });
+          successCount++;
+        } catch (error) {
+          console.error(`Failed to send to ${recipient.email}:`, error);
+          failedCount++;
+        }
+      }
+
+      setResult({
+        success: true,
+        message: `Sendt til ${successCount} av ${recipients.length} mottakere${failedCount > 0 ? ` (${failedCount} feilet)` : ''}`
+      });
+
+      // Reset form
+      setSubject('');
+      setMessage('');
+      setTemplate('');
+      setRecipientType('all');
+      setSelectedRecipients([]);
+    } catch (error) {
+      setResult({ success: false, message: error.message || 'Feil ved sending' });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (!currentTeam) {
+    return <div className="p-6">Laster...</div>;
+  }
+
+  if (!isTeamAdmin()) {
+    return (
+      <div className="p-6">
+        <Alert>
+          <AlertCircle className="w-4 h-4" />
+          <AlertDescription>
+            Kun administratorer har tilgang til kommunikasjonsmodulen.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold mb-2">Kommunikasjon</h1>
+        <p className="text-slate-600 dark:text-slate-400">
+          Send e-post til spillere og foreldre
+        </p>
+      </div>
+
+      {result && (
+        <Alert className={result.success ? 'border-green-200 bg-green-50 dark:bg-green-950' : 'border-red-200 bg-red-50 dark:bg-red-950'}>
+          {result.success ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <AlertCircle className="w-4 h-4 text-red-600" />}
+          <AlertDescription className={result.success ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}>
+            {result.message}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Message Composition */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Ny melding</CardTitle>
+            <CardDescription>Skriv melding til mottakere</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Mal (valgfritt)</Label>
+              <Select value={template} onValueChange={handleTemplateChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Velg mal eller skriv egen melding" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={null}>Ingen mal</SelectItem>
+                  {Object.entries(MESSAGE_TEMPLATES).map(([key, tmpl]) => (
+                    <SelectItem key={key} value={key}>{tmpl.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Emne</Label>
+              <Input
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="Skriv emne..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Melding</Label>
+              <Textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Skriv melding her..."
+                className="min-h-[250px]"
+              />
+              <p className="text-xs text-slate-500">
+                Tips: Bruk [navn] for å personalisere med mottakerens navn, og [lag] for lagets navn.
+              </p>
+            </div>
+
+            <Button 
+              onClick={handleSend} 
+              disabled={sending || !subject || !message || recipients.length === 0}
+              className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700"
+            >
+              {sending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Sender...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  Send til {recipients.length} mottaker{recipients.length !== 1 ? 'e' : ''}
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Recipients */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Mottakere</CardTitle>
+            <CardDescription>Velg hvem som skal motta meldingen</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Type mottakere</Label>
+              <Select value={recipientType} onValueChange={setRecipientType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Alle ({players.length})
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="players">
+                    Kun spillere ({players.filter(p => p.role === 'player').length})
+                  </SelectItem>
+                  <SelectItem value="parents">
+                    Kun foreldre ({players.filter(p => p.role === 'parent').length})
+                  </SelectItem>
+                  <SelectItem value="unpaid">
+                    Kun ubetalt ({players.filter(p => p.payment_status !== 'paid').length})
+                  </SelectItem>
+                  <SelectItem value="custom">Velg selv</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {recipientType === 'custom' && (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                <Label>Velg spillere/foreldre</Label>
+                {players.map(player => (
+                  <div key={player.id} className="flex items-center gap-2">
+                    <Checkbox
+                      id={player.id}
+                      checked={selectedRecipients.includes(player.user_email)}
+                      onCheckedChange={() => toggleRecipient(player.user_email)}
+                    />
+                    <label htmlFor={player.id} className="text-sm cursor-pointer flex-1">
+                      {player.full_name}
+                      <Badge variant="outline" className="ml-2 text-xs">
+                        {player.role === 'player' ? 'Spiller' : 'Forelder'}
+                      </Badge>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="pt-3 border-t">
+              <div className="flex items-center gap-2 text-sm">
+                <Mail className="w-4 h-4 text-slate-500" />
+                <span className="font-medium">{recipients.length}</span>
+                <span className="text-slate-500">valgte mottakere</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Message Templates Info */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Tilgjengelige maler</CardTitle>
+          <CardDescription>Forhåndsdefinerte meldingsmaler for vanlige situasjoner</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(MESSAGE_TEMPLATES).map(([key, tmpl]) => (
+              <div key={key} className="p-4 rounded-lg border bg-slate-50 dark:bg-slate-900">
+                <h3 className="font-semibold text-sm mb-1">{tmpl.name}</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400">{tmpl.subject}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
