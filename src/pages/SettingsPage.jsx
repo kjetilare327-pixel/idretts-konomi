@@ -24,6 +24,18 @@ const SPORTS = ['Fotball', 'Håndball', 'Ski', 'Svømming', 'Friidrett', 'Basket
 export default function SettingsPage() {
   const { currentTeam, refreshTeams, user } = useTeam();
   const queryClient = useQueryClient();
+
+  // All hooks at top level - call useQuery before any conditional logic
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ['categories', currentTeam?.id],
+    queryFn: async () => {
+      if (!currentTeam?.id) return [];
+      return base44.entities.Category.filter({ team_id: currentTeam.id });
+    },
+    enabled: !!currentTeam?.id,
+    staleTime: 30000,
+  });
+
   const [form, setForm] = useState(currentTeam ? {
     name: currentTeam.name,
     sport_type: currentTeam.sport_type,
@@ -42,12 +54,6 @@ export default function SettingsPage() {
   const [editCategory, setEditCategory] = useState(null);
   const [categoryForm, setCategoryForm] = useState({ name: '', type: 'expense' });
   const [savingCategory, setSavingCategory] = useState(false);
-
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories', currentTeam?.id],
-    queryFn: () => base44.entities.Category.filter({ team_id: currentTeam.id }),
-    enabled: !!currentTeam,
-  });
 
   const handleSave = async () => {
     if (!currentTeam) return;
