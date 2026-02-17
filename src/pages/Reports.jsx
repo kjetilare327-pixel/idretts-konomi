@@ -39,6 +39,12 @@ export default function Reports() {
     enabled: !!currentTeam,
   });
 
+  const { data: players = [] } = useQuery({
+    queryKey: ['players', currentTeam?.id],
+    queryFn: () => base44.entities.Player.filter({ team_id: currentTeam.id }),
+    enabled: !!currentTeam,
+  });
+
   const filtered = useMemo(() => {
     return transactions.filter(t => {
       if (!t.date) return false;

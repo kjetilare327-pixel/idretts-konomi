@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Send, Loader2, Mail, Users, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Send, Loader2, Mail, Users, CheckCircle2, AlertCircle, Sparkles, TrendingUp } from 'lucide-react';
 
 const MESSAGE_TEMPLATES = {
   training_change: {
@@ -50,6 +50,8 @@ export default function Communications() {
   const [recipientType, setRecipientType] = useState('all');
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
+  const [aiStrategies, setAiStrategies] = useState(null);
+  const [loadingStrategies, setLoadingStrategies] = useState(false);
 
   const { data: players = [] } = useQuery({
     queryKey: ['players', currentTeam?.id],
@@ -92,6 +94,32 @@ export default function Communications() {
     setSelectedRecipients(prev => 
       prev.includes(email) ? prev.filter(e => e !== email) : [...prev, email]
     );
+  };
+
+  const loadAiStrategies = async () => {
+    setLoadingStrategies(true);
+    try {
+      const response = await base44.functions.invoke('suggestCommunicationStrategy', { team_id: currentTeam.id });
+      setAiStrategies(response.data);
+    } catch (error) {
+      console.error('Failed to load AI strategies:', error);
+    } finally {
+      setLoadingStrategies(false);
+    }
+  };
+
+  const applyStrategy = (strategy) => {
+    setSubject(strategy.title || '');
+    setMessage(strategy.suggested_content || '');
+    
+    // Sett mottakere basert på segment
+    if (strategy.target_segment === 'all') {
+      setRecipientType('all');
+    } else if (strategy.target_segment === 'high_risk' || strategy.target_segment === 'medium_risk') {
+      setRecipientType('unpaid');
+    } else {
+      setRecipientType('all');
+    }
   };
 
   const handleSend = async () => {
@@ -308,6 +336,66 @@ export default function Communications() {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Communication Strategies */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-500" />
+                AI Kommunikasjonsstrategier
+              </CardTitle>
+              <CardDescription>Personlige forslag basert på medlemsaktivitet og betalingshistorikk</CardDescription>
+            </div>
+            <Button onClick={loadAiStrategies} disabled={loadingStrategies} variant="outline" className="gap-2">
+              {loadingStrategies ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
+              Analyser
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {aiStrategies ? (
+            <div className="space-y-4">
+              {aiStrategies.summary && (
+                <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900">
+                  <p className="text-sm text-slate-700 dark:text-slate-300">{aiStrategies.summary}</p>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {aiStrategies.strategies?.map((strategy, idx) => (
+                  <div key={idx} className="p-4 rounded-lg border bg-white dark:bg-slate-900 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-semibold text-sm">{strategy.title}</h3>
+                      <Badge variant="outline" className="text-xs">{strategy.channel}</Badge>
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">{strategy.message_tone}</p>
+                    <p className="text-xs mb-3 line-clamp-2">{strategy.suggested_content}</p>
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <span>📅 {strategy.optimal_timing}</span>
+                      <Button size="sm" variant="ghost" onClick={() => applyStrategy(strategy)} className="h-7 text-xs">
+                        Bruk
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {aiStrategies.segments && (
+                <div className="flex flex-wrap gap-2 pt-3 border-t">
+                  <Badge variant="outline">Høy risiko: {aiStrategies.segments.high_risk}</Badge>
+                  <Badge variant="outline">Middels risiko: {aiStrategies.segments.medium_risk}</Badge>
+                  <Badge variant="outline">God status: {aiStrategies.segments.good_standing}</Badge>
+                  <Badge variant="outline">Trege betalere: {aiStrategies.segments.slow_payers}</Badge>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500 text-center py-4">Klikk på "Analyser" for å få AI-baserte kommunikasjonsstrategier</p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Message Templates Info */}
       <Card>
