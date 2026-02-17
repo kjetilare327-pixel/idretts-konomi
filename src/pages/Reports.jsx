@@ -9,6 +9,9 @@ import LiquidityImpactChart from '../components/reports/LiquidityImpactChart';
 import GdprCompliancePanel from '../components/reports/GdprCompliancePanel';
 import PredictiveAnalytics from '../components/reports/PredictiveAnalytics';
 import ScenarioAnalysis from '../components/reports/ScenarioAnalysis';
+import RealtimeMetrics from '../components/reports/RealtimeMetrics';
+import InteractiveScenarioAnalysis from '../components/reports/InteractiveScenarioAnalysis';
+import CustomReportBuilder from '../components/reports/CustomReportBuilder';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -237,13 +240,19 @@ export default function Reports() {
         </div>
       </div>
 
-      <Tabs defaultValue="reports" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="realtime" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="realtime">Sanntid</TabsTrigger>
           <TabsTrigger value="reports">Rapporter</TabsTrigger>
+          <TabsTrigger value="scenario">Hva-hvis</TabsTrigger>
+          <TabsTrigger value="custom">Egendefinert</TabsTrigger>
           <TabsTrigger value="predictive">Prognoser</TabsTrigger>
-          <TabsTrigger value="scenario">Scenarioer</TabsTrigger>
           <TabsTrigger value="gdpr">GDPR</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="realtime" className="space-y-6">
+          <RealtimeMetrics teamId={currentTeam?.id} />
+        </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">{/* Existing reports content */}
 
@@ -574,12 +583,23 @@ export default function Reports() {
       </Card>
         </TabsContent>
 
-        <TabsContent value="predictive" className="space-y-6">
-          <PredictiveAnalytics teamId={currentTeam?.id} />
+        <TabsContent value="scenario" className="space-y-6">
+          <InteractiveScenarioAnalysis 
+            teamId={currentTeam?.id}
+            currentFinancials={{
+              totalIncome: totalIncome,
+              totalExpenses: totalExpenses,
+              memberCount: (players || []).length
+            }}
+          />
         </TabsContent>
 
-        <TabsContent value="scenario" className="space-y-6">
-          <ScenarioAnalysis teamId={currentTeam?.id} />
+        <TabsContent value="custom" className="space-y-6">
+          <CustomReportBuilder teamId={currentTeam?.id} />
+        </TabsContent>
+
+        <TabsContent value="predictive" className="space-y-6">
+          <PredictiveAnalytics teamId={currentTeam?.id} />
         </TabsContent>
 
         <TabsContent value="gdpr" className="space-y-6">

@@ -52,15 +52,15 @@ import BankReconciliation from './pages/BankReconciliation';
 import Budget from './pages/Budget';
 import Communications from './pages/Communications';
 import Dashboard from './pages/Dashboard';
+import EventManagement from './pages/EventManagement';
+import MemberManagement from './pages/MemberManagement';
 import Onboarding from './pages/Onboarding';
+import PaymentPortal from './pages/PaymentPortal';
 import Players from './pages/Players';
 import Reports from './pages/Reports';
 import SettingsPage from './pages/SettingsPage';
 import Transactions from './pages/Transactions';
-import MemberManagement from './pages/MemberManagement';
-import PaymentPortal from './pages/PaymentPortal';
 import VolunteerManagement from './pages/VolunteerManagement';
-import EventManagement from './pages/EventManagement';
 import __Layout from './Layout.jsx';
 
 
@@ -70,15 +70,15 @@ export const PAGES = {
     "Budget": Budget,
     "Communications": Communications,
     "Dashboard": Dashboard,
+    "EventManagement": EventManagement,
+    "MemberManagement": MemberManagement,
     "Onboarding": Onboarding,
+    "PaymentPortal": PaymentPortal,
     "Players": Players,
     "Reports": Reports,
     "SettingsPage": SettingsPage,
     "Transactions": Transactions,
-    "MemberManagement": MemberManagement,
-    "PaymentPortal": PaymentPortal,
     "VolunteerManagement": VolunteerManagement,
-    "EventManagement": EventManagement,
 }
 
 export const pagesConfig = {
