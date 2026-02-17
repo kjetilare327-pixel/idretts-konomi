@@ -43,6 +43,13 @@ export default function Reports() {
     enabled: !!currentTeam,
   });
 
+  const [filters, setFilters] = useState({
+    startDate: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+    groupBy: 'none',
+    category: null
+  });
+
   const allCategories = useMemo(() => {
     const cats = new Set();
     transactions.forEach(t => cats.add(t.category));
@@ -246,15 +253,52 @@ export default function Reports() {
         </div>
       </div>
 
-      <Tabs defaultValue="realtime" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+      <Tabs defaultValue="budget-vs-actual" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="budget-vs-actual">Budsjett</TabsTrigger>
+          <TabsTrigger value="cashflow">Cashflow</TabsTrigger>
           <TabsTrigger value="realtime">Sanntid</TabsTrigger>
           <TabsTrigger value="reports">Rapporter</TabsTrigger>
           <TabsTrigger value="scenario">Hva-hvis</TabsTrigger>
-          <TabsTrigger value="custom">Egendefinert</TabsTrigger>
           <TabsTrigger value="predictive">Prognoser</TabsTrigger>
           <TabsTrigger value="gdpr">GDPR</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="budget-vs-actual" className="space-y-6">
+          <ReportFilters filters={filters} setFilters={setFilters} categories={allCategories} />
+          <div className="flex justify-end">
+            <ReportExport
+              data={budgets}
+              reportType="budget_vs_actual"
+              teamName={currentTeam?.name}
+              startDate={filters.startDate}
+              endDate={filters.endDate}
+            />
+          </div>
+          <BudgetVsActualReport
+            transactions={transactions}
+            budgets={budgets}
+            startDate={filters.startDate}
+            endDate={filters.endDate}
+          />
+        </TabsContent>
+
+        <TabsContent value="cashflow" className="space-y-6">
+          <div className="flex justify-end">
+            <ReportExport
+              data={[]}
+              reportType="cashflow"
+              teamName={currentTeam?.name}
+              startDate={filters.startDate}
+              endDate={filters.endDate}
+            />
+          </div>
+          <CashFlowProjection
+            transactions={transactions}
+            claims={claims}
+            budgets={budgets}
+          />
+        </TabsContent>
 
         <TabsContent value="realtime" className="space-y-6">
           <RealtimeMetrics teamId={currentTeam?.id} />
@@ -601,6 +645,16 @@ export default function Reports() {
         </TabsContent>
 
         <TabsContent value="custom" className="space-y-6">
+          <ReportFilters filters={filters} setFilters={setFilters} categories={allCategories} />
+          <div className="flex justify-end mb-4">
+            <ReportExport
+              data={transactions}
+              reportType="transactions"
+              teamName={currentTeam?.name}
+              startDate={filters.startDate}
+              endDate={filters.endDate}
+            />
+          </div>
           <CustomReportBuilder teamId={currentTeam?.id} />
         </TabsContent>
 
