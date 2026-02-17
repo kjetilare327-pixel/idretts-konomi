@@ -17,6 +17,7 @@ import ReportExport from '../components/reports/ReportExport';
 import BudgetVsActualReport from '../components/reports/BudgetVsActualReport';
 import CashFlowProjection from '../components/reports/CashFlowProjection';
 import NIFAnnualReport from '../components/reports/NIFAnnualReport';
+import ExpensePredictions from '../components/budget/ExpensePredictions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -665,6 +666,7 @@ export default function Reports() {
         </TabsContent>
 
         <TabsContent value="predictive" className="space-y-6">
+          <ExpensePredictions teamId={currentTeam?.id} />
           <PredictiveAnalytics teamId={currentTeam?.id} />
         </TabsContent>
 
