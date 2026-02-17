@@ -16,6 +16,7 @@ import ReportFilters from '../components/reports/ReportFilters';
 import ReportExport from '../components/reports/ReportExport';
 import BudgetVsActualReport from '../components/reports/BudgetVsActualReport';
 import CashFlowProjection from '../components/reports/CashFlowProjection';
+import NIFAnnualReport from '../components/reports/NIFAnnualReport';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -258,13 +259,14 @@ export default function Reports() {
       </div>
 
       <Tabs defaultValue="budget-vs-actual" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="budget-vs-actual">Budsjett</TabsTrigger>
           <TabsTrigger value="cashflow">Cashflow</TabsTrigger>
           <TabsTrigger value="realtime">Sanntid</TabsTrigger>
           <TabsTrigger value="reports">Rapporter</TabsTrigger>
           <TabsTrigger value="scenario">Hva-hvis</TabsTrigger>
           <TabsTrigger value="predictive">Prognoser</TabsTrigger>
+          <TabsTrigger value="nif">NIF-årsrapport</TabsTrigger>
           <TabsTrigger value="gdpr">GDPR</TabsTrigger>
         </TabsList>
 
@@ -664,6 +666,10 @@ export default function Reports() {
 
         <TabsContent value="predictive" className="space-y-6">
           <PredictiveAnalytics teamId={currentTeam?.id} />
+        </TabsContent>
+
+        <TabsContent value="nif" className="space-y-6">
+          <NIFAnnualReport teamId={currentTeam?.id} teamName={currentTeam?.name} />
         </TabsContent>
 
         <TabsContent value="gdpr" className="space-y-6">
