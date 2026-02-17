@@ -43,7 +43,7 @@ export default function SettingsPage() {
   const [categoryForm, setCategoryForm] = useState({ name: '', type: 'expense' });
   const [savingCategory, setSavingCategory] = useState(false);
 
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ['categories', currentTeam?.id],
     queryFn: () => base44.entities.Category.filter({ team_id: currentTeam.id }),
     enabled: !!currentTeam,
@@ -190,8 +190,11 @@ export default function SettingsPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {['income', 'expense'].map(type => (
+          {categoriesLoading ? (
+            <p className="text-center py-4 text-slate-500">Laster kategorier...</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {['income', 'expense'].map(type => (
               <div key={type}>
                 <p className="text-xs font-semibold text-slate-500 mb-2 uppercase">{type === 'income' ? 'Inntekter' : 'Utgifter'}</p>
                 <div className="space-y-2">
