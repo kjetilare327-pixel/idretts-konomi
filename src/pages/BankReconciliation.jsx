@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import BankImporter from '@/components/bank/BankImporter';
 import ReconciliationStatus from '@/components/bank/ReconciliationStatus';
+import ReconciliationVisualizer from '@/components/bank/ReconciliationVisualizer';
 import MatchingRulesManager from '@/components/bank/MatchingRulesManager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -79,7 +80,10 @@ export default function BankReconciliation() {
         </p>
       </div>
 
-      {/* Reconciliation status overview */}
+      {/* Enhanced reconciliation visualizer */}
+      <ReconciliationVisualizer teamId={currentTeam?.id} />
+
+      {/* Basic reconciliation status overview */}
       <ReconciliationStatus teamId={currentTeam?.id} />
 
       {/* Matching rules */}
