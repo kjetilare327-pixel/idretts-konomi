@@ -3,6 +3,8 @@ import { useTeam } from '../components/shared/TeamContext';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import BankImporter from '@/components/bank/BankImporter';
+import ReconciliationStatus from '@/components/bank/ReconciliationStatus';
+import MatchingRulesManager from '@/components/bank/MatchingRulesManager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -76,6 +78,12 @@ export default function BankReconciliation() {
           Last opp bankkontoutskrift for automatisk avstemming av transaksjoner
         </p>
       </div>
+
+      {/* Reconciliation status overview */}
+      <ReconciliationStatus teamId={currentTeam?.id} />
+
+      {/* Matching rules */}
+      <MatchingRulesManager teamId={currentTeam?.id} />
 
       {/* AI-powered bank importer */}
       <BankImporter teamId={currentTeam?.id} />
