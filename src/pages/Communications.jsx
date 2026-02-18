@@ -250,20 +250,12 @@ export default function Communications() {
       <div>
         <h1 className="text-3xl font-bold mb-2">Kommunikasjon</h1>
         <p className="text-slate-600 dark:text-slate-400">
-          Send meldinger, administrer maler og spor leveringsstatus
+          Send betalingspåminnelser og finansiell informasjon til medlemmer
         </p>
       </div>
 
-      <Tabs defaultValue="ai-personal" className="space-y-6">
+      <Tabs defaultValue="compose" className="space-y-6">
         <TabsList className="flex flex-wrap h-auto gap-1">
-          <TabsTrigger value="ai-personal">
-            <Sparkles className="w-4 h-4 mr-1.5" />
-            AI e-poster
-          </TabsTrigger>
-          <TabsTrigger value="newsletter">
-            <Newspaper className="w-4 h-4 mr-1.5" />
-            Nyhetsbrev
-          </TabsTrigger>
           <TabsTrigger value="compose">
             <Send className="w-4 h-4 mr-1.5" />
             Send melding
@@ -277,28 +269,6 @@ export default function Communications() {
             Sporing
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="ai-personal" className="space-y-6">
-          <AIPersonalizedEmails
-            teamId={currentTeam?.id}
-            teamName={currentTeam?.name}
-            players={players}
-            claims={claims}
-          />
-        </TabsContent>
-
-        <TabsContent value="newsletter" className="space-y-6">
-          <AINewsletterGenerator
-            teamName={currentTeam?.name}
-            transactions={allTransactions}
-            players={players}
-            claims={claims}
-            onUseContent={({ subject, body }) => {
-              setSubject(subject);
-              setMessage(body);
-            }}
-          />
-        </TabsContent>
 
         <TabsContent value="compose" className="space-y-6">{/* Existing compose content */}
 
