@@ -86,6 +86,12 @@ export default function PaymentPortal() {
         </p>
       </div>
 
+      {/* Stripe payments */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <MembershipSubscription team={currentTeam} />
+        <DonationWidget team={currentTeam} />
+      </div>
+
       {/* Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="border-0 shadow-md dark:bg-slate-900">
