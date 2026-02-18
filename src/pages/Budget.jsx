@@ -8,6 +8,7 @@ import AiBudgetGenerator from '../components/budget/AiBudgetGenerator';
 import ExpensePredictions from '../components/budget/ExpensePredictions';
 import BudgetDeviationAlerts from '../components/budget/BudgetDeviationAlerts';
 import AISeasonalForecast from '../components/budget/AISeasonalForecast';
+import BudgetAlertConfig from '../components/reports/BudgetAlertConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -125,6 +126,9 @@ export default function BudgetPage() {
 
       {/* AI Expense Predictions */}
       <ExpensePredictions teamId={currentTeam?.id} />
+
+      {/* Smart budget alerts with cashflow */}
+      <BudgetAlertConfig transactions={transactions} budgets={budgets} claims={[]} />
 
       {/* Budget deviation alerts */}
       <BudgetDeviationAlerts transactions={transactions} budgets={budgets} />
