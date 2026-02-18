@@ -167,7 +167,7 @@ export default function Dashboard() {
 
       <AiHint teamId={currentTeam?.id} />
 
-      {isAdmin && <ReferralKpiWidget teamId={currentTeam?.id} />}
+      {/* ReferralKpiWidget removed – finance-only dashboard */}
 
       {isAdmin && <CashFlowForecastChart transactions={transactions} budgets={budgets} />}
 
