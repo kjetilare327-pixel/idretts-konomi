@@ -22,6 +22,8 @@ import EngagementTrendWidget from '@/components/dashboard/EngagementTrendWidget'
 import FinancialSummaryWidget from '@/components/dashboard/FinancialSummaryWidget';
 import OutstandingClaimsWidget from '@/components/dashboard/OutstandingClaimsWidget';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
+import CustomDashboardKPIs from '@/components/dashboard/CustomDashboardKPIs';
+import CashFlowForecastChart from '@/components/dashboard/CashFlowForecastChart';
 
 export default function Dashboard() {
   const { currentTeam, teams, loading: teamLoading, isTeamAdmin, playerProfile, refreshPlayerProfile } = useTeam();
