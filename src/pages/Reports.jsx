@@ -31,6 +31,9 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend, ComposedChart } from 'recharts';
 import { FileDown, Mail, Loader2, FileSpreadsheet, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
+import DashboardWidgets from '@/components/reports/DashboardWidgets';
+import AIAnomalyDetector from '@/components/reports/AIAnomalyDetector';
+import PDFExportButton from '@/components/reports/PDFExportButton';
 
 const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#f97316', '#84cc16', '#6366f1'];
 const MONTHS = ['Januar', 'Februar', 'Mars', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Desember'];
