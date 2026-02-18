@@ -35,6 +35,10 @@ import AIAnomalyDetector from '@/components/reports/AIAnomalyDetector';
 import PDFExportButton from '@/components/reports/PDFExportButton';
 import AIFinancialTrends from '@/components/reports/AIFinancialTrends';
 import BudgetAlertConfig from '@/components/reports/BudgetAlertConfig';
+import LiquidityOverview from '@/components/liquidity/LiquidityOverview';
+import CashFlowForecast from '@/components/liquidity/CashFlowForecast';
+import LiquidityAIAdvisor from '@/components/liquidity/LiquidityAIAdvisor';
+import FinancialReportGenerator from '@/components/reports/FinancialReportGenerator';
 
 const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#f97316', '#84cc16', '#6366f1'];
 const MONTHS = ['Januar', 'Februar', 'Mars', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Desember'];
