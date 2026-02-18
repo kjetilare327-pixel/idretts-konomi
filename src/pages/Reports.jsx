@@ -291,6 +291,14 @@ export default function Reports() {
           <TabsTrigger value="gdpr">GDPR</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="ai-insights" className="space-y-6">
+          <AIAnomalyDetector
+            transactions={filtered}
+            budgets={budgets}
+            claims={claims}
+          />
+        </TabsContent>
+
         <TabsContent value="regnskap" className="space-y-6">
           <IncomeStatement transactions={transactions} teamName={currentTeam?.name} />
           <BalanceSheet transactions={transactions} claims={claims} teamName={currentTeam?.name} />
