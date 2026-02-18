@@ -157,7 +157,6 @@ export default function Dashboard() {
 
       {isAdmin && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <EngagementTrendWidget teamId={currentTeam?.id} />
           <FinancialSummaryWidget teamId={currentTeam?.id} />
           <OutstandingClaimsWidget teamId={currentTeam?.id} />
         </div>
