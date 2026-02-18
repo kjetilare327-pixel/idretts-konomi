@@ -252,20 +252,30 @@ export default function Reports() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Rapporter & Analyse</h1>
-          <p className="text-sm text-slate-500">Økonomiske rapporter, prognoser og GDPR-overholdelse</p>
+          <p className="text-sm text-slate-500">Økonomi, prognoser og AI-innsikt</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={exportCSV} className="gap-2">
-            <FileSpreadsheet className="w-4 h-4" /> CSV
-          </Button>
-          <Button variant="outline" onClick={exportText} className="gap-2">
-            <FileDown className="w-4 h-4" /> Tekstfil
-          </Button>
+        <div className="flex gap-2 flex-wrap">
+          <PDFExportButton
+            transactions={filtered}
+            budgets={budgets}
+            claims={claims}
+            summary={summary}
+            teamName={currentTeam?.name}
+            periodLabel={periodLabel}
+          />
           <Button variant="outline" onClick={sendEmail} disabled={sending} className="gap-2">
             {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />} E-post
           </Button>
         </div>
       </div>
+
+      {/* Customizable widgets dashboard */}
+      <DashboardWidgets
+        transactions={filtered}
+        claims={claims}
+        budgets={budgets}
+        players={players || []}
+      />
 
       <Tabs defaultValue="regnskap" className="space-y-6">
         <TabsList className="flex flex-wrap w-full h-auto gap-1">
