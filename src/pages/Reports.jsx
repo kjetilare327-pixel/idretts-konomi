@@ -653,6 +653,9 @@ export default function Reports() {
         </TabsContent>
 
         <TabsContent value="scenario" className="space-y-6">
+          <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-800 text-sm text-purple-800 dark:text-purple-300">
+            Bruk AI-scenarioverktøyet til å teste effekten av ulike beslutninger. Juster parametere og se umiddelbar effekt på resultat og saldo.
+          </div>
           <InteractiveScenarioAnalysis 
             teamId={currentTeam?.id}
             currentFinancials={{
