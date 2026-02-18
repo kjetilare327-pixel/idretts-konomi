@@ -277,8 +277,9 @@ export default function Reports() {
         players={players || []}
       />
 
-      <Tabs defaultValue="regnskap" className="space-y-6">
+      <Tabs defaultValue="ai-insights" className="space-y-6">
         <TabsList className="flex flex-wrap w-full h-auto gap-1">
+          <TabsTrigger value="ai-insights">AI Innsikt</TabsTrigger>
           <TabsTrigger value="regnskap">Regnskap</TabsTrigger>
           <TabsTrigger value="budget-vs-actual">Budsjett</TabsTrigger>
           <TabsTrigger value="cashflow">Cashflow</TabsTrigger>
