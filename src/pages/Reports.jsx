@@ -47,16 +47,20 @@ export default function Reports() {
   const [month, setMonth] = useState(String(new Date().getMonth()));
   const [sending, setSending] = useState(false);
 
+  const CACHE_5MIN = { staleTime: 5 * 60 * 1000, gcTime: 10 * 60 * 1000 };
+
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions', currentTeam?.id],
     queryFn: () => base44.entities.Transaction.filter({ team_id: currentTeam.id }),
     enabled: !!currentTeam,
+    ...CACHE_5MIN,
   });
 
   const { data: budgets = [] } = useQuery({
     queryKey: ['budgets', currentTeam?.id],
     queryFn: () => base44.entities.Budget.filter({ team_id: currentTeam.id }),
     enabled: !!currentTeam,
+    ...CACHE_5MIN,
   });
 
   const [filters, setFilters] = useState({
