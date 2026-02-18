@@ -46,6 +46,12 @@ export default function InvoiceAutomation() {
     enabled: !!currentTeam,
   });
 
+  const { data: claims = [] } = useQuery({
+    queryKey: ['claims', currentTeam?.id],
+    queryFn: () => base44.entities.Claim.filter({ team_id: currentTeam.id }),
+    enabled: !!currentTeam,
+  });
+
   const handleCreate = async () => {
     if (!form.name || !form.amount || !form.next_invoice_date) return;
 
@@ -218,10 +224,10 @@ export default function InvoiceAutomation() {
       )}
 
       {/* AI Invoice Generator */}
-      <AIInvoiceGenerator teamId={currentTeam?.id} players={players} claims={[]} />
+      <AIInvoiceGenerator teamId={currentTeam?.id} players={players} claims={claims} />
 
       {/* AI Collection Advisor */}
-      <AICollectionAdvisor teamId={currentTeam?.id} players={players} claims={[]} />
+      <AICollectionAdvisor teamId={currentTeam?.id} players={players} claims={claims} />
 
       {/* Payment reminders */}
       <PaymentReminderManager teamId={currentTeam?.id} />
