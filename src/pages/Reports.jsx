@@ -291,6 +291,8 @@ export default function Reports() {
       <Tabs defaultValue="ai-insights" className="space-y-6">
         <TabsList className="flex flex-wrap w-full h-auto gap-1">
           <TabsTrigger value="ai-insights">AI Innsikt</TabsTrigger>
+          <TabsTrigger value="likviditet">Likviditet</TabsTrigger>
+          <TabsTrigger value="finansrapport">Finansrapport</TabsTrigger>
           <TabsTrigger value="regnskap">Regnskap</TabsTrigger>
           <TabsTrigger value="budget-vs-actual">Budsjett</TabsTrigger>
           <TabsTrigger value="cashflow">Cashflow</TabsTrigger>
