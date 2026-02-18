@@ -283,16 +283,16 @@ export default function Communications() {
             teamId={currentTeam?.id}
             teamName={currentTeam?.name}
             players={players}
-            claims={[]}
+            claims={claims}
           />
         </TabsContent>
 
         <TabsContent value="newsletter" className="space-y-6">
           <AINewsletterGenerator
             teamName={currentTeam?.name}
-            transactions={[]}
+            transactions={allTransactions}
             players={players}
-            claims={[]}
+            claims={claims}
             onUseContent={({ subject, body }) => {
               setSubject(subject);
               setMessage(body);
