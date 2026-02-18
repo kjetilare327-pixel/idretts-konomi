@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import PaymentReminderManager from '@/components/invoicing/PaymentReminderManager';
 import AIInvoiceGenerator from '@/components/invoicing/AIInvoiceGenerator';
 import AICollectionAdvisor from '@/components/invoicing/AICollectionAdvisor';
+import ReceivablesReport from '@/components/invoicing/ReceivablesReport';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
