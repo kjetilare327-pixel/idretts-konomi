@@ -242,18 +242,26 @@ export default function Communications() {
         </p>
       </div>
 
-      <Tabs defaultValue="compose" className="space-y-6">
-        <TabsList>
+      <Tabs defaultValue="ai-personal" className="space-y-6">
+        <TabsList className="flex flex-wrap h-auto gap-1">
+          <TabsTrigger value="ai-personal">
+            <Sparkles className="w-4 h-4 mr-1.5" />
+            AI e-poster
+          </TabsTrigger>
+          <TabsTrigger value="newsletter">
+            <Newspaper className="w-4 h-4 mr-1.5" />
+            Nyhetsbrev
+          </TabsTrigger>
           <TabsTrigger value="compose">
-            <Send className="w-4 h-4 mr-2" />
+            <Send className="w-4 h-4 mr-1.5" />
             Send melding
           </TabsTrigger>
           <TabsTrigger value="templates">
-            <Mail className="w-4 h-4 mr-2" />
+            <Mail className="w-4 h-4 mr-1.5" />
             Maler
           </TabsTrigger>
           <TabsTrigger value="tracking">
-            <BarChart3 className="w-4 h-4 mr-2" />
+            <BarChart3 className="w-4 h-4 mr-1.5" />
             Sporing
           </TabsTrigger>
         </TabsList>
