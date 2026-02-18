@@ -65,6 +65,18 @@ export default function Communications() {
     enabled: !!currentTeam,
   });
 
+  const { data: claims = [] } = useQuery({
+    queryKey: ['claims', currentTeam?.id],
+    queryFn: () => base44.entities.Claim.filter({ team_id: currentTeam.id }),
+    enabled: !!currentTeam,
+  });
+
+  const { data: allTransactions = [] } = useQuery({
+    queryKey: ['transactions', currentTeam?.id],
+    queryFn: () => base44.entities.Transaction.filter({ team_id: currentTeam.id }),
+    enabled: !!currentTeam,
+  });
+
   const recipients = useMemo(() => {
     if (recipientType === 'all') {
       return players.map(p => ({ email: p.user_email, name: p.full_name, role: p.role }));
