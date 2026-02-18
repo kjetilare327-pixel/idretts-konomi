@@ -43,6 +43,18 @@ export default function Dashboard() {
     enabled: !!currentTeam,
   });
 
+  const { data: claims = [] } = useQuery({
+    queryKey: ['claims', currentTeam?.id],
+    queryFn: () => base44.entities.Claim.filter({ team_id: currentTeam.id }),
+    enabled: !!currentTeam && isAdmin,
+  });
+
+  const { data: players = [] } = useQuery({
+    queryKey: ['players', currentTeam?.id],
+    queryFn: () => base44.entities.Player.filter({ team_id: currentTeam.id, status: 'active' }),
+    enabled: !!currentTeam && isAdmin,
+  });
+
   const stats = useMemo(() => {
     const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
