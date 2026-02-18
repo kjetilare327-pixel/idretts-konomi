@@ -5,6 +5,7 @@ import { useTeam } from '@/components/shared/TeamContext';
 import { formatNOK } from '@/components/shared/FormatUtils';
 import AiBudgetPlanner from '../components/budget/AiBudgetPlanner';
 import AiBudgetGenerator from '../components/budget/AiBudgetGenerator';
+import AutoBudgetGenerator from '../components/budget/AutoBudgetGenerator';
 import ExpensePredictions from '../components/budget/ExpensePredictions';
 import BudgetDeviationAlerts from '../components/budget/BudgetDeviationAlerts';
 import AISeasonalForecast from '../components/budget/AISeasonalForecast';
