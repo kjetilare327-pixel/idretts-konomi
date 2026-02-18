@@ -230,6 +230,9 @@ export default function InvoiceAutomation() {
       {/* AI Collection Advisor */}
       <AICollectionAdvisor teamId={currentTeam?.id} players={players} claims={claims} />
 
+      {/* Receivables Report */}
+      <ReceivablesReport claims={claims} players={players} />
+
       {/* Payment reminders */}
       <PaymentReminderManager teamId={currentTeam?.id} />
 
