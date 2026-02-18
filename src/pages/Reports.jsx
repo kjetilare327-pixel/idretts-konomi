@@ -80,12 +80,14 @@ export default function Reports() {
     queryKey: ['claims', currentTeam?.id],
     queryFn: () => base44.entities.Claim.filter({ team_id: currentTeam.id }),
     enabled: !!currentTeam,
+    ...CACHE_5MIN,
   });
 
   const { data: players = [] } = useQuery({
     queryKey: ['players', currentTeam?.id],
     queryFn: () => base44.entities.Player.filter({ team_id: currentTeam.id }),
     enabled: !!currentTeam,
+    ...CACHE_5MIN,
   });
 
   const filtered = useMemo(() => {
