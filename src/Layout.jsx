@@ -34,20 +34,18 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
+// Finance-only nav – non-economy items removed
 const NAV_ITEMS = [
-  { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'kasserer', 'styreleder', 'revisor', 'player'] },
-  { name: 'Mine betalinger', page: 'PaymentPortal', icon: Receipt, roles: ['player'] },
-  { name: 'Henvisningsprogram', page: 'ReferralProgram', icon: Users, roles: ['admin', 'kasserer', 'styreleder', 'player'] },
-  { name: 'Dugnad & Arrangementer', page: 'VolunteerManagement', icon: Users, roles: ['admin', 'kasserer', 'styreleder', 'player'] },
-  { name: 'Medlemmer', page: 'MemberManagement', icon: Users, roles: ['admin', 'kasserer', 'styreleder'] },
+  { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'kasserer', 'styreleder', 'revisor', 'player', 'parent'] },
+  { name: 'Mine betalinger', page: 'PaymentPortal', icon: Receipt, roles: ['player', 'parent'] },
   { name: 'Spillere', page: 'Players', icon: Users, roles: ['admin', 'kasserer', 'styreleder', 'revisor'] },
   { name: 'Transaksjoner', page: 'Transactions', icon: Receipt, roles: ['admin', 'kasserer', 'revisor'] },
   { name: 'Bankavstemming', page: 'BankReconciliation', icon: Receipt, roles: ['admin', 'kasserer'] },
   { name: 'Budsjett', page: 'Budget', icon: PiggyBank, roles: ['admin', 'kasserer', 'revisor'] },
+  { name: 'Fakturering', page: 'InvoiceAutomation', icon: Receipt, roles: ['admin', 'kasserer'] },
   { name: 'Rapporter', page: 'Reports', icon: FileBarChart, roles: ['admin', 'kasserer', 'styreleder', 'revisor'] },
   { name: 'Avanserte analyser', page: 'AdvancedAnalytics', icon: FileBarChart, roles: ['admin', 'kasserer', 'styreleder'] },
-  { name: 'Automatisk fakturering', page: 'InvoiceAutomation', icon: Receipt, roles: ['admin', 'kasserer'] },
-  { name: 'Kommunikasjon', page: 'Communications', icon: Mail, roles: ['admin', 'kasserer', 'styreleder'] },
+  { name: 'Kommunikasjon', page: 'Communications', icon: Mail, roles: ['admin', 'kasserer'] },
   { name: 'Revisjonslogg', page: 'AuditLog', icon: ScrollText, roles: ['admin', 'styreleder', 'revisor'] },
   { name: 'Regnskap', page: 'AccountingIntegration', icon: FileBarChart, roles: ['admin', 'kasserer'] },
   { name: 'Innstillinger', page: 'SettingsPage', icon: Settings, roles: ['admin', 'kasserer', 'styreleder'] },
