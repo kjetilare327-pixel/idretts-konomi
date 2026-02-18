@@ -16,8 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TemplateManager from '../components/communications/TemplateManager';
 import MessageTracker from '../components/communications/MessageTracker';
 import RecipientSegmentation from '../components/communications/RecipientSegmentation';
-import AINewsletterGenerator from '../components/communications/AINewsletterGenerator';
-import AIPersonalizedEmails from '../components/communications/AIPersonalizedEmails';
+
 
 const MESSAGE_TEMPLATES = {
   training_change: {
