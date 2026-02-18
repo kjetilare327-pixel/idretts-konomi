@@ -9,6 +9,8 @@ import ExpensePredictions from '../components/budget/ExpensePredictions';
 import BudgetDeviationAlerts from '../components/budget/BudgetDeviationAlerts';
 import AISeasonalForecast from '../components/budget/AISeasonalForecast';
 import BudgetAlertConfig from '../components/reports/BudgetAlertConfig';
+import AIBudgetAdjustments from '../components/budget/AIBudgetAdjustments';
+import ProjectBudget from '../components/budget/ProjectBudget';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
