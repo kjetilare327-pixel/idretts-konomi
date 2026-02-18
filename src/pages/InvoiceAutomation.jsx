@@ -3,6 +3,8 @@ import { useTeam } from '../components/shared/TeamContext';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import PaymentReminderManager from '@/components/invoicing/PaymentReminderManager';
+import AIInvoiceGenerator from '@/components/invoicing/AIInvoiceGenerator';
+import AICollectionAdvisor from '@/components/invoicing/AICollectionAdvisor';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -214,6 +216,12 @@ export default function InvoiceAutomation() {
           </CardContent>
         </Card>
       )}
+
+      {/* AI Invoice Generator */}
+      <AIInvoiceGenerator teamId={currentTeam?.id} players={players} claims={[]} />
+
+      {/* AI Collection Advisor */}
+      <AICollectionAdvisor teamId={currentTeam?.id} players={players} claims={[]} />
 
       {/* Payment reminders */}
       <PaymentReminderManager teamId={currentTeam?.id} />
