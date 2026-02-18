@@ -6,6 +6,7 @@ import { formatNOK } from '@/components/shared/FormatUtils';
 import AiBudgetPlanner from '../components/budget/AiBudgetPlanner';
 import AiBudgetGenerator from '../components/budget/AiBudgetGenerator';
 import ExpensePredictions from '../components/budget/ExpensePredictions';
+import BudgetDeviationAlerts from '../components/budget/BudgetDeviationAlerts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -123,6 +124,9 @@ export default function BudgetPage() {
 
       {/* AI Expense Predictions */}
       <ExpensePredictions teamId={currentTeam?.id} />
+
+      {/* Budget deviation alerts */}
+      <BudgetDeviationAlerts transactions={transactions} budgets={budgets} />
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

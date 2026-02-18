@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import MemberSegmentation from '@/components/members/MemberSegmentation';
 import AIMemberSegmentation from '@/components/members/AIMemberSegmentation';
+import AIPredictiveSegmentation from '@/components/members/AIPredictiveSegmentation';
 import MemberCardGenerator from '@/components/members/MemberCardGenerator';
 import StatusMessageManager from '@/components/members/StatusMessageManager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -133,6 +134,14 @@ export default function MemberManagement() {
 
       {/* AI-powered member segmentation */}
       <AIMemberSegmentation teamId={currentTeam?.id} />
+
+      {/* AI predictive segmentation */}
+      <AIPredictiveSegmentation
+        teamId={currentTeam?.id}
+        players={players}
+        claims={claims}
+        transactions={transactions}
+      />
 
       {/* Custom member segmentation */}
       <MemberSegmentation teamId={currentTeam?.id} />
