@@ -313,9 +313,11 @@ export default function Reports() {
         </TabsContent>
 
         <TabsContent value="likviditet" className="space-y-6">
+          <BankAccountManager totalTransactionBalance={summary.balance} />
           <LiquidityOverview transactions={transactions} claims={claims} />
           <CashFlowForecast transactions={transactions} claims={claims} budgets={budgets} />
           <LiquidityAIAdvisor transactions={transactions} claims={claims} budgets={budgets} teamName={currentTeam?.name} />
+          <ResourceAllocationAdvisor transactions={transactions} claims={claims} budgets={budgets} teamName={currentTeam?.name} />
         </TabsContent>
 
         <TabsContent value="finansrapport" className="space-y-6">
