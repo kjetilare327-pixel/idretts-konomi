@@ -266,6 +266,28 @@ export default function Communications() {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="ai-personal" className="space-y-6">
+          <AIPersonalizedEmails
+            teamId={currentTeam?.id}
+            teamName={currentTeam?.name}
+            players={players}
+            claims={[]}
+          />
+        </TabsContent>
+
+        <TabsContent value="newsletter" className="space-y-6">
+          <AINewsletterGenerator
+            teamName={currentTeam?.name}
+            transactions={[]}
+            players={players}
+            claims={[]}
+            onUseContent={({ subject, body }) => {
+              setSubject(subject);
+              setMessage(body);
+            }}
+          />
+        </TabsContent>
+
         <TabsContent value="compose" className="space-y-6">{/* Existing compose content */}
 
       {result && (
