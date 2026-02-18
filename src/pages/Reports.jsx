@@ -310,6 +310,16 @@ export default function Reports() {
           <AIFinancialTrends transactions={transactions} budgets={budgets} claims={claims} />
         </TabsContent>
 
+        <TabsContent value="likviditet" className="space-y-6">
+          <LiquidityOverview transactions={transactions} claims={claims} />
+          <CashFlowForecast transactions={transactions} claims={claims} budgets={budgets} />
+          <LiquidityAIAdvisor transactions={transactions} claims={claims} budgets={budgets} teamName={currentTeam?.name} />
+        </TabsContent>
+
+        <TabsContent value="finansrapport" className="space-y-6">
+          <FinancialReportGenerator transactions={transactions} budgets={budgets} teamName={currentTeam?.name} />
+        </TabsContent>
+
         <TabsContent value="regnskap" className="space-y-6">
           <IncomeStatement transactions={transactions} teamName={currentTeam?.name} />
           <BalanceSheet transactions={transactions} claims={claims} teamName={currentTeam?.name} />
