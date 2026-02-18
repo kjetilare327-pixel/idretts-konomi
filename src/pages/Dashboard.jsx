@@ -18,7 +18,6 @@ import AiHint from '@/components/dashboard/AiHint';
 import ProfileCompletionPrompt from '@/components/onboarding/ProfileCompletionPrompt';
 import ReferralKpiWidget from '@/components/dashboard/ReferralKpiWidget';
 import PushNotifications from '@/components/mobile/PushNotifications';
-import EngagementTrendWidget from '@/components/dashboard/EngagementTrendWidget';
 import FinancialSummaryWidget from '@/components/dashboard/FinancialSummaryWidget';
 import OutstandingClaimsWidget from '@/components/dashboard/OutstandingClaimsWidget';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
