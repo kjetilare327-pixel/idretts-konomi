@@ -16,10 +16,13 @@ import ReportFilters from '../components/reports/ReportFilters';
 import ReportExport from '../components/reports/ReportExport';
 import BudgetVsActualReport from '../components/reports/BudgetVsActualReport';
 import CashFlowProjection from '../components/reports/CashFlowProjection';
+import CashFlowAnalysis from '../components/reports/CashFlowAnalysis';
 import NIFAnnualReport from '../components/reports/NIFAnnualReport';
 import ExpensePredictions from '../components/budget/ExpensePredictions';
 import MemberEngagementReport from '../components/reports/MemberEngagementReport';
 import FinancialYearlyReport from '../components/reports/FinancialYearlyReport';
+import IncomeStatement from '../components/reports/IncomeStatement';
+import BalanceSheet from '../components/reports/BalanceSheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -261,8 +264,9 @@ export default function Reports() {
         </div>
       </div>
 
-      <Tabs defaultValue="budget-vs-actual" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-8">
+      <Tabs defaultValue="regnskap" className="space-y-6">
+        <TabsList className="flex flex-wrap w-full h-auto gap-1">
+          <TabsTrigger value="regnskap">Regnskap</TabsTrigger>
           <TabsTrigger value="budget-vs-actual">Budsjett</TabsTrigger>
           <TabsTrigger value="cashflow">Cashflow</TabsTrigger>
           <TabsTrigger value="realtime">Sanntid</TabsTrigger>
@@ -272,6 +276,12 @@ export default function Reports() {
           <TabsTrigger value="nif">NIF-årsrapport</TabsTrigger>
           <TabsTrigger value="gdpr">GDPR</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="regnskap" className="space-y-6">
+          <IncomeStatement transactions={transactions} teamName={currentTeam?.name} />
+          <BalanceSheet transactions={transactions} claims={claims} teamName={currentTeam?.name} />
+          <CashFlowAnalysis transactions={transactions} claims={claims} budgets={budgets} teamName={currentTeam?.name} />
+        </TabsContent>
 
         <TabsContent value="budget-vs-actual" className="space-y-6">
           <ReportFilters filters={filters} setFilters={setFilters} categories={allCategories} />
