@@ -31,28 +31,34 @@ export default function Dashboard() {
   const isAdmin = isTeamAdmin();
   const [showProfilePrompt, setShowProfilePrompt] = useState(true);
 
+  const CACHE_5MIN = { staleTime: 5 * 60 * 1000, gcTime: 10 * 60 * 1000 };
+
   const { data: transactions = [], isLoading: txLoading } = useQuery({
     queryKey: ['transactions', currentTeam?.id],
     queryFn: () => base44.entities.Transaction.filter({ team_id: currentTeam.id }, '-date'),
     enabled: !!currentTeam,
+    ...CACHE_5MIN,
   });
 
   const { data: budgets = [] } = useQuery({
     queryKey: ['budgets', currentTeam?.id],
     queryFn: () => base44.entities.Budget.filter({ team_id: currentTeam.id }),
     enabled: !!currentTeam,
+    ...CACHE_5MIN,
   });
 
   const { data: claims = [] } = useQuery({
     queryKey: ['claims', currentTeam?.id],
     queryFn: () => base44.entities.Claim.filter({ team_id: currentTeam.id }),
     enabled: !!currentTeam && isAdmin,
+    ...CACHE_5MIN,
   });
 
   const { data: players = [] } = useQuery({
     queryKey: ['players', currentTeam?.id],
     queryFn: () => base44.entities.Player.filter({ team_id: currentTeam.id, status: 'active' }),
     enabled: !!currentTeam && isAdmin,
+    ...CACHE_5MIN,
   });
 
   const stats = useMemo(() => {
