@@ -125,6 +125,13 @@ export default function BudgetPage() {
         </div>
       </div>
 
+      <AutoBudgetGenerator
+        transactions={transactions}
+        budgets={budgets}
+        teamId={currentTeam.id}
+        onApplyAll={() => queryClient.invalidateQueries({ queryKey: ['budgets', currentTeam.id] })}
+      />
+
       <AiBudgetPlanner teamId={currentTeam?.id} onApplyBudget={() => queryClient.invalidateQueries({ queryKey: ['budgets'] })} />
 
       {/* AI Expense Predictions */}
