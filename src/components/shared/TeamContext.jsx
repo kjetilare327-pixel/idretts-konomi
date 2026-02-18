@@ -85,7 +85,20 @@ export function TeamProvider({ children }) {
 
   const isTeamAdmin = (team = currentTeam) => {
     if (!team || !user) return false;
-    return team.members?.some(m => m.email === user.email && m.role === 'admin');
+    return team.members?.some(m => m.email === user.email && ['admin', 'kasserer', 'styreleder', 'revisor'].includes(m.role));
+  };
+
+  // RBAC: get current user's role in the current team
+  const getUserTeamRole = (team = currentTeam) => {
+    if (!team || !user) return 'player';
+    const member = team.members?.find(m => m.email === user.email);
+    return member?.role || 'player';
+  };
+
+  // RBAC: check if user can access finance data (not just a parent/player viewing own debts)
+  const canViewFinance = (team = currentTeam) => {
+    const role = getUserTeamRole(team);
+    return ['admin', 'kasserer', 'styreleder', 'revisor'].includes(role);
   };
 
   return (
@@ -100,7 +113,9 @@ export function TeamProvider({ children }) {
       refreshTeams, 
       refreshPlayerProfile,
       loadData,
-      isTeamAdmin
+      isTeamAdmin,
+      getUserTeamRole,
+      canViewFinance,
     }}>
       {children}
     </TeamContext.Provider>
