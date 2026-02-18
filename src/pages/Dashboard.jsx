@@ -124,7 +124,8 @@ export default function Dashboard() {
         />
       )}
 
-      <PushNotifications />
+      {/* PushNotifications shown only to admin roles */}
+      {isAdmin && <PushNotifications />}
 
       {!isAdmin && playerProfile && (
         <Card className="border-0 shadow-md dark:bg-slate-900">
