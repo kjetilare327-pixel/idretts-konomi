@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Send, Loader2, Mail, Users, CheckCircle2, AlertCircle, Sparkles, TrendingUp, BarChart3, Newspaper } from 'lucide-react';
+import { Send, Loader2, Mail, Users, CheckCircle2, AlertCircle, Sparkles, TrendingUp, BarChart3 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TemplateManager from '../components/communications/TemplateManager';
 import MessageTracker from '../components/communications/MessageTracker';
