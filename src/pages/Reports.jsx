@@ -711,16 +711,7 @@ export default function Reports() {
         <TabsContent value="predictive" className="space-y-6">
           <ExpensePredictions teamId={currentTeam?.id} />
           <PredictiveAnalytics teamId={currentTeam?.id} />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <h2 className="text-lg font-semibold mb-4">Medlems-engasjement</h2>
-              <MemberEngagementReport teamId={currentTeam?.id} />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold mb-4">Årlig finansiell oversikt</h2>
-              <FinancialYearlyReport teamId={currentTeam?.id} year={parseInt(year)} />
-            </div>
-          </div>
+          <FinancialYearlyReport teamId={currentTeam?.id} year={parseInt(year)} />
         </TabsContent>
 
         <TabsContent value="nif" className="space-y-6">
