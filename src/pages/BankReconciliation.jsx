@@ -6,6 +6,7 @@ import BankImporter from '@/components/bank/BankImporter';
 import ReconciliationStatus from '@/components/bank/ReconciliationStatus';
 import ReconciliationVisualizer from '@/components/bank/ReconciliationVisualizer';
 import MatchingRulesManager from '@/components/bank/MatchingRulesManager';
+import AIPaymentMatcher from '@/components/bank/AIPaymentMatcher';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +28,18 @@ export default function BankReconciliation() {
   const { data: unreconciledTx = [] } = useQuery({
     queryKey: ['unreconciledTransactions', currentTeam?.id],
     queryFn: () => base44.entities.Transaction.filter({ team_id: currentTeam.id, reconciled: 'unreconciled' }),
+    enabled: !!currentTeam,
+  });
+
+  const { data: claims = [] } = useQuery({
+    queryKey: ['claims', currentTeam?.id],
+    queryFn: () => base44.entities.Claim.filter({ team_id: currentTeam.id }),
+    enabled: !!currentTeam,
+  });
+
+  const { data: players = [] } = useQuery({
+    queryKey: ['players', currentTeam?.id],
+    queryFn: () => base44.entities.Player.filter({ team_id: currentTeam.id }),
     enabled: !!currentTeam,
   });
 
@@ -79,6 +92,14 @@ export default function BankReconciliation() {
           Last opp bankkontoutskrift for automatisk avstemming av transaksjoner
         </p>
       </div>
+
+      {/* AI Payment Matcher */}
+      <AIPaymentMatcher
+        teamId={currentTeam?.id}
+        bankTransactions={bankTransactions}
+        claims={claims}
+        players={players}
+      />
 
       {/* Enhanced reconciliation visualizer */}
       <ReconciliationVisualizer teamId={currentTeam?.id} />
