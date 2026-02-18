@@ -20,6 +20,7 @@ import {
   Users,
   ScrollText,
   Mail,
+  Building2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import NotificationCenter from './components/notifications/NotificationCenter';
@@ -43,6 +44,7 @@ const NAV_ITEMS = [
   { name: 'Bankavstemming', page: 'BankReconciliation', icon: Receipt, roles: ['admin', 'kasserer'] },
   { name: 'Budsjett', page: 'Budget', icon: PiggyBank, roles: ['admin', 'kasserer', 'revisor'] },
   { name: 'Fakturering', page: 'InvoiceAutomation', icon: Receipt, roles: ['admin', 'kasserer'] },
+  { name: 'Sponsorer', page: 'Sponsors', icon: Building2, roles: ['admin', 'kasserer', 'styreleder'] },
   { name: 'Rapporter', page: 'Reports', icon: FileBarChart, roles: ['admin', 'kasserer', 'styreleder', 'revisor'] },
   { name: 'Avanserte analyser', page: 'AdvancedAnalytics', icon: FileBarChart, roles: ['admin', 'kasserer', 'styreleder'] },
   { name: 'Kommunikasjon', page: 'Communications', icon: Mail, roles: ['admin', 'kasserer'] },

@@ -41,6 +41,8 @@ import LiquidityAIAdvisor from '@/components/liquidity/LiquidityAIAdvisor';
 import BankAccountManager from '@/components/liquidity/BankAccountManager';
 import ResourceAllocationAdvisor from '@/components/liquidity/ResourceAllocationAdvisor';
 import FinancialReportGenerator from '@/components/reports/FinancialReportGenerator';
+import CashFlowForecast90 from '@/components/liquidity/CashFlowForecast90';
+import PeriodComparisonReport from '@/components/reports/PeriodComparisonReport';
 
 const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#f97316', '#84cc16', '#6366f1'];
 const MONTHS = ['Januar', 'Februar', 'Mars', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Desember'];
@@ -304,6 +306,7 @@ export default function Reports() {
           <TabsTrigger value="predictive">Prognoser</TabsTrigger>
           <TabsTrigger value="nif">NIF-årsrapport</TabsTrigger>
           <TabsTrigger value="gdpr">GDPR</TabsTrigger>
+          <TabsTrigger value="sammenligning">Sammenligning</TabsTrigger>
         </TabsList>
 
         <TabsContent value="ai-insights" className="space-y-6">
@@ -315,6 +318,7 @@ export default function Reports() {
         <TabsContent value="likviditet" className="space-y-6">
           <BankAccountManager totalTransactionBalance={summary.balance} />
           <LiquidityOverview transactions={transactions} claims={claims} />
+          <CashFlowForecast90 transactions={transactions} claims={claims} budgets={budgets} />
           <CashFlowForecast transactions={transactions} claims={claims} budgets={budgets} />
           <LiquidityAIAdvisor transactions={transactions} claims={claims} budgets={budgets} teamName={currentTeam?.name} />
           <ResourceAllocationAdvisor transactions={transactions} claims={claims} budgets={budgets} teamName={currentTeam?.name} />
@@ -739,6 +743,10 @@ export default function Reports() {
 
         <TabsContent value="gdpr" className="space-y-6">
           <GdprCompliancePanel teamId={currentTeam?.id} />
+        </TabsContent>
+
+        <TabsContent value="sammenligning" className="space-y-6">
+          <PeriodComparisonReport transactions={transactions} />
         </TabsContent>
       </Tabs>
     </div>
