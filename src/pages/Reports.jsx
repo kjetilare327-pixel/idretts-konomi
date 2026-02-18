@@ -300,8 +300,8 @@ export default function Reports() {
 
         <TabsContent value="ai-insights" className="space-y-6">
           <BudgetAlertConfig transactions={filtered} budgets={budgets} claims={claims} />
-          <AIFinancialTrends transactions={transactions} budgets={budgets} claims={claims} />
           <AIAnomalyDetector transactions={filtered} budgets={budgets} claims={claims} />
+          <AIFinancialTrends transactions={transactions} budgets={budgets} claims={claims} />
         </TabsContent>
 
         <TabsContent value="regnskap" className="space-y-6">
