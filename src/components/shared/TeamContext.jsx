@@ -107,6 +107,7 @@ export function TeamProvider({ children }) {
   );
 }
 
+// isParentRole: true if the user is a 'parent' in the current team (RBAC helper)
 export function useTeam() {
   const ctx = useContext(TeamContext);
   if (!ctx) throw new Error('useTeam must be used within TeamProvider');
