@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CreditCard, Clock, CheckCircle2, ExternalLink, Download, Loader2 } from 'lucide-react';
 import { formatNOK } from '@/components/shared/FormatUtils';
+import DonationWidget from '@/components/payments/DonationWidget';
+import MembershipSubscription from '@/components/payments/MembershipSubscription';
 
 export default function PaymentPortal() {
   const { currentTeam, playerProfile, user } = useTeam();
