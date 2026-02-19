@@ -202,19 +202,62 @@ export default function Transactions() {
       </Card>
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>{editData?.id ? 'Rediger transaksjon' : 'Ny transaksjon'}</DialogTitle>
+            <DialogTitle>
+              {editData?.id ? 'Rediger transaksjon' : (
+                formMode === 'ai'
+                  ? <span className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-violet-600" /> AI-transaksjonsassistent</span>
+                  : 'Ny transaksjon'
+              )}
+            </DialogTitle>
           </DialogHeader>
-          <TransactionForm
-            teamId={currentTeam.id}
-            editData={editData}
-            onClose={() => setShowForm(false)}
-            onSaved={() => {
-              setShowForm(false);
-              queryClient.invalidateQueries({ queryKey: ['transactions', currentTeam?.id] });
-            }}
-          />
+
+          {!editData?.id && (
+            <Tabs value={formMode} onValueChange={setFormMode} className="w-full">
+              <TabsList className="w-full mb-4">
+                <TabsTrigger value="manual" className="flex-1">Manuell</TabsTrigger>
+                <TabsTrigger value="ai" className="flex-1 gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" /> AI-fordeling
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="manual">
+                <TransactionForm
+                  teamId={currentTeam.id}
+                  editData={editData}
+                  onClose={() => setShowForm(false)}
+                  onSaved={() => {
+                    setShowForm(false);
+                    queryClient.invalidateQueries({ queryKey: ['transactions', currentTeam?.id] });
+                    queryClient.invalidateQueries({ queryKey: ['players', currentTeam?.id] });
+                  }}
+                />
+              </TabsContent>
+              <TabsContent value="ai">
+                <AiTransactionAssistant
+                  teamId={currentTeam.id}
+                  onDone={() => {
+                    setShowForm(false);
+                    queryClient.invalidateQueries({ queryKey: ['transactions', currentTeam?.id] });
+                    queryClient.invalidateQueries({ queryKey: ['players', currentTeam?.id] });
+                    queryClient.invalidateQueries({ queryKey: ['claims', currentTeam?.id] });
+                  }}
+                />
+              </TabsContent>
+            </Tabs>
+          )}
+
+          {editData?.id && (
+            <TransactionForm
+              teamId={currentTeam.id}
+              editData={editData}
+              onClose={() => setShowForm(false)}
+              onSaved={() => {
+                setShowForm(false);
+                queryClient.invalidateQueries({ queryKey: ['transactions', currentTeam?.id] });
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
