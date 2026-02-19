@@ -27,6 +27,7 @@ export default function AiTransactionAssistant({ teamId, onDone }) {
   const [showPlayerPicker, setShowPlayerPicker] = useState(false);
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState(false);
+  const [showPickerModal, setShowPickerModal] = useState(false);
   const textareaRef = useRef(null);
 
   const { data: players = [] } = useQuery({
