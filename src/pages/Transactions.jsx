@@ -76,7 +76,7 @@ export default function Transactions() {
   };
 
   const openEdit = (t) => { setEditData(t); setShowForm(true); };
-  const openNew = () => { setEditData(null); setShowForm(true); };
+  const openNew = (mode = 'manual') => { setEditData(null); setFormMode(mode); setShowForm(true); };
 
   if (!currentTeam) return <p className="text-center py-12 text-slate-500">Velg et lag for å se transaksjoner.</p>;
 
