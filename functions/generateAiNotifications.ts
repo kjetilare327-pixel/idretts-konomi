@@ -123,12 +123,19 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
+    // Safely parse body — scheduled automations send no body or empty body
     let team_id = null;
-    try {
-      const body = await req.json();
-      team_id = body?.team_id || null;
-    } catch (_) {
-      // No body — running as scheduled automation
+    const contentType = req.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      try {
+        const text = await req.text();
+        if (text && text.trim().length > 0) {
+          const body = JSON.parse(text);
+          team_id = body?.team_id || null;
+        }
+      } catch (_) {
+        // Ignore parse errors — treat as scheduled run
+      }
     }
 
     const isScheduled = !team_id;
@@ -139,27 +146,25 @@ Deno.serve(async (req) => {
       if (!user || user.role !== 'admin') {
         return Response.json({ error: 'Unauthorized' }, { status: 403 });
       }
+      const result = await generateNotificationsForTeam(base44, team_id);
+      return Response.json({ success: true, ...result });
     }
 
-    if (isScheduled) {
-      // Run for all teams inline (no re-invocation to avoid 403)
-      const allTeams = await base44.asServiceRole.entities.Team.list();
-      const results = [];
-      for (const team of allTeams) {
-        try {
-          const result = await generateNotificationsForTeam(base44, team.id);
-          results.push({ team_id: team.id, team_name: team.name, status: 'ok', ...result });
-        } catch (err) {
-          console.error(`Failed for team ${team.id}:`, err.message);
-          results.push({ team_id: team.id, team_name: team.name, status: 'error', error: err.message });
-        }
+    // Scheduled run — iterate all teams
+    console.log('Scheduled run: generating notifications for all teams');
+    const allTeams = await base44.asServiceRole.entities.Team.list();
+    console.log(`Found ${allTeams.length} teams`);
+    const results = [];
+    for (const team of allTeams) {
+      try {
+        const result = await generateNotificationsForTeam(base44, team.id);
+        results.push({ team_id: team.id, team_name: team.name, status: 'ok', ...result });
+      } catch (err) {
+        console.error(`Failed for team ${team.id}:`, err.message);
+        results.push({ team_id: team.id, team_name: team.name, status: 'error', error: err.message });
       }
-      return Response.json({ success: true, scheduled_run: true, results });
     }
-
-    // Single team
-    const result = await generateNotificationsForTeam(base44, team_id);
-    return Response.json({ success: true, ...result });
+    return Response.json({ success: true, scheduled_run: true, results });
 
   } catch (error) {
     console.error('Generate AI notifications error:', error);
