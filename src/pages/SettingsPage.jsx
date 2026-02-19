@@ -28,6 +28,20 @@ export default function SettingsPage() {
   const queryClient = useQueryClient();
 
   // All hooks at top level - call useQuery before any conditional logic
+  const { data: transactions = [] } = useQuery({
+    queryKey: ['transactions', currentTeam?.id],
+    queryFn: () => base44.entities.Transaction.filter({ team_id: currentTeam.id }),
+    enabled: !!currentTeam?.id,
+    staleTime: 60000,
+  });
+
+  const { data: budgets = [] } = useQuery({
+    queryKey: ['budgets', currentTeam?.id],
+    queryFn: () => base44.entities.Budget.filter({ team_id: currentTeam.id }),
+    enabled: !!currentTeam?.id,
+    staleTime: 60000,
+  });
+
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ['categories', currentTeam?.id],
     queryFn: async () => {
