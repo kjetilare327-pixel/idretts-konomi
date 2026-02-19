@@ -163,6 +163,9 @@ export default function SettingsPage() {
         <RoleManagement teamId={currentTeam?.id} />
       )}
 
+      {/* Alert threshold settings */}
+      <AlertThresholdSettings teamId={currentTeam?.id} transactions={transactions} budgets={budgets} />
+
       {/* Team details */}
       <Card className="border-0 shadow-md dark:bg-slate-900">
         <CardHeader>
