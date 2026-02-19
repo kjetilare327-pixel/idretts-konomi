@@ -87,9 +87,14 @@ export default function Transactions() {
           <h1 className="text-2xl font-bold tracking-tight">Transaksjoner</h1>
           <p className="text-sm text-slate-500">{filtered.length} transaksjoner</p>
         </div>
-        <Button onClick={openNew} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
-          <Plus className="w-4 h-4" /> Ny transaksjon
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => openNew('ai')} variant="outline" className="gap-2 border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-violet-400 dark:hover:bg-violet-500/10">
+            <Sparkles className="w-4 h-4" /> AI-fordeling
+          </Button>
+          <Button onClick={() => openNew('manual')} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+            <Plus className="w-4 h-4" /> Ny transaksjon
+          </Button>
+        </div>
       </div>
 
       {/* OCR Scanner and CSV Importer */}
