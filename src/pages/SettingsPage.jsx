@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useTeam } from '@/components/shared/TeamContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import RoleManagement from '@/components/settings/RoleManagement';
+import AlertThresholdSettings from '@/components/notifications/AlertThresholdSettings';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
