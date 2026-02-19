@@ -150,6 +150,22 @@ Regler:
     }
   };
 
+  const handlePickerConfirm = (chosenPlayers) => {
+    if (chosenPlayers.length === 0) return;
+    const names = chosenPlayers.map(p => p.full_name).join(', ');
+    const prefix = chosenPlayers.length === 1
+      ? `Spiller: ${names}. `
+      : `Spillere (${chosenPlayers.length}): ${names}. `;
+    setPrompt(prev => {
+      const base = prev.trim();
+      // Avoid duplicating the prefix if already there
+      if (base.includes(prefix.trim())) return prev;
+      return prefix + (base ? base : '');
+    });
+    // Focus textarea so user can continue typing
+    setTimeout(() => textareaRef.current?.focus(), 50);
+  };
+
   const togglePlayer = (pid) => {
     setSelectedPlayerIds(prev => {
       const next = new Set(prev);
