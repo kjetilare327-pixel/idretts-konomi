@@ -279,12 +279,22 @@ Regler:
             className="resize-none"
             onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) handleAnalyze(); }}
           />
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-slate-400">Ctrl+Enter for å analysere</span>
+          <div className="flex justify-between items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPickerModal(true)}
+              className="gap-1.5 border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-violet-400 dark:hover:bg-violet-500/10 shrink-0"
+            >
+              <Users className="w-3.5 h-3.5" />
+              Velg deltakere
+            </Button>
+            <span className="text-xs text-slate-400 hidden sm:block">Ctrl+Enter for å analysere</span>
             <Button
               onClick={handleAnalyze}
               disabled={loading || !prompt.trim()}
-              className="bg-violet-600 hover:bg-violet-700 gap-2"
+              className="bg-violet-600 hover:bg-violet-700 gap-2 shrink-0"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               {loading ? 'Analyserer...' : 'Analyser'}
@@ -292,6 +302,13 @@ Regler:
           </div>
         </div>
       )}
+
+      <PlayerPickerModal
+        open={showPickerModal}
+        onClose={() => setShowPickerModal(false)}
+        players={players}
+        onConfirm={handlePickerConfirm}
+      />
 
       {/* Error */}
       {error && (
