@@ -33,6 +33,7 @@ export default function Transactions() {
   const { currentTeam } = useTeam();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [formMode, setFormMode] = useState('manual'); // 'manual' | 'ai'
   const [editData, setEditData] = useState(null);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('all');
