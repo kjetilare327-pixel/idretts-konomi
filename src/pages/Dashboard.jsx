@@ -22,6 +22,7 @@ import OutstandingClaimsWidget from '@/components/dashboard/OutstandingClaimsWid
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 import CustomDashboardKPIs from '@/components/dashboard/CustomDashboardKPIs';
 import CashFlowForecastChart from '@/components/dashboard/CashFlowForecastChart';
+import KpiDashboard from '@/components/dashboard/KpiDashboard';
 
 export default function Dashboard() {
   const { currentTeam, teams, loading: teamLoading, isTeamAdmin, playerProfile, refreshPlayerProfile } = useTeam();

@@ -63,9 +63,9 @@ import Players from './pages/Players';
 import ReferralProgram from './pages/ReferralProgram';
 import Reports from './pages/Reports';
 import SettingsPage from './pages/SettingsPage';
+import Sponsors from './pages/Sponsors';
 import Transactions from './pages/Transactions';
 import VolunteerManagement from './pages/VolunteerManagement';
-import Sponsors from './pages/Sponsors';
 import __Layout from './Layout.jsx';
 
 
@@ -86,9 +86,9 @@ export const PAGES = {
     "ReferralProgram": ReferralProgram,
     "Reports": Reports,
     "SettingsPage": SettingsPage,
+    "Sponsors": Sponsors,
     "Transactions": Transactions,
     "VolunteerManagement": VolunteerManagement,
-    "Sponsors": Sponsors,
 }
 
 export const pagesConfig = {
