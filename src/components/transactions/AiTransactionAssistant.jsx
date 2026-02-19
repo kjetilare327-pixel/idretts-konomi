@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { Sparkles, Send, Loader2, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, Users, X } from 'lucide-react';
 import { formatNOK } from '@/components/shared/FormatUtils';
+import PlayerPickerModal from './PlayerPickerModal';
 
 const EXAMPLE_PROMPTS = [
   'Trener brukte 2000 kr på mat for laget – del likt på alle 20 spillere',
