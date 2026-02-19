@@ -102,11 +102,15 @@ Deno.serve(async (req) => {
 
     // Schedule follow-up (simulate with immediate send for demo)
     setTimeout(async () => {
-      await base44.asServiceRole.integrations.Core.SendEmail({
-        to: player.user_email,
-        subject: `Påminnelse fra ${team.name}`,
-        body: followUpEmailBody
-      });
+      try {
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          to: player.user_email,
+          subject: `Påminnelse fra ${team.name}`,
+          body: followUpEmailBody
+        });
+      } catch (emailErr) {
+        console.warn(`Could not send follow-up email to ${player.user_email}:`, emailErr.message);
+      }
     }, 1000);
 
     return Response.json({ 
