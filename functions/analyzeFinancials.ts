@@ -19,13 +19,13 @@ Deno.serve(async (req) => {
       if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Scheduled: run for all teams
+    // Scheduled: run for all teams inline (no re-invocation to avoid 403)
     if (isScheduled) {
       const allTeams = await base44.asServiceRole.entities.Team.list();
       const results = [];
       for (const team of allTeams) {
         try {
-          const res = await base44.asServiceRole.functions.invoke('analyzeFinancials', { team_id: team.id });
+          await runAnalysisForTeam(base44, team.id);
           results.push({ team_id: team.id, team_name: team.name, status: 'ok' });
         } catch (err) {
           console.error(`Failed for team ${team.id}:`, err.message);
