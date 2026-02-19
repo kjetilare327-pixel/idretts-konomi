@@ -3,16 +3,36 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    // Support both scheduled (no auth, no body) and manual invocation (with team_id)
+    let team_id = null;
+    try {
+      const body = await req.json();
+      team_id = body?.team_id || null;
+    } catch (_) {
+      // No body — running as scheduled automation
     }
 
-    const { team_id } = await req.json();
-    
-    if (!team_id) {
-      return Response.json({ error: 'team_id is required' }, { status: 400 });
+    // If called from frontend, require auth
+    const isScheduled = !team_id;
+    if (!isScheduled) {
+      const user = await base44.auth.me();
+      if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Scheduled: run for all teams
+    if (isScheduled) {
+      const allTeams = await base44.asServiceRole.entities.Team.list();
+      const results = [];
+      for (const team of allTeams) {
+        try {
+          const res = await base44.asServiceRole.functions.invoke('analyzeFinancials', { team_id: team.id });
+          results.push({ team_id: team.id, team_name: team.name, status: 'ok' });
+        } catch (err) {
+          console.error(`Failed for team ${team.id}:`, err.message);
+          results.push({ team_id: team.id, team_name: team.name, status: 'error', error: err.message });
+        }
+      }
+      return Response.json({ success: true, scheduled_run: true, results });
     }
 
     // Hent data
