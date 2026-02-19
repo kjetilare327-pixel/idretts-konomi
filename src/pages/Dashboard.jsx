@@ -170,6 +170,8 @@ export default function Dashboard() {
 
       {/* ReferralKpiWidget removed – finance-only dashboard */}
 
+      {isAdmin && <KpiDashboard transactions={transactions} budgets={budgets} claims={claims} />}
+
       {isAdmin && <CashFlowForecastChart transactions={transactions} budgets={budgets} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
