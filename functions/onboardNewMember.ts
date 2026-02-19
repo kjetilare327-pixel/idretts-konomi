@@ -41,11 +41,15 @@ Deno.serve(async (req) => {
 <p>Hilsen<br>${team.name}</p>
     `;
 
-    await base44.asServiceRole.integrations.Core.SendEmail({
-      to: player.user_email,
-      subject: `Velkommen til ${team.name}!`,
-      body: welcomeEmailBody
-    });
+    try {
+      await base44.asServiceRole.integrations.Core.SendEmail({
+        to: player.user_email,
+        subject: `Velkommen til ${team.name}!`,
+        body: welcomeEmailBody
+      });
+    } catch (emailErr) {
+      console.warn(`Could not send welcome email to ${player.user_email}:`, emailErr.message);
+    }
 
     // 2. Create profile completion reminders
     const needsCompletion = [];
