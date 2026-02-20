@@ -48,6 +48,10 @@ export default function Transactions() {
     enabled: !!currentTeam,
   });
 
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['transactions', currentTeam?.id] });
+  };
+
   const filtered = useMemo(() => {
     let list = [...transactions];
     if (filterType !== 'all') list = list.filter(t => t.type === filterType);
