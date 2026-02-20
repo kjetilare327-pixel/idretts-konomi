@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,8 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { User, Edit, Upload, Instagram, Facebook, Twitter, AtSign, Loader2 } from 'lucide-react';
+import { Edit, Upload, Instagram, Facebook, Twitter, AtSign, Loader2 } from 'lucide-react';
 import { formatNOK } from '@/components/shared/FormatUtils';
+import { computePlayerLedger } from '@/components/shared/useLedger';
 
 export default function PlayerProfileCard({ player, onUpdate, isOwnProfile = false }) {
   const [editing, setEditing] = useState(false);
