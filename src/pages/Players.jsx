@@ -421,22 +421,9 @@ export default function Players() {
                 <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Saldo (NOK)</Label>
-                <Input type="number" step="0.01" value={form.balance} onChange={e => setForm({ ...form, balance: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={form.payment_status} onValueChange={v => setForm({ ...form, payment_status: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="paid">Betalt</SelectItem>
-                    <SelectItem value="partial">Delvis</SelectItem>
-                    <SelectItem value="unpaid">Ubetalt</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label>Startsaldo (NOK) – overstyres av krav/innbetalinger</Label>
+              <Input type="number" step="0.01" value={form.balance} onChange={e => setForm({ ...form, balance: e.target.value })} placeholder="0" />
             </div>
             <div className="space-y-2">
               <Label>Interne notater</Label>
