@@ -82,9 +82,24 @@ export default function Players() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [players, ledgerMap]);
 
+  const validateForm = () => {
+    const errors = {};
+    if (!form.full_name.trim()) errors.full_name = 'Navn er påkrevd';
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!form.user_email.trim()) errors.user_email = 'E-post er påkrevd';
+    else if (!emailRe.test(form.user_email)) errors.user_email = 'Ugyldig e-postformat';
+    if (form.phone) {
+      const phone = form.phone.replace(/\s/g, '');
+      const phoneRe = /^(\+47)?[2-9]\d{7}$/;
+      if (!phoneRe.test(phone)) errors.phone = 'Ugyldig telefonnummer (norsk format: 8 siffer eller +47...)';
+    }
+    return errors;
+  };
+
   const openNew = () => {
     setEditData(null);
     setForm({ full_name: '', user_email: '', role: 'player', balance: '0', phone: '', notes: '' });
+    setFormErrors({});
     setShowForm(true);
   };
 
@@ -98,11 +113,13 @@ export default function Players() {
       phone: p.phone || '',
       notes: p.notes || ''
     });
+    setFormErrors({});
     setShowForm(true);
   };
 
   const handleSave = async () => {
-    if (!form.full_name || !form.user_email) return;
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
     setSaving(true);
     const data = {
       team_id: currentTeam.id,
