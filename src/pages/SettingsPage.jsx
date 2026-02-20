@@ -351,7 +351,22 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* GDPR / Delete */}
+      {/* Delete account */}
+      <Card className="border-0 shadow-md border-red-200 dark:border-red-500/20 dark:bg-slate-900">
+        <CardHeader>
+          <CardTitle className="text-base text-red-600 flex items-center gap-2">
+            <UserX className="w-4 h-4" /> Slett min konto
+          </CardTitle>
+          <CardDescription>Sletter din brukerkonto permanent. Du mister tilgang til alle lag.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="destructive" onClick={() => setShowDeleteAccount(true)} className="gap-2">
+            <UserX className="w-4 h-4" /> Slett konto
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* GDPR / Delete team */}
       <Card className="border-0 shadow-md border-red-200 dark:border-red-500/20 dark:bg-slate-900">
         <CardHeader>
           <CardTitle className="text-base text-red-600 flex items-center gap-2">
