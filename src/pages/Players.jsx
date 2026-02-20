@@ -140,11 +140,12 @@ export default function Players() {
 
   const handleSendReminder = async (player) => {
     setSendingReminder(player.id);
+    const ledger = getLedger(player);
     try {
       await base44.integrations.Core.SendEmail({
         to: player.user_email,
         subject: `Betalingspåminnelse – ${currentTeam.name}`,
-        body: `Hei ${player.full_name},\n\nDu har ${formatNOK(player.balance)} utestående for ${currentTeam.name}.\n\nVennligst betal til kasserer.\n\nMvh\n${currentTeam.name}`,
+        body: `Hei ${player.full_name},\n\nDu har ${formatNOK(ledger.balance)} utestående for ${currentTeam.name}.\n\nVennligst betal til kasserer.\n\nMvh\n${currentTeam.name}`,
       });
       alert(`Påminnelse sendt til ${player.full_name}`);
     } catch (e) {
