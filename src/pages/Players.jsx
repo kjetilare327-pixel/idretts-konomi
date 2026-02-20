@@ -83,7 +83,7 @@ export default function Players() {
 
   const openNew = () => {
     setEditData(null);
-    setForm({ full_name: '', user_email: '', role: 'player', balance: '0', payment_status: 'paid', phone: '', notes: '' });
+    setForm({ full_name: '', user_email: '', role: 'player', balance: '0', phone: '', notes: '' });
     setShowForm(true);
   };
 
