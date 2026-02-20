@@ -137,6 +137,7 @@ export default function Players() {
     }
     setSaving(false);
     setShowForm(false);
+    setFormErrors({});
     queryClient.invalidateQueries({ queryKey: ['players', currentTeam?.id] });
   };
 
