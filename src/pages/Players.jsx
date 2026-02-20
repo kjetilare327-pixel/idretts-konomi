@@ -25,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Users, Plus, Pencil, Trash2, Mail, Loader2, Bell, FileText } from 'lucide-react';
+import { Users, Plus, Pencil, Trash2, Mail, Loader2, Bell, FileText, AlertCircle } from 'lucide-react';
 import PlayerProfileCard from '../components/players/PlayerProfileCard';
 import PlayerLedgerDetail from '../components/players/PlayerLedgerDetail';
 
