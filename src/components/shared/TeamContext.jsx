@@ -71,7 +71,11 @@ export function TeamProvider({ children }) {
 
   const refreshTeams = async () => {
     const allTeams = await base44.entities.Team.list();
-    setTeams(allTeams);
+    const myTeams = user ? allTeams.filter(t =>
+      t.created_by === user.email ||
+      t.members?.some(m => m.email === user.email)
+    ) : allTeams;
+    setTeams(myTeams);
     if (currentTeam) {
       const updated = allTeams.find(t => t.id === currentTeam.id);
       if (updated) setCurrentTeam(updated);
