@@ -154,6 +154,13 @@ export default function Players() {
     setSendingReminder(null);
   };
 
+  const STATUS_ICONS = {
+    paid: CheckCircle,
+    partial: Clock,
+    unpaid: AlertCircle,
+    overdue: AlertCircle,
+  };
+
   if (!currentTeam) return <p className="text-center py-12 text-slate-500">Velg et lag for å se spillere.</p>;
 
   // Player view (ikke admin)
@@ -168,8 +175,7 @@ export default function Players() {
         {/* My profile */}
         {playerProfile && (
           <PlayerProfileCard 
-            player={playerProfile}
-            ledger={getLedger(playerProfile)}
+            player={playerProfile} 
             onUpdate={() => queryClient.invalidateQueries({ queryKey: ['players'] })} 
             isOwnProfile={true}
           />
@@ -193,17 +199,21 @@ export default function Players() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {players.map((p, i) => {
-                  const l = getLedger(p);
-                  const cfg = STATUS_CONFIG[l.status] || STATUS_CONFIG.paid;
+                {players.filter(p => p.status !== 'archived').map((p, i) => {
+                  const ledger = getLedger(p);
+                  const cfg = STATUS_CONFIG[ledger.status] || STATUS_CONFIG.paid;
+                  const Icon = STATUS_ICONS[ledger.status] || CheckCircle;
                   return (
                     <TableRow key={p.id}>
                       <TableCell>{showNames ? p.full_name : `Spiller ${String.fromCharCode(65 + i)}`}</TableCell>
                       <TableCell>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badgeClass}`}>{cfg.label}</span>
+                        <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badgeClass}`}>
+                          <Icon className="w-3 h-3" />
+                          {cfg.label}
+                        </span>
                       </TableCell>
-                      <TableCell className={`text-right font-medium ${l.balance > 0 ? 'text-red-600' : l.balance < 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                        {l.balance > 0 ? `+${formatNOK(l.balance)}` : l.balance < 0 ? formatNOK(l.balance) : '–'}
+                      <TableCell className={`text-right font-medium ${ledger.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                        {ledger.balance > 0 ? `+${formatNOK(ledger.balance)}` : ledger.balance < 0 ? formatNOK(ledger.balance) : '–'}
                       </TableCell>
                     </TableRow>
                   );
@@ -283,18 +293,22 @@ export default function Players() {
               ) : players.length === 0 ? (
                 <TableRow><TableCell colSpan={6} className="text-center py-12 text-slate-400">Ingen spillere lagt til</TableCell></TableRow>
               ) : players.filter(p => p.status !== 'archived').map(p => {
-                const l = getLedger(p);
-                const cfg = STATUS_CONFIG[l.status] || STATUS_CONFIG.paid;
-                const needsReminder = l.status === 'unpaid' || l.status === 'partial' || l.status === 'overdue';
+                const ledger = getLedger(p);
+                const cfg = STATUS_CONFIG[ledger.status] || STATUS_CONFIG.paid;
+                const Icon = STATUS_ICONS[ledger.status] || CheckCircle;
+                const needsReminder = ledger.status !== 'paid';
                 return (
                   <TableRow key={p.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 cursor-pointer" onClick={() => setSelectedPlayer(p)}>
                     <TableCell className="font-medium">{p.full_name}</TableCell>
                     <TableCell className="text-sm text-slate-500">{p.user_email}</TableCell>
                     <TableCell>
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.badgeClass}`}>{cfg.label}</span>
+                      <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badgeClass}`}>
+                        <Icon className="w-3 h-3" />
+                        {cfg.label}
+                      </span>
                     </TableCell>
-                    <TableCell className={`text-right font-semibold ${l.balance > 0 ? 'text-red-600' : l.balance < 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                      {l.balance > 0 ? `+${formatNOK(l.balance)}` : l.balance < 0 ? formatNOK(l.balance) : '–'}
+                    <TableCell className={`text-right font-semibold ${ledger.balance > 0 ? 'text-red-600' : ledger.balance < 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      {ledger.balance > 0 ? `+${formatNOK(ledger.balance)}` : ledger.balance < 0 ? formatNOK(ledger.balance) : '–'}
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="text-xs">
@@ -331,41 +345,37 @@ export default function Players() {
       <Dialog open={!!selectedPlayer} onOpenChange={() => setSelectedPlayer(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           {selectedPlayer && (() => {
-            const l = getLedger(selectedPlayer);
-            const cfg = STATUS_CONFIG[l.status] || STATUS_CONFIG.paid;
-            const needsReminder = l.status !== 'paid';
+            const ledger = getLedger(selectedPlayer);
+            const needsReminder = ledger.status !== 'paid';
             return (
               <>
                 <DialogHeader>
-                  <DialogTitle className="text-xl">{selectedPlayer.full_name}</DialogTitle>
+                  <DialogTitle className="text-xl flex items-center gap-2">
+                    {selectedPlayer.full_name}
+                    <Badge variant="secondary" className="text-xs font-normal">
+                      {selectedPlayer.role === 'parent' ? 'Forelder' : 'Spiller'}
+                    </Badge>
+                  </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-5 pt-2">
-                  {/* Info */}
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Contact info */}
+                  <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <p className="text-xs text-slate-500">E-post</p>
-                      <p className="font-medium text-sm">{selectedPlayer.user_email}</p>
+                      <p className="font-medium">{selectedPlayer.user_email}</p>
                     </div>
                     <div>
                       <p className="text-xs text-slate-500">Telefon</p>
-                      <p className="font-medium text-sm">{selectedPlayer.phone || '–'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Rolle</p>
-                      <Badge variant="secondary" className="text-xs">{selectedPlayer.role === 'parent' ? 'Forelder' : 'Spiller'}</Badge>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">Ledger-status</p>
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.badgeClass}`}>{cfg.label}</span>
+                      <p className="font-medium">{selectedPlayer.phone || '–'}</p>
                     </div>
                   </div>
 
-                  {/* Ledger breakdown – "Kilder til saldo" */}
+                  {/* Ledger breakdown – canonical "Kilder til saldo" */}
                   <div>
-                    <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                    <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
                       <FileText className="w-4 h-4 text-emerald-500" /> Kilder til saldo
                     </h3>
-                    <PlayerLedgerDetail ledger={l} />
+                    <PlayerLedgerDetail ledger={ledger} />
                   </div>
 
                   {/* Actions */}
@@ -421,22 +431,9 @@ export default function Players() {
                 <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Saldo (NOK)</Label>
-                <Input type="number" step="0.01" value={form.balance} onChange={e => setForm({ ...form, balance: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={form.payment_status} onValueChange={v => setForm({ ...form, payment_status: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="paid">Betalt</SelectItem>
-                    <SelectItem value="partial">Delvis</SelectItem>
-                    <SelectItem value="unpaid">Ubetalt</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label>Startbalanse (NOK) <span className="text-slate-400 font-normal text-xs">– overskrives av krav/innbetalinger</span></Label>
+              <Input type="number" step="0.01" value={form.balance} onChange={e => setForm({ ...form, balance: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>Interne notater</Label>
