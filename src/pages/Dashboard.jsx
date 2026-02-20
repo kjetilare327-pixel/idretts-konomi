@@ -20,6 +20,7 @@ import PullToRefresh from '@/components/mobile/PullToRefresh';
 export default function Dashboard() {
   const { currentTeam, teams, loading: teamLoading, isTeamAdmin, playerProfile, refreshPlayerProfile } = useTeam();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const isAdmin = isTeamAdmin();
   const [showProfilePrompt, setShowProfilePrompt] = useState(true);
   const [showSetup, setShowSetup] = useState(true);
