@@ -101,7 +101,7 @@ function InnerLayout({ children, currentPageName }) {
   }
 
   return (
-    <div className={`min-h-screen flex ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
+    <div className={`h-screen flex overflow-hidden ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
       <style>{`
         :root {
           --brand: #10b981;
