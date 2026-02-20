@@ -339,7 +339,7 @@ export default function SettingsPage() {
                    currentTeam.subscription_status === 'trial' ? 'Prøveperiode' : 'Utløpt'}
                 </Badge>
               </p>
-              <p className="text-sm text-slate-500 mt-1">59 kr/mnd – Moms inkludert</p>
+              <p className="text-sm text-slate-500 mt-1">99 kr/mnd per lag – Moms inkludert</p>
             </div>
             {(currentTeam.subscription_status === 'trial' || currentTeam.subscription_status === 'expired') && (
               <Button className="bg-emerald-600 hover:bg-emerald-700">Oppgrader nå</Button>
