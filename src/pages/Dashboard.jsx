@@ -14,6 +14,7 @@ import StatCard from '@/components/dashboard/StatCard';
 import SubscriptionBanner from '@/components/dashboard/SubscriptionBanner';
 import ProfileCompletionPrompt from '@/components/onboarding/ProfileCompletionPrompt';
 import SetupProgress, { getCompletedSteps, isSetupComplete } from '@/components/onboarding/SetupProgress';
+import PullToRefresh from '@/components/mobile/PullToRefresh';
 
 export default function Dashboard() {
   const { currentTeam, teams, loading: teamLoading, isTeamAdmin, playerProfile, refreshPlayerProfile } = useTeam();

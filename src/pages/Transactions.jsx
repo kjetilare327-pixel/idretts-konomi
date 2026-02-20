@@ -28,6 +28,7 @@ import ReceiptScanner from '@/components/transactions/ReceiptScanner';
 import CSVImporter from '@/components/transactions/CSVImporter';
 import AiTransactionAssistant from '@/components/transactions/AiTransactionAssistant';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import PullToRefresh from '@/components/mobile/PullToRefresh';
 
 export default function Transactions() {
   const { currentTeam } = useTeam();
