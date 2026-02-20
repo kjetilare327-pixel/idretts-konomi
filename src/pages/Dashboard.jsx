@@ -63,6 +63,20 @@ export default function Dashboard() {
     ...CACHE_5MIN,
   });
 
+  const { data: sentMessages = [] } = useQuery({
+    queryKey: ['sent-messages-setup', currentTeam?.id],
+    queryFn: () => base44.entities.SentMessage.filter({ team_id: currentTeam.id }),
+    enabled: !!currentTeam && isAdmin,
+    ...CACHE_5MIN,
+  });
+
+  const completedSteps = useMemo(
+    () => getCompletedSteps(players, transactions, claims, sentMessages),
+    [players, transactions, claims, sentMessages]
+  );
+  const coreSetupDone = isCoreSetupDone(completedSteps);
+  const setupComplete = isSetupComplete(completedSteps);
+
   const stats = useMemo(() => {
     const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
