@@ -239,29 +239,35 @@ export default function Players() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <Card className="border-0 shadow-md dark:bg-slate-900">
-          <CardContent className="p-5">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <Card className="border-0 shadow-md dark:bg-slate-900 col-span-2 sm:col-span-1">
+          <CardContent className="p-4">
             <p className="text-xs text-slate-500">Totalt utestående</p>
-            <p className="text-2xl font-bold text-red-600">{formatNOK(summary.totalOwed)}</p>
+            <p className="text-xl font-bold text-red-600">{formatNOK(summary.totalOwed)}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-md dark:bg-slate-900">
-          <CardContent className="p-5">
+          <CardContent className="p-4">
             <p className="text-xs text-slate-500">Betalt</p>
-            <p className="text-2xl font-bold text-emerald-600">{summary.paid}</p>
+            <p className="text-xl font-bold text-emerald-600">{summary.paid}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-md dark:bg-slate-900">
-          <CardContent className="p-5">
-            <p className="text-xs text-slate-500">Delvis betalt</p>
-            <p className="text-2xl font-bold text-amber-600">{summary.partial}</p>
+          <CardContent className="p-4">
+            <p className="text-xs text-slate-500">Delvis</p>
+            <p className="text-xl font-bold text-amber-600">{summary.partial}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-md dark:bg-slate-900">
-          <CardContent className="p-5">
+          <CardContent className="p-4">
             <p className="text-xs text-slate-500">Ubetalt</p>
-            <p className="text-2xl font-bold text-red-600">{summary.unpaid}</p>
+            <p className="text-xl font-bold text-red-600">{summary.unpaid}</p>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-md dark:bg-slate-900">
+          <CardContent className="p-4">
+            <p className="text-xs text-slate-500">Forfalt</p>
+            <p className="text-xl font-bold text-rose-700">{summary.overdue}</p>
           </CardContent>
         </Card>
       </div>
