@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { TeamProvider, useTeam } from './components/shared/TeamContext';
