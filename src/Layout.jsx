@@ -30,6 +30,7 @@ import NotificationCenter from './components/notifications/NotificationCenter';
 import SupportChatbot from './components/support/SupportChatbot';
 import OfflineManager from './components/mobile/OfflineManager';
 import PushNotifications from './components/mobile/PushNotifications';
+import BottomNav from './components/mobile/BottomNav';
 import {
   DropdownMenu,
   DropdownMenuContent,
