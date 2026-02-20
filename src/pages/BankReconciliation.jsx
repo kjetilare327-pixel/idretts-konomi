@@ -91,22 +91,16 @@ export default function BankReconciliation() {
         </p>
       </div>
 
-      {/* AI Payment Matcher */}
-      <AIPaymentMatcher
-        teamId={currentTeam?.id}
+      {/* Manual match panel – shows unmatched payments + suggested claims */}
+      <ManualMatchPanel
         bankTransactions={bankTransactions}
         claims={claims}
         players={players}
+        teamId={currentTeam?.id}
       />
 
-      {/* Enhanced reconciliation visualizer */}
-      <ReconciliationVisualizer teamId={currentTeam?.id} />
-
-      {/* Basic reconciliation status overview */}
+      {/* Reconciliation status */}
       <ReconciliationStatus teamId={currentTeam?.id} />
-
-      {/* Matching rules */}
-      <MatchingRulesManager teamId={currentTeam?.id} />
 
       {/* AI-powered bank importer */}
       <BankImporter teamId={currentTeam?.id} />
