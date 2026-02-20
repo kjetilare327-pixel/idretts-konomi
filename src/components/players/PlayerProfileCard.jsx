@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,11 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Edit, Upload, Instagram, Facebook, Twitter, AtSign, Loader2 } from 'lucide-react';
+import { User, Edit, Upload, Instagram, Facebook, Twitter, AtSign, Loader2 } from 'lucide-react';
 import { formatNOK } from '@/components/shared/FormatUtils';
-import { computePlayerLedger } from '@/components/shared/useLedger';
+import { STATUS_CONFIG } from '@/components/shared/useLedger';
+import PlayerLedgerDetail from './PlayerLedgerDetail';
 
-export default function PlayerProfileCard({ player, onUpdate, isOwnProfile = false }) {
+export default function PlayerProfileCard({ player, ledger, onUpdate, isOwnProfile = false }) {
   const [editing, setEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
@@ -249,8 +249,8 @@ export default function PlayerProfileCard({ player, onUpdate, isOwnProfile = fal
         <div className="grid grid-cols-2 gap-4 pt-3 border-t">
           <div>
             <p className="text-xs text-slate-500">Saldo</p>
-            <p className={`font-semibold ${(ledgerBalance) > 0 ? 'text-red-600' : (ledgerBalance) < 0 ? 'text-emerald-600' : 'text-slate-600'}`}>
-              {ledgerBalance > 0 ? `Skylder ${formatNOK(ledgerBalance)}` : ledgerBalance < 0 ? `Kreditt ${formatNOK(-ledgerBalance)}` : 'Ingen utestående'}
+            <p className={`font-semibold ${player.balance > 0 ? 'text-red-600' : player.balance < 0 ? 'text-emerald-600' : 'text-slate-600'}`}>
+              {player.balance > 0 ? `Skylder ${formatNOK(player.balance)}` : player.balance < 0 ? `Kreditt ${formatNOK(-player.balance)}` : 'Ingen utestående'}
             </p>
           </div>
           {player.phone && (
