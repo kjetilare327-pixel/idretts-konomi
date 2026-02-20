@@ -86,6 +86,7 @@ export default function Transactions() {
   if (!currentTeam) return <p className="text-center py-12 text-slate-500">Velg et lag for å se transaksjoner.</p>;
 
   return (
+    <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -266,5 +267,6 @@ export default function Transactions() {
         </DialogContent>
       </Dialog>
     </div>
+    </PullToRefresh>
   );
 }
