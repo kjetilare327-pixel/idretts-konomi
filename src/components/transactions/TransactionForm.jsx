@@ -13,6 +13,7 @@ import { CalendarIcon, Upload, Loader2, X } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export default function TransactionForm({ teamId, editData, onClose, onSaved }) {
+  const qc = useQueryClient();
   const [form, setForm] = useState(editData || {
     type: 'expense',
     category: '',
@@ -21,8 +22,40 @@ export default function TransactionForm({ teamId, editData, onClose, onSaved }) 
     description: '',
     attachment_url: '',
   });
-  const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  const saveMutation = useMutation({
+    mutationFn: async (data) => {
+      if (editData?.id) {
+        return base44.entities.Transaction.update(editData.id, data);
+      } else {
+        return base44.entities.Transaction.create(data);
+      }
+    },
+    onMutate: async (data) => {
+      await qc.cancelQueries({ queryKey: ['transactions', teamId] });
+      const prev = qc.getQueryData(['transactions', teamId]);
+      if (editData?.id) {
+        qc.setQueryData(['transactions', teamId], old =>
+          old ? old.map(t => t.id === editData.id ? { ...t, ...data } : t) : old
+        );
+      } else {
+        qc.setQueryData(['transactions', teamId], old =>
+          old ? [{ ...data, id: `temp-${Date.now()}` }, ...old] : old
+        );
+      }
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['transactions', teamId], ctx.prev);
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['transactions', teamId] });
+    },
+    onSuccess: () => onSaved(),
+  });
+
+  const saving = saveMutation.isPending;
 
   const { data: allCategories = [] } = useQuery({
     queryKey: ['categories', teamId],
