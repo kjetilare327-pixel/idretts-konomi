@@ -60,8 +60,26 @@ const ADVANCED_NAV = [
   { name: 'Regnskap', page: 'AccountingIntegration', icon: FileBarChart, roles: ['admin', 'kasserer'] },
 ];
 
+function NavLink({ item, active, darkMode, onClick }) {
+  return (
+    <Link
+      to={createPageUrl(item.page)}
+      onClick={onClick}
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all touch-manipulation ${
+        active
+          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+          : darkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+      }`}
+    >
+      <item.icon className="w-5 h-5 shrink-0" />
+      {item.name}
+    </Link>
+  );
+}
+
 function InnerLayout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const { currentTeam, teams, selectTeam, user, isTeamAdmin } = useTeam();
   const { darkMode, toggleDark } = useTheme();
   const isAdmin = isTeamAdmin();
@@ -73,6 +91,7 @@ function InnerLayout({ children, currentPageName }) {
   };
   
   const userRole = getUserRole();
+  const activeAdvanced = ADVANCED_NAV.some(i => i.page === currentPageName);
 
   const noLayoutPages = ['Onboarding', 'GdprConsent'];
   if (noLayoutPages.includes(currentPageName)) {
