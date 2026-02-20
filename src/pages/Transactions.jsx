@@ -266,7 +266,7 @@ export default function Transactions() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
     </PullToRefresh>
   );
 }
