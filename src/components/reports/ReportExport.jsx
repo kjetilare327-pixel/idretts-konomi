@@ -41,84 +41,50 @@ export default function ReportExport({ data, reportType, teamName, startDate, en
     a.remove();
   };
 
+  const safeText = (doc, text, x, y) => {
+    const str = text == null ? '' : String(text);
+    doc.text(str, x, y);
+  };
+
   const exportToPDF = () => {
     const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    
+
     // Header
     doc.setFontSize(20);
-    doc.text(teamName, 20, 20);
-    
+    safeText(doc, resolvedTeamName, 20, 20);
+
     doc.setFontSize(14);
-    doc.text(getReportTitle(), 20, 30);
-    
+    safeText(doc, getReportTitle(), 20, 30);
+
     doc.setFontSize(10);
-    doc.text(`Periode: ${formatDate(startDate)} - ${formatDate(endDate)}`, 20, 38);
-    doc.text(`Generert: ${new Date().toLocaleDateString('nb-NO')}`, 20, 44);
-    
-    let y = 55;
-    
-    if (reportType === 'budget_vs_actual') {
-      doc.setFontSize(12);
-      doc.text('Budsjett vs. Faktisk', 20, y);
-      y += 10;
-      
-      doc.setFontSize(9);
-      data.forEach(row => {
-        if (y > 270) {
-          doc.addPage();
-          y = 20;
-        }
-        
-        doc.text(`${row.category} (${row.type === 'income' ? 'Inntekt' : 'Utgift'})`, 20, y);
-        doc.text(`Budsjett: ${formatNOK(row.budgeted)}`, 80, y);
-        doc.text(`Faktisk: ${formatNOK(row.actual)}`, 130, y);
-        doc.text(`Avvik: ${formatNOK(row.variance)} (${row.variancePercent.toFixed(1)}%)`, 170, y);
-        y += 8;
-      });
-    } else if (reportType === 'transactions') {
-      doc.setFontSize(12);
-      doc.text('Transaksjoner', 20, y);
-      y += 10;
-      
-      doc.setFontSize(9);
-      data.forEach(row => {
-        if (y > 270) {
-          doc.addPage();
-          y = 20;
-        }
-        
-        doc.text(formatDate(row.date), 20, y);
-        doc.text(row.category, 50, y);
-        doc.text(row.type === 'income' ? 'Inn' : 'Ut', 90, y);
-        doc.text(formatNOK(row.amount), 120, y);
-        y += 7;
-      });
-    } else if (reportType === 'cashflow') {
-      doc.setFontSize(12);
-      doc.text('Cashflow-prognose', 20, y);
-      y += 10;
-      
-      doc.setFontSize(9);
-      data.forEach(row => {
-        if (y > 270) {
-          doc.addPage();
-          y = 20;
-        }
-        
-        doc.text(row.month, 20, y);
-        doc.text(`Inn: ${formatNOK(row.income)}`, 60, y);
-        doc.text(`Ut: ${formatNOK(row.expense)}`, 110, y);
-        doc.text(`Saldo: ${formatNOK(row.balance)}`, 150, y);
-        y += 7;
-      });
-    }
-    
-    doc.save(`${reportType}_${new Date().toISOString().split('T')[0]}.pdf`);
+    safeText(doc, `Generert: ${new Date().toLocaleDateString('nb-NO')}`, 20, 38);
+
+    let y = 50;
+
+    // Transactions mode (default when called from Reports page)
+    const rows = resolvedData;
+    doc.setFontSize(12);
+    safeText(doc, 'Transaksjoner', 20, y);
+    y += 10;
+
+    doc.setFontSize(9);
+    rows.forEach(row => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      safeText(doc, formatDate(row.date) || '', 20, y);
+      safeText(doc, row.category || '', 55, y);
+      safeText(doc, row.type === 'income' ? 'Inntekt' : 'Utgift', 100, y);
+      safeText(doc, formatNOK(row.amount || 0), 140, y);
+      y += 7;
+    });
+
+    doc.save(`rapport_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const getReportTitle = () => {
-    switch (reportType) {
+    switch (resolvedType) {
       case 'budget_vs_actual': return 'Budsjett vs. Faktisk Rapport';
       case 'transactions': return 'Transaksjonsrapport';
       case 'cashflow': return 'Cashflow-prognose';
