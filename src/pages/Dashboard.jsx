@@ -184,16 +184,24 @@ export default function Dashboard() {
       )}
 
       {isAdmin && (
-        <CustomDashboardKPIs transactions={transactions} budgets={budgets} claims={claims} players={players} />
+        <FeatureGate coreSetupDone={coreSetupDone} label="tilpassede KPI-er">
+          <CustomDashboardKPIs transactions={transactions} budgets={budgets} claims={claims} players={players} />
+        </FeatureGate>
       )}
 
       <AiHint teamId={currentTeam?.id} />
 
-      {/* ReferralKpiWidget removed – finance-only dashboard */}
+      {isAdmin && (
+        <FeatureGate coreSetupDone={coreSetupDone} label="KPI-dashboard">
+          <KpiDashboard transactions={transactions} budgets={budgets} claims={claims} />
+        </FeatureGate>
+      )}
 
-      {isAdmin && <KpiDashboard transactions={transactions} budgets={budgets} claims={claims} />}
-
-      {isAdmin && <CashFlowForecastChart transactions={transactions} budgets={budgets} />}
+      {isAdmin && (
+        <FeatureGate coreSetupDone={coreSetupDone} label="kontantstrømprognose">
+          <CashFlowForecastChart transactions={transactions} budgets={budgets} />
+        </FeatureGate>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
