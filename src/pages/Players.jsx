@@ -109,7 +109,6 @@ export default function Players() {
       user_email: form.user_email,
       role: form.role,
       balance: Number(form.balance) || 0,
-      payment_status: form.payment_status,
       phone: form.phone,
       notes: form.notes,
     };
