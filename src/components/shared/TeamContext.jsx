@@ -20,12 +20,16 @@ export function TeamProvider({ children }) {
       const u = await base44.auth.me();
       setUser(u);
       
-      // Check if admin
+      // Only load teams this user is a member of
       const allTeams = await base44.entities.Team.list();
-      const adminTeams = allTeams.filter(t => 
+      const myTeams = allTeams.filter(t =>
+        t.created_by === u.email ||
+        t.members?.some(m => m.email === u.email)
+      );
+      const adminTeams = myTeams.filter(t =>
         t.members?.some(m => m.email === u.email && m.role === 'admin')
       );
-      setTeams(allTeams);
+      setTeams(myTeams);
       setIsAdmin(adminTeams.length > 0);
       
       const savedTeamId = localStorage.getItem('idrettsøkonomi_team_id');
