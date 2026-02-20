@@ -416,11 +416,13 @@ export default function Players() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Fullt navn *</Label>
-                <Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} />
+                <Input value={form.full_name} onChange={e => { setForm({ ...form, full_name: e.target.value }); setFormErrors(fe => ({ ...fe, full_name: undefined })); }} className={formErrors.full_name ? 'border-red-400' : ''} />
+                {formErrors.full_name && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{formErrors.full_name}</p>}
               </div>
               <div className="space-y-2">
                 <Label>E-post *</Label>
-                <Input type="email" value={form.user_email} onChange={e => setForm({ ...form, user_email: e.target.value })} />
+                <Input type="email" value={form.user_email} onChange={e => { setForm({ ...form, user_email: e.target.value }); setFormErrors(fe => ({ ...fe, user_email: undefined })); }} className={formErrors.user_email ? 'border-red-400' : ''} />
+                {formErrors.user_email && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{formErrors.user_email}</p>}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -436,7 +438,8 @@ export default function Players() {
               </div>
               <div className="space-y-2">
                 <Label>Telefon</Label>
-                <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+                <Input value={form.phone} onChange={e => { setForm({ ...form, phone: e.target.value }); setFormErrors(fe => ({ ...fe, phone: undefined })); }} className={formErrors.phone ? 'border-red-400' : ''} placeholder="+47 12345678" />
+                {formErrors.phone && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{formErrors.phone}</p>}
               </div>
             </div>
             <div className="space-y-2">
