@@ -93,8 +93,7 @@ export default function Players() {
       full_name: p.full_name, 
       user_email: p.user_email, 
       role: p.role, 
-      balance: String(p.balance || 0), 
-      payment_status: p.payment_status || 'paid',
+      balance: String(p.balance || 0),
       phone: p.phone || '',
       notes: p.notes || ''
     });
