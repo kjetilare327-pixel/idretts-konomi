@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTeam } from '@/components/shared/TeamContext';
 import { formatNOK } from '@/components/shared/FormatUtils';
+import { useLedger, STATUS_CONFIG } from '@/components/shared/useLedger';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,8 +25,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Users, Plus, Pencil, Trash2, Mail, CheckCircle, AlertCircle, Clock, Loader2, Eye, EyeOff, Bell, FileText, TrendingDown, TrendingUp } from 'lucide-react';
+import { Users, Plus, Pencil, Trash2, Mail, CheckCircle, AlertCircle, Clock, Loader2, Bell, FileText } from 'lucide-react';
 import PlayerProfileCard from '../components/players/PlayerProfileCard';
+import PlayerLedgerDetail from '../components/players/PlayerLedgerDetail';
 
 export default function Players() {
   const { currentTeam, isTeamAdmin, playerProfile } = useTeam();
