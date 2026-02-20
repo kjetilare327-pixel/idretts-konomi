@@ -31,6 +31,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const isAdmin = isTeamAdmin();
   const [showProfilePrompt, setShowProfilePrompt] = useState(true);
+  const [showSetup, setShowSetup] = useState(true);
 
   const CACHE_5MIN = { staleTime: 5 * 60 * 1000, gcTime: 10 * 60 * 1000 };
 
