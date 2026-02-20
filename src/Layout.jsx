@@ -278,9 +278,18 @@ function InnerLayout({ children, currentPageName }) {
 
       {/* Main content */}
       <main className="flex-1 lg:ml-64 pt-14 lg:pt-0 min-h-screen">
-        <div className="p-4 md:p-6 lg:p-8 pb-24 lg:pb-8 max-w-7xl mx-auto">
-          {children}
-        </div>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={currentPageName}
+            initial={{ x: 20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -20, opacity: 0 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="p-4 md:p-6 lg:p-8 pb-24 lg:pb-8 max-w-7xl mx-auto"
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Bottom nav – mobile only */}
