@@ -15,12 +15,15 @@ import {
   Sun,
   Moon,
   ChevronDown,
+  ChevronRight,
   LogOut,
   Shield,
   Users,
   ScrollText,
   Mail,
   Building2,
+  Sparkles,
+  Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import NotificationCenter from './components/notifications/NotificationCenter';
