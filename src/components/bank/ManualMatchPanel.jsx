@@ -49,38 +49,49 @@ export default function ManualMatchPanel({ bankTransactions = [], claims = [], p
     });
   }, [unmatched, claims, playerMap]);
 
+  const matchMutation = useMutation({
+    mutationFn: async ({ bankTx, claim, noteText }) => {
+      await base44.entities.BankTransaction.update(bankTx.id, { reconciled: true, matched_claim_id: claim.id });
+      await base44.entities.Claim.update(claim.id, { status: 'paid' });
+      await base44.entities.Payment.create({
+        team_id: teamId,
+        player_id: claim.player_id,
+        claim_id: claim.id,
+        amount: bankTx.amount,
+        payment_method: 'bank_transfer',
+        status: 'completed',
+        paid_at: new Date(bankTx.transaction_date).toISOString(),
+        notes: noteText || `Matchet mot banktransaksjon: ${bankTx.description}`,
+      });
+    },
+    onMutate: async ({ bankTx, claim }) => {
+      await qc.cancelQueries({ queryKey: ['bankTransactions', teamId] });
+      await qc.cancelQueries({ queryKey: ['claims', teamId] });
+      const prevBankTx = qc.getQueryData(['bankTransactions', teamId]);
+      const prevClaims = qc.getQueryData(['claims', teamId]);
+      qc.setQueryData(['bankTransactions', teamId], old =>
+        old ? old.map(bt => bt.id === bankTx.id ? { ...bt, reconciled: true } : bt) : old
+      );
+      qc.setQueryData(['claims', teamId], old =>
+        old ? old.map(c => c.id === claim.id ? { ...c, status: 'paid' } : c) : old
+      );
+      return { prevBankTx, prevClaims };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prevBankTx) qc.setQueryData(['bankTransactions', teamId], ctx.prevBankTx);
+      if (ctx?.prevClaims) qc.setQueryData(['claims', teamId], ctx.prevClaims);
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['bankTransactions', teamId] });
+      qc.invalidateQueries({ queryKey: ['claims', teamId] });
+      qc.invalidateQueries({ queryKey: ['payments', teamId] });
+    },
+  });
+
   const handleConfirm = async () => {
     if (!confirming) return;
     setSaving(true);
-    const { bankTx, claim } = confirming;
-
-    // 1. Mark bank transaction as reconciled
-    await base44.entities.BankTransaction.update(bankTx.id, {
-      reconciled: true,
-      matched_claim_id: claim.id,
-    });
-
-    // 2. Update claim status to paid
-    await base44.entities.Claim.update(claim.id, {
-      status: 'paid',
-    });
-
-    // 3. Create a Payment record
-    await base44.entities.Payment.create({
-      team_id: teamId,
-      player_id: claim.player_id,
-      claim_id: claim.id,
-      amount: bankTx.amount,
-      payment_method: 'bank_transfer',
-      status: 'completed',
-      paid_at: new Date(bankTx.transaction_date).toISOString(),
-      notes: note || `Matchet mot banktransaksjon: ${bankTx.description}`,
-    });
-
-    qc.invalidateQueries({ queryKey: ['bankTransactions', teamId] });
-    qc.invalidateQueries({ queryKey: ['claims', teamId] });
-    qc.invalidateQueries({ queryKey: ['payments', teamId] });
-
+    await matchMutation.mutateAsync({ bankTx: confirming.bankTx, claim: confirming.claim, noteText: note });
     setSaving(false);
     setConfirming(null);
     setNote('');
