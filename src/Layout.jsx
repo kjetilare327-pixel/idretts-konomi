@@ -249,21 +249,19 @@ function InnerLayout({ children, currentPageName }) {
                 ))}
               </div>
             )}
-            {NAV_ITEMS.filter(item => !item.roles || item.roles.includes(userRole)).map(item => (
-              <Link
-                key={item.page}
-                to={createPageUrl(item.page)}
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium ${
-                  currentPageName === item.page
-                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
-                    : ''
-                }`}
-              >
-                <item.icon className="w-5 h-5" />
-                {item.name}
-              </Link>
+            {CORE_NAV.filter(item => !item.roles || item.roles.includes(userRole)).map(item => (
+              <NavLink key={item.page} item={item} active={currentPageName === item.page} darkMode={darkMode} onClick={() => setMobileOpen(false)} />
             ))}
+            {ADVANCED_NAV.some(i => !i.roles || i.roles.includes(userRole)) && (
+              <>
+                <p className="px-3 pt-2 pb-1 text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" /> Avansert <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-amber-100 text-amber-700 font-bold">Pro</span>
+                </p>
+                {ADVANCED_NAV.filter(item => !item.roles || item.roles.includes(userRole)).map(item => (
+                  <NavLink key={item.page} item={item} active={currentPageName === item.page} darkMode={darkMode} onClick={() => setMobileOpen(false)} />
+                ))}
+              </>
+            )}
             <div className="pt-2 border-t border-inherit flex items-center justify-between">
               <button onClick={toggleDark} className="text-sm flex items-center gap-2 px-3 py-2">
                 {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />} {darkMode ? 'Lyst' : 'Mørkt'}
