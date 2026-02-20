@@ -16,6 +16,8 @@ import TopExpenses from '@/components/dashboard/TopExpenses';
 import SubscriptionBanner from '@/components/dashboard/SubscriptionBanner';
 import AiHint from '@/components/dashboard/AiHint';
 import ProfileCompletionPrompt from '@/components/onboarding/ProfileCompletionPrompt';
+import SetupProgress, { getCompletedSteps, isSetupComplete, isCoreSetupDone } from '@/components/onboarding/SetupProgress';
+import FeatureGate from '@/components/onboarding/FeatureGate';
 import PushNotifications from '@/components/mobile/PushNotifications';
 import FinancialSummaryWidget from '@/components/dashboard/FinancialSummaryWidget';
 import OutstandingClaimsWidget from '@/components/dashboard/OutstandingClaimsWidget';
