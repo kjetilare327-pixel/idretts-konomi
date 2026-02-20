@@ -61,7 +61,6 @@ import Onboarding from './pages/Onboarding';
 import PaymentPortal from './pages/PaymentPortal';
 import Players from './pages/Players';
 import ReferralProgram from './pages/ReferralProgram';
-import Reports from './pages/Reports';
 import SettingsPage from './pages/SettingsPage';
 import Sponsors from './pages/Sponsors';
 import Transactions from './pages/Transactions';
@@ -84,7 +83,6 @@ export const PAGES = {
     "PaymentPortal": PaymentPortal,
     "Players": Players,
     "ReferralProgram": ReferralProgram,
-    "Reports": Reports,
     "SettingsPage": SettingsPage,
     "Sponsors": Sponsors,
     "Transactions": Transactions,
