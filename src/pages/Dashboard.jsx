@@ -94,7 +94,16 @@ export default function Dashboard() {
     return null;
   }
 
+  const handleRefresh = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['transactions', currentTeam?.id] }),
+      queryClient.invalidateQueries({ queryKey: ['claims', currentTeam?.id] }),
+      queryClient.invalidateQueries({ queryKey: ['players', currentTeam?.id] }),
+    ]);
+  };
+
   return (
+    <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
