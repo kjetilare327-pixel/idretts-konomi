@@ -154,6 +154,13 @@ export default function Players() {
     setSendingReminder(null);
   };
 
+  const STATUS_ICONS = {
+    paid: CheckCircle,
+    partial: Clock,
+    unpaid: AlertCircle,
+    overdue: AlertCircle,
+  };
+
   if (!currentTeam) return <p className="text-center py-12 text-slate-500">Velg et lag for å se spillere.</p>;
 
   // Player view (ikke admin)
@@ -168,8 +175,7 @@ export default function Players() {
         {/* My profile */}
         {playerProfile && (
           <PlayerProfileCard 
-            player={playerProfile}
-            ledger={getLedger(playerProfile)}
+            player={playerProfile} 
             onUpdate={() => queryClient.invalidateQueries({ queryKey: ['players'] })} 
             isOwnProfile={true}
           />
@@ -193,17 +199,21 @@ export default function Players() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {players.map((p, i) => {
-                  const l = getLedger(p);
-                  const cfg = STATUS_CONFIG[l.status] || STATUS_CONFIG.paid;
+                {players.filter(p => p.status !== 'archived').map((p, i) => {
+                  const ledger = getLedger(p);
+                  const cfg = STATUS_CONFIG[ledger.status] || STATUS_CONFIG.paid;
+                  const Icon = STATUS_ICONS[ledger.status] || CheckCircle;
                   return (
                     <TableRow key={p.id}>
                       <TableCell>{showNames ? p.full_name : `Spiller ${String.fromCharCode(65 + i)}`}</TableCell>
                       <TableCell>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badgeClass}`}>{cfg.label}</span>
+                        <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badgeClass}`}>
+                          <Icon className="w-3 h-3" />
+                          {cfg.label}
+                        </span>
                       </TableCell>
-                      <TableCell className={`text-right font-medium ${l.balance > 0 ? 'text-red-600' : l.balance < 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                        {l.balance > 0 ? `+${formatNOK(l.balance)}` : l.balance < 0 ? formatNOK(l.balance) : '–'}
+                      <TableCell className={`text-right font-medium ${ledger.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                        {ledger.balance > 0 ? `+${formatNOK(ledger.balance)}` : ledger.balance < 0 ? formatNOK(ledger.balance) : '–'}
                       </TableCell>
                     </TableRow>
                   );
@@ -283,18 +293,22 @@ export default function Players() {
               ) : players.length === 0 ? (
                 <TableRow><TableCell colSpan={6} className="text-center py-12 text-slate-400">Ingen spillere lagt til</TableCell></TableRow>
               ) : players.filter(p => p.status !== 'archived').map(p => {
-                const l = getLedger(p);
-                const cfg = STATUS_CONFIG[l.status] || STATUS_CONFIG.paid;
-                const needsReminder = l.status === 'unpaid' || l.status === 'partial' || l.status === 'overdue';
+                const ledger = getLedger(p);
+                const cfg = STATUS_CONFIG[ledger.status] || STATUS_CONFIG.paid;
+                const Icon = STATUS_ICONS[ledger.status] || CheckCircle;
+                const needsReminder = ledger.status !== 'paid';
                 return (
                   <TableRow key={p.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 cursor-pointer" onClick={() => setSelectedPlayer(p)}>
                     <TableCell className="font-medium">{p.full_name}</TableCell>
                     <TableCell className="text-sm text-slate-500">{p.user_email}</TableCell>
                     <TableCell>
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.badgeClass}`}>{cfg.label}</span>
+                      <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badgeClass}`}>
+                        <Icon className="w-3 h-3" />
+                        {cfg.label}
+                      </span>
                     </TableCell>
-                    <TableCell className={`text-right font-semibold ${l.balance > 0 ? 'text-red-600' : l.balance < 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                      {l.balance > 0 ? `+${formatNOK(l.balance)}` : l.balance < 0 ? formatNOK(l.balance) : '–'}
+                    <TableCell className={`text-right font-semibold ${ledger.balance > 0 ? 'text-red-600' : ledger.balance < 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      {ledger.balance > 0 ? `+${formatNOK(ledger.balance)}` : ledger.balance < 0 ? formatNOK(ledger.balance) : '–'}
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="text-xs">
@@ -330,109 +344,58 @@ export default function Players() {
       {/* Player details modal */}
       <Dialog open={!!selectedPlayer} onOpenChange={() => setSelectedPlayer(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          {selectedPlayer && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-xl">{selectedPlayer.full_name}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-5 pt-2">
-                {/* Info */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-slate-500">E-post</p>
-                    <p className="font-medium text-sm">{selectedPlayer.user_email}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">Telefon</p>
-                    <p className="font-medium text-sm">{selectedPlayer.phone || '–'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">Rolle</p>
-                    <Badge variant="secondary" className="text-xs">{selectedPlayer.role === 'parent' ? 'Forelder' : 'Spiller'}</Badge>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">Status</p>
-                    <div className="flex items-center gap-2">
-                      {(() => {
-                        const config = statusConfig[selectedPlayer.payment_status] || statusConfig.paid;
-                        const Icon = config.icon;
-                        return (
-                          <>
-                            <Icon className={`w-4 h-4 ${config.color}`} />
-                            <span className="text-xs font-medium">{config.label}</span>
-                          </>
-                        );
-                      })()}
+          {selectedPlayer && (() => {
+            const ledger = getLedger(selectedPlayer);
+            const needsReminder = ledger.status !== 'paid';
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="text-xl flex items-center gap-2">
+                    {selectedPlayer.full_name}
+                    <Badge variant="secondary" className="text-xs font-normal">
+                      {selectedPlayer.role === 'parent' ? 'Forelder' : 'Spiller'}
+                    </Badge>
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-5 pt-2">
+                  {/* Contact info */}
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-xs text-slate-500">E-post</p>
+                      <p className="font-medium">{selectedPlayer.user_email}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Telefon</p>
+                      <p className="font-medium">{selectedPlayer.phone || '–'}</p>
                     </div>
                   </div>
-                </div>
 
-                {/* Balance */}
-                <Card className={`border-0 ${selectedPlayer.balance > 0 ? 'bg-red-50 dark:bg-red-500/10' : 'bg-emerald-50 dark:bg-emerald-500/10'}`}>
-                  <CardContent className="p-4">
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Saldo</p>
-                    <p className={`text-3xl font-bold ${selectedPlayer.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                      {selectedPlayer.balance > 0 ? `Skylder ${formatNOK(selectedPlayer.balance)}` : selectedPlayer.balance < 0 ? `Kreditt ${formatNOK(-selectedPlayer.balance)}` : 'Ingen utestående'}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                {/* Transactions */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-sm flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-emerald-500" /> Transaksjonshistorikk
+                  {/* Ledger breakdown – canonical "Kilder til saldo" */}
+                  <div>
+                    <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                      <FileText className="w-4 h-4 text-emerald-500" /> Kilder til saldo
                     </h3>
+                    <PlayerLedgerDetail ledger={ledger} />
                   </div>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {allTransactions
-                      .filter(tx => tx.player_id === selectedPlayer.id)
-                      .sort((a, b) => new Date(b.date) - new Date(a.date))
-                      .map(tx => (
-                        <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-sm">
-                          <div className="flex items-center gap-3">
-                            {tx.type === 'income' ? (
-                              <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
-                                <TrendingDown className="w-4 h-4 text-emerald-600" />
-                              </div>
-                            ) : (
-                              <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-500/20 flex items-center justify-center">
-                                <TrendingUp className="w-4 h-4 text-red-600" />
-                              </div>
-                            )}
-                            <div>
-                              <p className="font-medium">{tx.description || tx.category}</p>
-                              <p className="text-xs text-slate-500">{new Date(tx.date).toLocaleDateString('nb-NO')}</p>
-                            </div>
-                          </div>
-                          <p className={`font-semibold ${tx.type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
-                            {tx.type === 'income' ? '-' : '+'}{formatNOK(tx.amount)}
-                          </p>
-                        </div>
-                      ))}
-                    {allTransactions.filter(tx => tx.player_id === selectedPlayer.id).length === 0 && (
-                      <p className="text-center py-8 text-slate-400 text-sm">Ingen transaksjoner ennå</p>
-                    )}
-                  </div>
+
+                  {/* Actions */}
+                  {needsReminder && (
+                    <Button onClick={() => handleSendReminder(selectedPlayer)} disabled={sendingReminder === selectedPlayer.id} className="w-full bg-amber-600 hover:bg-amber-700 gap-2">
+                      {sendingReminder === selectedPlayer.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+                      Send betalingspåminnelse
+                    </Button>
+                  )}
+
+                  {selectedPlayer.notes && (
+                    <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-sm">
+                      <p className="text-xs text-slate-500 mb-1">Notater</p>
+                      <p>{selectedPlayer.notes}</p>
+                    </div>
+                  )}
                 </div>
-
-                {/* Actions */}
-                {(selectedPlayer.payment_status === 'unpaid' || selectedPlayer.payment_status === 'partial') && (
-                  <Button onClick={() => handleSendReminder(selectedPlayer)} disabled={sendingReminder === selectedPlayer.id} className="w-full bg-amber-600 hover:bg-amber-700 gap-2">
-                    {sendingReminder === selectedPlayer.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
-                    Send betalingspåminnelse
-                  </Button>
-                )}
-
-                {selectedPlayer.notes && (
-                  <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-sm">
-                    <p className="text-xs text-slate-500 mb-1">Notater</p>
-                    <p>{selectedPlayer.notes}</p>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
