@@ -77,7 +77,7 @@ export function TeamProvider({ children }) {
     ) : allTeams;
     setTeams(myTeams);
     if (currentTeam) {
-      const updated = allTeams.find(t => t.id === currentTeam.id);
+      const updated = myTeams.find(t => t.id === currentTeam.id);
       if (updated) setCurrentTeam(updated);
     }
   };
