@@ -53,6 +53,11 @@
   body { @apply bg-background text-foreground; }
 }
 
+/* Prevent overscroll bounce on mobile */
+body {
+  overscroll-behavior-y: none;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

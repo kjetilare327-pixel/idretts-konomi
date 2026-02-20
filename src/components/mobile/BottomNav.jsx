@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { LayoutDashboard, Receipt, Users, FileBarChart, Settings } from 'lucide-react';
 import { useTheme } from '@/components/shared/ThemeContext';
@@ -14,6 +14,14 @@ const NAV_ITEMS = [
 
 export default function BottomNav({ currentPageName }) {
   const { darkMode } = useTheme();
+  const navigate = useNavigate();
+
+  const handleNavClick = (e, item) => {
+    if (currentPageName === item.page) {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   return (
     <nav
@@ -28,6 +36,7 @@ export default function BottomNav({ currentPageName }) {
           <Link
             key={item.page}
             to={createPageUrl(item.page)}
+            onClick={(e) => handleNavClick(e, item)}
             className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-[10px] font-medium transition-colors ${
               active
                 ? 'text-emerald-600 dark:text-emerald-400'
