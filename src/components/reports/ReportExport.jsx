@@ -4,8 +4,12 @@ import { FileDown, FileText, FileSpreadsheet } from 'lucide-react';
 import { formatNOK, formatDate } from '@/components/shared/FormatUtils';
 import jsPDF from 'jspdf';
 
-export default function ReportExport({ data, reportType, teamName, startDate, endDate }) {
-  
+export default function ReportExport({ data, reportType, teamName, startDate, endDate, transactions, budgets }) {
+  // Support being called from Reports page with transactions/budgets props
+  const resolvedData = data || transactions || [];
+  const resolvedType = reportType || 'transactions';
+  const resolvedTeamName = teamName || 'Rapport';
+
   const exportToCSV = () => {
     let csv = '';
     
