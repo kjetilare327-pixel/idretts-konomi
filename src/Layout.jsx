@@ -38,8 +38,8 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
-// Finance-only nav – non-economy items removed
-const NAV_ITEMS = [
+// Core nav items
+const CORE_NAV = [
   { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'kasserer', 'styreleder', 'revisor', 'player', 'parent'] },
   { name: 'Mine betalinger', page: 'PaymentPortal', icon: Receipt, roles: ['player', 'parent'] },
   { name: 'Spillere', page: 'Players', icon: Users, roles: ['admin', 'kasserer', 'styreleder', 'revisor'] },
@@ -47,13 +47,17 @@ const NAV_ITEMS = [
   { name: 'Bankavstemming', page: 'BankReconciliation', icon: Receipt, roles: ['admin', 'kasserer'] },
   { name: 'Budsjett', page: 'Budget', icon: PiggyBank, roles: ['admin', 'kasserer', 'revisor'] },
   { name: 'Fakturering', page: 'InvoiceAutomation', icon: Receipt, roles: ['admin', 'kasserer'] },
-  { name: 'Sponsorer', page: 'Sponsors', icon: Building2, roles: ['admin', 'kasserer', 'styreleder'] },
   { name: 'Rapporter', page: 'Reports', icon: FileBarChart, roles: ['admin', 'kasserer', 'styreleder', 'revisor'] },
-  { name: 'Avanserte analyser', page: 'AdvancedAnalytics', icon: FileBarChart, roles: ['admin', 'kasserer', 'styreleder'] },
   { name: 'Kommunikasjon', page: 'Communications', icon: Mail, roles: ['admin', 'kasserer'] },
   { name: 'Revisjonslogg', page: 'AuditLog', icon: ScrollText, roles: ['admin', 'styreleder', 'revisor'] },
-  { name: 'Regnskap', page: 'AccountingIntegration', icon: FileBarChart, roles: ['admin', 'kasserer'] },
   { name: 'Innstillinger', page: 'SettingsPage', icon: Settings, roles: ['admin', 'kasserer', 'styreleder'] },
+];
+
+// Advanced (Pro) nav items – shown in collapsible section
+const ADVANCED_NAV = [
+  { name: 'Avanserte analyser', page: 'AdvancedAnalytics', icon: FileBarChart, roles: ['admin', 'kasserer', 'styreleder'] },
+  { name: 'Sponsorer', page: 'Sponsors', icon: Building2, roles: ['admin', 'kasserer', 'styreleder'] },
+  { name: 'Regnskap', page: 'AccountingIntegration', icon: FileBarChart, roles: ['admin', 'kasserer'] },
 ];
 
 function InnerLayout({ children, currentPageName }) {
