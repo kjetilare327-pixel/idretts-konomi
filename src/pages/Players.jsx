@@ -291,22 +291,23 @@ export default function Players() {
                 <TableRow><TableCell colSpan={6} className="text-center py-12"><Loader2 className="w-6 h-6 animate-spin mx-auto text-emerald-500" /></TableCell></TableRow>
               ) : players.length === 0 ? (
                 <TableRow><TableCell colSpan={6} className="text-center py-12 text-slate-400">Ingen spillere lagt til</TableCell></TableRow>
-              ) : players.map(p => {
-                const config = statusConfig[p.payment_status] || statusConfig.paid;
-                const Icon = config.icon;
-                const needsReminder = p.payment_status === 'unpaid' || p.payment_status === 'partial';
+              ) : players.filter(p => p.status !== 'archived').map(p => {
+                const ledger = getLedger(p);
+                const cfg = STATUS_CONFIG[ledger.status] || STATUS_CONFIG.paid;
+                const Icon = STATUS_ICONS[ledger.status] || CheckCircle;
+                const needsReminder = ledger.status !== 'paid';
                 return (
                   <TableRow key={p.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 cursor-pointer" onClick={() => setSelectedPlayer(p)}>
                     <TableCell className="font-medium">{p.full_name}</TableCell>
                     <TableCell className="text-sm text-slate-500">{p.user_email}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Icon className={`w-4 h-4 ${config.color}`} />
-                        <span className="text-xs">{config.label}</span>
-                      </div>
+                      <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badgeClass}`}>
+                        <Icon className="w-3 h-3" />
+                        {cfg.label}
+                      </span>
                     </TableCell>
-                    <TableCell className={`text-right font-semibold ${p.balance > 0 ? 'text-red-600' : p.balance < 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                      {p.balance > 0 ? `+${formatNOK(p.balance)}` : p.balance < 0 ? formatNOK(p.balance) : '–'}
+                    <TableCell className={`text-right font-semibold ${ledger.balance > 0 ? 'text-red-600' : ledger.balance < 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      {ledger.balance > 0 ? `+${formatNOK(ledger.balance)}` : ledger.balance < 0 ? formatNOK(ledger.balance) : '–'}
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="text-xs">
