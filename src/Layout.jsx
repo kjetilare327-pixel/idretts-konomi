@@ -172,23 +172,35 @@ function InnerLayout({ children, currentPageName }) {
         )}
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto min-h-0">
-          {NAV_ITEMS.filter(item => !item.roles || item.roles.includes(userRole)).map(item => {
-            const active = currentPageName === item.page;
-            return (
-              <Link
-                key={item.page}
-                to={createPageUrl(item.page)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all touch-manipulation ${
-                  active
-                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
-                    : darkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          {CORE_NAV.filter(item => !item.roles || item.roles.includes(userRole)).map(item => (
+            <NavLink key={item.page} item={item} active={currentPageName === item.page} darkMode={darkMode} />
+          ))}
+
+          {/* Advanced / Pro section */}
+          {ADVANCED_NAV.some(i => !i.roles || i.roles.includes(userRole)) && (
+            <div className="pt-2">
+              <button
+                onClick={() => setAdvancedOpen(o => !o)}
+                className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors ${
+                  activeAdvanced
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : darkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'
                 }`}
               >
-                <item.icon className="w-5 h-5" />
-                {item.name}
-              </Link>
-            );
-          })}
+                <Sparkles className="w-3.5 h-3.5" />
+                Avansert
+                <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 font-bold">Pro</span>
+                <ChevronRight className={`w-3.5 h-3.5 ml-auto transition-transform ${advancedOpen || activeAdvanced ? 'rotate-90' : ''}`} />
+              </button>
+              {(advancedOpen || activeAdvanced) && (
+                <div className="mt-1 space-y-1 pl-2 border-l-2 border-slate-100 dark:border-slate-800 ml-2">
+                  {ADVANCED_NAV.filter(item => !item.roles || item.roles.includes(userRole)).map(item => (
+                    <NavLink key={item.page} item={item} active={currentPageName === item.page} darkMode={darkMode} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </nav>
 
         <div className="p-4 border-t border-inherit space-y-2 flex-shrink-0">
