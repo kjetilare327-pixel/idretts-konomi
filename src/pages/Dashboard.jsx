@@ -9,6 +9,7 @@ import { Wallet, TrendingUp, TrendingDown, AlertCircle, ArrowRight, Loader2, Loc
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 import StatCard from '@/components/dashboard/StatCard';
 import SubscriptionBanner from '@/components/dashboard/SubscriptionBanner';
