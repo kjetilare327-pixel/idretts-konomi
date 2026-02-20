@@ -154,10 +154,11 @@ export default function Players() {
     setSendingReminder(null);
   };
 
-  const statusConfig = {
-    paid: { icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-500/10', label: 'Betalt' },
-    partial: { icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-500/10', label: 'Delvis' },
-    unpaid: { icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-500/10', label: 'Ubetalt' },
+  const STATUS_ICONS = {
+    paid: CheckCircle,
+    partial: Clock,
+    unpaid: AlertCircle,
+    overdue: AlertCircle,
   };
 
   if (!currentTeam) return <p className="text-center py-12 text-slate-500">Velg et lag for å se spillere.</p>;
