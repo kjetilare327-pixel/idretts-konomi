@@ -34,11 +34,11 @@ export function TeamProvider({ children }) {
       
       const savedTeamId = localStorage.getItem('idrettsøkonomi_team_id');
       let selectedTeam = null;
-      if (savedTeamId && allTeams.find(t => t.id === savedTeamId)) {
-        selectedTeam = allTeams.find(t => t.id === savedTeamId);
-      } else if (allTeams.length > 0) {
-        selectedTeam = allTeams[0];
-        localStorage.setItem('idrettsøkonomi_team_id', allTeams[0].id);
+      if (savedTeamId && myTeams.find(t => t.id === savedTeamId)) {
+        selectedTeam = myTeams.find(t => t.id === savedTeamId);
+      } else if (myTeams.length > 0) {
+        selectedTeam = myTeams[0];
+        localStorage.setItem('idrettsøkonomi_team_id', myTeams[0].id);
       }
       
       setCurrentTeam(selectedTeam);
