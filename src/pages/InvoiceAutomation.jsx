@@ -164,7 +164,7 @@ export default function InvoiceAutomation() {
                         <div className="text-slate-500">
                           Mål: {schedule.target_players === 'all' ? 'Alle' :
                                schedule.target_players === 'players' ? 'Spillere' :
-                               schedule.target_players === 'parents' ? 'Foreldre' : 'Utvalgte'}
+                               'Utvalgte'}
                         </div>
                       </div>
                       {schedule.last_generated && (

@@ -452,7 +452,7 @@ export default function Players() {
             </div>
             <div className="flex gap-3 pt-2">
               <Button variant="outline" onClick={() => setShowForm(false)} className="flex-1">Avbryt</Button>
-              <Button onClick={handleSave} disabled={saving || !form.full_name || !form.user_email} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
+              <Button onClick={handleSave} disabled={saving} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 {editData ? 'Oppdater' : 'Lagre'}
               </Button>
