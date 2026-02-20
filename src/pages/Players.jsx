@@ -46,22 +46,40 @@ export default function Players() {
     enabled: !!currentTeam,
   });
 
-  const { data: allTransactions = [] } = useQuery({
-    queryKey: ['transactions', currentTeam?.id],
-    queryFn: () => base44.entities.Transaction.filter({ team_id: currentTeam.id }),
-    enabled: !!currentTeam,
-  });
+  const { ledgerMap, isLoading: loadingLedger } = useLedger(currentTeam?.id);
 
   const showNames = currentTeam?.show_player_names !== false;
   const isAdmin = isTeamAdmin();
 
+  // Derive ledger for a player (falls back to stored balance if no claims/payments yet)
+  const getLedger = (p) => {
+    if (ledgerMap[p.id]) return ledgerMap[p.id];
+    // fallback: infer from stored fields
+    const balance = p.balance || 0;
+    return {
+      balance,
+      totalCharged: balance > 0 ? balance : 0,
+      totalPaid: 0,
+      status: balance <= 0 ? 'paid' : p.payment_status || 'unpaid',
+      claims: [],
+      payments: [],
+    };
+  };
+
   const summary = useMemo(() => {
-    const totalOwed = players.filter(p => p.balance > 0).reduce((s, p) => s + p.balance, 0);
-    const paid = players.filter(p => p.payment_status === 'paid').length;
-    const unpaid = players.filter(p => p.payment_status === 'unpaid').length;
-    const partial = players.filter(p => p.payment_status === 'partial').length;
-    return { totalOwed, paid, unpaid, partial };
-  }, [players]);
+    const activePlayers = players.filter(p => p.status !== 'archived');
+    let totalOwed = 0, paid = 0, unpaid = 0, partial = 0, overdue = 0;
+    for (const p of activePlayers) {
+      const l = getLedger(p);
+      if (l.balance > 0) totalOwed += l.balance;
+      if (l.status === 'paid') paid++;
+      else if (l.status === 'unpaid') unpaid++;
+      else if (l.status === 'partial') partial++;
+      else if (l.status === 'overdue') overdue++;
+    }
+    return { totalOwed, paid, unpaid, partial, overdue };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [players, ledgerMap]);
 
   const openNew = () => {
     setEditData(null);
