@@ -256,7 +256,7 @@ function InnerLayout({ children, currentPageName }) {
             {ADVANCED_NAV.some(i => !i.roles || i.roles.includes(userRole)) && (
               <>
                 <p className="px-3 pt-2 pb-1 text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" /> Avansert <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-amber-100 text-amber-700 font-bold">Pro</span>
+                  <Sparkles className="w-3 h-3" /> Avansert
                 </p>
                 {ADVANCED_NAV.filter(item => !item.roles || item.roles.includes(userRole)).map(item => (
                   <NavLink key={item.page} item={item} active={currentPageName === item.page} darkMode={darkMode} onClick={() => setMobileOpen(false)} />
