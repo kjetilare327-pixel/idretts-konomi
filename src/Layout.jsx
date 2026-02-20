@@ -189,7 +189,7 @@ function InnerLayout({ children, currentPageName }) {
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 Avansert
-                <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 font-bold">Pro</span>
+
                 <ChevronRight className={`w-3.5 h-3.5 ml-auto transition-transform ${advancedOpen || activeAdvanced ? 'rotate-90' : ''}`} />
               </button>
               {(advancedOpen || activeAdvanced) && (
