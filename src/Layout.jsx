@@ -277,7 +277,7 @@ function InnerLayout({ children, currentPageName }) {
 
       {/* Main content */}
       <main className="flex-1 lg:ml-64 pt-14 lg:pt-0 min-h-screen">
-        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
+        <div className="p-4 md:p-6 lg:p-8 pb-24 lg:pb-8 max-w-7xl mx-auto">
           {children}
         </div>
       </main>
