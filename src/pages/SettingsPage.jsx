@@ -66,6 +66,9 @@ export default function SettingsPage() {
   const [showDelete, setShowDelete] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deleteAccountConfirm, setDeleteAccountConfirm] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [editCategory, setEditCategory] = useState(null);
   const [categoryForm, setCategoryForm] = useState({ name: '', type: 'expense' });
