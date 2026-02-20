@@ -80,21 +80,9 @@ export default function TransactionForm({ teamId, editData, onClose, onSaved }) 
     setUploading(false);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!form.category || !form.amount || !form.date) return;
-    setSaving(true);
-    const data = {
-      ...form,
-      team_id: teamId,
-      amount: Math.abs(Number(form.amount)),
-    };
-    if (editData?.id) {
-      await base44.entities.Transaction.update(editData.id, data);
-    } else {
-      await base44.entities.Transaction.create(data);
-    }
-    setSaving(false);
-    onSaved();
+    saveMutation.mutate({ ...form, team_id: teamId, amount: Math.abs(Number(form.amount)) });
   };
 
   return (
