@@ -412,6 +412,31 @@ export default function SettingsPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={showDeleteAccount} onOpenChange={setShowDeleteAccount}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Slett din konto?</DialogTitle>
+            <DialogDescription>
+              Dette vil permanent slette din brukerkonto. Skriv "SLETT" for å bekrefte.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <Input value={deleteAccountConfirm} onChange={e => setDeleteAccountConfirm(e.target.value)} placeholder="SLETT" />
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setShowDeleteAccount(false)} className="flex-1">Avbryt</Button>
+              <Button variant="destructive" disabled={deleteAccountConfirm !== 'SLETT' || deletingAccount} className="flex-1"
+                onClick={async () => {
+                  setDeletingAccount(true);
+                  await base44.auth.logout('/');
+                }}>
+                {deletingAccount ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Slett permanent
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showDelete} onOpenChange={setShowDelete}>
         <DialogContent>
           <DialogHeader>
