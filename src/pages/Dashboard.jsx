@@ -5,26 +5,15 @@ import { useTeam } from '@/components/shared/TeamContext';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { formatNOK } from '@/components/shared/FormatUtils';
-import { Wallet, TrendingUp, TrendingDown, ArrowRight, Loader2 } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, AlertCircle, ArrowRight, Loader2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Link } from 'react-router-dom';
 
 import StatCard from '@/components/dashboard/StatCard';
-import MonthlyChart from '@/components/dashboard/MonthlyChart';
-import BudgetDeviationBar from '@/components/dashboard/BudgetDeviationBar';
-import TopExpenses from '@/components/dashboard/TopExpenses';
 import SubscriptionBanner from '@/components/dashboard/SubscriptionBanner';
-import AiHint from '@/components/dashboard/AiHint';
 import ProfileCompletionPrompt from '@/components/onboarding/ProfileCompletionPrompt';
-import SetupProgress, { getCompletedSteps, isSetupComplete, isCoreSetupDone } from '@/components/onboarding/SetupProgress';
-import FeatureGate from '@/components/onboarding/FeatureGate';
-import PushNotifications from '@/components/mobile/PushNotifications';
-import FinancialSummaryWidget from '@/components/dashboard/FinancialSummaryWidget';
-import OutstandingClaimsWidget from '@/components/dashboard/OutstandingClaimsWidget';
-import NotificationCenter from '@/components/notifications/NotificationCenter';
-import CustomDashboardKPIs from '@/components/dashboard/CustomDashboardKPIs';
-import CashFlowForecastChart from '@/components/dashboard/CashFlowForecastChart';
-import KpiDashboard from '@/components/dashboard/KpiDashboard';
+import SetupProgress, { getCompletedSteps, isSetupComplete } from '@/components/onboarding/SetupProgress';
 
 export default function Dashboard() {
   const { currentTeam, teams, loading: teamLoading, isTeamAdmin, playerProfile, refreshPlayerProfile } = useTeam();
@@ -38,13 +27,6 @@ export default function Dashboard() {
   const { data: transactions = [], isLoading: txLoading } = useQuery({
     queryKey: ['transactions', currentTeam?.id],
     queryFn: () => base44.entities.Transaction.filter({ team_id: currentTeam.id }, '-date'),
-    enabled: !!currentTeam,
-    ...CACHE_5MIN,
-  });
-
-  const { data: budgets = [] } = useQuery({
-    queryKey: ['budgets', currentTeam?.id],
-    queryFn: () => base44.entities.Budget.filter({ team_id: currentTeam.id }),
     enabled: !!currentTeam,
     ...CACHE_5MIN,
   });
@@ -74,7 +56,6 @@ export default function Dashboard() {
     () => getCompletedSteps(players, transactions, claims, sentMessages),
     [players, transactions, claims, sentMessages]
   );
-  const coreSetupDone = isCoreSetupDone(completedSteps);
   const setupComplete = isSetupComplete(completedSteps);
 
   const stats = useMemo(() => {
@@ -82,28 +63,26 @@ export default function Dashboard() {
     const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
     const balance = totalIncome - totalExpense;
 
-    // Current month
     const now = new Date();
     const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const monthIncome = transactions.filter(t => t.type === 'income' && t.date?.startsWith(curMonth)).reduce((s, t) => s + t.amount, 0);
     const monthExpense = transactions.filter(t => t.type === 'expense' && t.date?.startsWith(curMonth)).reduce((s, t) => s + t.amount, 0);
 
-    return { totalIncome, totalExpense, balance, monthIncome, monthExpense };
+    return { balance, monthIncome, monthExpense };
   }, [transactions]);
 
-  const budgetDeviations = useMemo(() => {
-    const expByCategory = {};
-    const now = new Date();
-    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    transactions.filter(t => t.type === 'expense' && t.date?.startsWith(curMonth)).forEach(t => {
-      expByCategory[t.category] = (expByCategory[t.category] || 0) + t.amount;
-    });
-    return budgets.filter(b => b.type === 'expense' && b.monthly_amount > 0).map(b => ({
-      category: b.category,
-      spent: expByCategory[b.category] || 0,
-      budgeted: b.monthly_amount,
-    }));
-  }, [transactions, budgets]);
+  const unpaidClaims = useMemo(() =>
+    claims
+      .filter(c => c.status === 'pending' || c.status === 'overdue')
+      .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+      .slice(0, 5),
+    [claims]
+  );
+
+  const totalOutstanding = useMemo(() =>
+    claims.filter(c => c.status === 'pending' || c.status === 'overdue').reduce((s, c) => s + c.amount, 0),
+    [claims]
+  );
 
   if (teamLoading) {
     return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-8 h-8 animate-spin text-emerald-500" /></div>;
@@ -116,113 +95,120 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-sm text-slate-500">{currentTeam?.name} – {isAdmin ? 'Økonomisk oversikt' : 'Min økonomi'}</p>
         </div>
-        <div className="flex gap-2">
-          {isAdmin && <NotificationCenter />}
-          {isAdmin && (
-            <Button onClick={() => navigate(createPageUrl('Transactions'))} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
-              Ny transaksjon <ArrowRight className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
+        {isAdmin && (
+          <Button onClick={() => navigate(createPageUrl('Transactions'))} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+            Ny transaksjon <ArrowRight className="w-4 h-4" />
+          </Button>
+        )}
       </div>
 
+      {/* Profile completion prompt */}
       {playerProfile && showProfilePrompt && (!playerProfile.phone || !playerProfile.notes) && (
         <ProfileCompletionPrompt
           player={playerProfile}
-          onComplete={() => {
-            setShowProfilePrompt(false);
-            refreshPlayerProfile();
-          }}
+          onComplete={() => { setShowProfilePrompt(false); refreshPlayerProfile(); }}
           onDismiss={() => setShowProfilePrompt(false)}
         />
       )}
 
-      {/* PushNotifications shown only to admin roles */}
-      {isAdmin && <PushNotifications />}
+      {isAdmin && <SubscriptionBanner team={currentTeam} />}
 
+      {/* Player balance card */}
       {!isAdmin && playerProfile && (
         <Card className="border-0 shadow-md dark:bg-slate-900">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-500">Din saldo</p>
-                <p className={`text-3xl font-bold ${playerProfile.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                  {playerProfile.balance > 0 ? `Skylder ${formatNOK(playerProfile.balance)}` : playerProfile.balance < 0 ? `Kreditt ${formatNOK(-playerProfile.balance)}` : 'Ingen utestående'}
-                </p>
-              </div>
-              <Button onClick={() => navigate(createPageUrl('Players'))} variant="outline" className="gap-2">
-                Se detaljer <ArrowRight className="w-4 h-4" />
-              </Button>
+          <CardContent className="p-6 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-500">Din saldo</p>
+              <p className={`text-3xl font-bold ${playerProfile.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                {playerProfile.balance > 0
+                  ? `Skylder ${formatNOK(playerProfile.balance)}`
+                  : playerProfile.balance < 0
+                  ? `Kreditt ${formatNOK(-playerProfile.balance)}`
+                  : 'Ingen utestående'}
+              </p>
             </div>
+            <Button onClick={() => navigate(createPageUrl('Players'))} variant="outline" className="gap-2">
+              Se detaljer <ArrowRight className="w-4 h-4" />
+            </Button>
           </CardContent>
         </Card>
       )}
 
-      {isAdmin && <SubscriptionBanner team={currentTeam} />}
-
-      {isAdmin && showSetup && !setupComplete && (
-        <SetupProgress completedSteps={completedSteps} onDismiss={() => setShowSetup(false)} />
+      {/* KPI row – 4 cards */}
+      {isAdmin && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard title="Total saldo" value={formatNOK(stats.balance)} icon={Wallet} variant={stats.balance >= 0 ? 'green' : 'red'} />
+          <StatCard title="Inntekter denne mnd" value={formatNOK(stats.monthIncome)} icon={TrendingUp} variant="green" />
+          <StatCard title="Utgifter denne mnd" value={formatNOK(stats.monthExpense)} icon={TrendingDown} variant="red" />
+          <StatCard title="Utestående krav" value={formatNOK(totalOutstanding)} subtitle={`${claims.filter(c => c.status === 'pending' || c.status === 'overdue').length} krav`} icon={AlertCircle} variant="orange" />
+        </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total saldo" value={formatNOK(stats.balance)} icon={Wallet} variant={stats.balance >= 0 ? 'green' : 'red'} />
-        <StatCard title="Inntekter (total)" value={formatNOK(stats.totalIncome)} icon={TrendingUp} variant="green" />
-        <StatCard title="Utgifter (total)" value={formatNOK(stats.totalExpense)} icon={TrendingDown} variant="red" />
-        <StatCard title="Denne mnd" value={formatNOK(stats.monthIncome - stats.monthExpense)} subtitle={`${formatNOK(stats.monthIncome)} inn / ${formatNOK(stats.monthExpense)} ut`} icon={Wallet} variant="blue" />
-      </div>
-
-      {isAdmin && (
+      {/* Setup + Forecast lock – side by side on wide screens */}
+      {isAdmin && !setupComplete && showSetup && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FinancialSummaryWidget teamId={currentTeam?.id} />
-          <OutstandingClaimsWidget teamId={currentTeam?.id} />
+          <div className="md:col-span-2">
+            <SetupProgress completedSteps={completedSteps} onDismiss={() => setShowSetup(false)} />
+          </div>
+          <Card className="border-0 shadow-md dark:bg-slate-900 flex flex-col justify-center items-center text-center p-6 gap-3">
+            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+              <Lock className="w-6 h-6 text-slate-400" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm">Kontantstrømprognose</p>
+              <p className="text-xs text-slate-400 mt-1">Tilgjengelig når oppsett er fullført</p>
+            </div>
+            <Button variant="outline" size="sm" className="gap-2 mt-1" onClick={() => navigate(createPageUrl('AdvancedAnalytics'))}>
+              <Lock className="w-3.5 h-3.5" /> Lås opp prognose
+            </Button>
+          </Card>
         </div>
       )}
 
-      {isAdmin && (
-        <FeatureGate coreSetupDone={coreSetupDone} label="tilpassede KPI-er">
-          <CustomDashboardKPIs transactions={transactions} budgets={budgets} claims={claims} players={players} />
-        </FeatureGate>
+      {/* Outstanding claims – top 5 */}
+      {isAdmin && unpaidClaims.length > 0 && (
+        <Card className="border-0 shadow-md dark:bg-slate-900">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <CardTitle className="text-base font-semibold">Utestående krav</CardTitle>
+            <Link to={createPageUrl('Players')}>
+              <Button variant="ghost" size="sm" className="gap-1 text-emerald-600 hover:text-emerald-700">
+                Se alle <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="divide-y dark:divide-slate-800">
+              {unpaidClaims.map(claim => {
+                const isOverdue = claim.status === 'overdue' || (claim.due_date && new Date(claim.due_date) < new Date());
+                return (
+                  <div key={claim.id} className="flex items-center justify-between py-2.5">
+                    <div>
+                      <p className="text-sm font-medium">{claim.description || claim.type}</p>
+                      <p className="text-xs text-slate-400">
+                        Forfall: {claim.due_date ? new Date(claim.due_date).toLocaleDateString('nb-NO') : '–'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-sm font-semibold ${isOverdue ? 'text-red-500' : 'text-slate-700 dark:text-slate-200'}`}>
+                        {formatNOK(claim.amount)}
+                      </p>
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${isOverdue ? 'bg-red-100 text-red-600 dark:bg-red-500/10' : 'bg-amber-100 text-amber-700 dark:bg-amber-500/10'}`}>
+                        {isOverdue ? 'Forfalt' : 'Ubetalt'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       )}
-
-      <AiHint teamId={currentTeam?.id} />
-
-      {isAdmin && (
-        <FeatureGate coreSetupDone={coreSetupDone} label="KPI-dashboard">
-          <KpiDashboard transactions={transactions} budgets={budgets} claims={claims} />
-        </FeatureGate>
-      )}
-
-      {isAdmin && (
-        <FeatureGate coreSetupDone={coreSetupDone} label="kontantstrømprognose">
-          <CashFlowForecastChart transactions={transactions} budgets={budgets} />
-        </FeatureGate>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <MonthlyChart transactions={transactions} />
-        </div>
-        <div className="space-y-6">
-          <TopExpenses transactions={transactions} />
-          {budgetDeviations.length > 0 && (
-            <Card className="border-0 shadow-md dark:bg-slate-900">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold">Budsjettavvik</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {budgetDeviations.map(d => (
-                  <BudgetDeviationBar key={d.category} {...d} />
-                ))}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
