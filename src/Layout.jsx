@@ -282,6 +282,9 @@ function InnerLayout({ children, currentPageName }) {
         </div>
       </main>
 
+      {/* Bottom nav – mobile only */}
+      <BottomNav currentPageName={currentPageName} />
+
       {/* Support chatbot */}
       {currentTeam && <SupportChatbot teamId={currentTeam.id} />}
       </div>
