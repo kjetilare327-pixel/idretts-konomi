@@ -277,8 +277,7 @@ function InnerLayout({ children, currentPageName }) {
       </div>
 
       {/* Main content */}
-      <main className="flex-1 lg:ml-64 min-h-0 flex flex-col overflow-y-auto" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 56px)' }}>
-        <style>{`@media (min-width: 1024px) { .main-scroll-area { padding-top: 0 !important; } }`}</style>
+      <main className="flex-1 lg:ml-64 min-h-0 overflow-y-auto pt-14 lg:pt-0">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={currentPageName}
@@ -287,7 +286,7 @@ function InnerLayout({ children, currentPageName }) {
             exit={{ x: -20, opacity: 0 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
             className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full"
-            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 4rem)' }}
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 4.5rem)' }}
           >
             {children}
           </motion.div>
