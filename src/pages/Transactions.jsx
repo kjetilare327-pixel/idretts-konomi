@@ -129,21 +129,47 @@ export default function Transactions() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input placeholder="Søk i beskrivelse..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
         </div>
-        <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alle typer</SelectItem>
-            <SelectItem value="income">Inntekter</SelectItem>
-            <SelectItem value="expense">Utgifter</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={filterCategory} onValueChange={setFilterCategory}>
-          <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alle kategorier</SelectItem>
-            {ALL_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        {/* On mobile use NativeSelect (BottomSheet), on desktop use shadcn Select */}
+        <div className="sm:hidden flex gap-2">
+          <NativeSelect
+            value={filterType}
+            onValueChange={setFilterType}
+            title="Filtertype"
+            className="flex-1"
+            options={[
+              { value: 'all', label: 'Alle typer' },
+              { value: 'income', label: 'Inntekter' },
+              { value: 'expense', label: 'Utgifter' },
+            ]}
+          />
+          <NativeSelect
+            value={filterCategory}
+            onValueChange={setFilterCategory}
+            title="Kategori"
+            className="flex-1"
+            options={[
+              { value: 'all', label: 'Alle kategorier' },
+              ...ALL_CATEGORIES.map(c => ({ value: c, label: c })),
+            ]}
+          />
+        </div>
+        <div className="hidden sm:flex gap-3">
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle typer</SelectItem>
+              <SelectItem value="income">Inntekter</SelectItem>
+              <SelectItem value="expense">Utgifter</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle kategorier</SelectItem>
+              {ALL_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Table */}
