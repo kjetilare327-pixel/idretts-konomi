@@ -29,6 +29,7 @@ import CSVImporter from '@/components/transactions/CSVImporter';
 import AiTransactionAssistant from '@/components/transactions/AiTransactionAssistant';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import PullToRefresh from '@/components/mobile/PullToRefresh';
+import NativeSelect from '@/components/mobile/NativeSelect';
 
 export default function Transactions() {
   const { currentTeam } = useTeam();
