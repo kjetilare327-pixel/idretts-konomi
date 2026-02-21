@@ -8,8 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Shield, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { Shield, ArrowRight, Loader2 } from 'lucide-react';
 import { addDays, format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -24,13 +23,27 @@ export default function Onboarding() {
   const navigate = useNavigate();
 
   const handleCreate = async () => {
-    if (!form.name || !form.sport_type || !gdpr) return;
+    console.log('createTeam click', { form, gdpr, saving });
+
+    // Surface validation failures visibly instead of silent no-op
+    if (!form.name || !form.sport_type) {
+      toast.error('Fyll inn lagsnavn og idrettstype.');
+      return;
+    }
+    if (!gdpr) {
+      toast.error('Du må samtykke til GDPR-vilkårene.');
+      return;
+    }
+    if (saving) return;
+
     setSaving(true);
+    toast.loading('Oppretter lag…', { id: 'create-team' });
+
     try {
       const trialEnd = format(addDays(new Date(), 14), 'yyyy-MM-dd');
       const user = await base44.auth.me();
+      console.log('auth.me ok', user?.email);
 
-      // Create team with membership embedded — deterministic, no async propagation needed
       const newTeam = await base44.entities.Team.create({
         ...form,
         estimated_members: Number(form.estimated_members) || 0,
@@ -39,13 +52,15 @@ export default function Onboarding() {
         gdpr_consent: true,
         members: [{ email: user.email, role: 'admin' }],
       });
+      console.log('Team.create ok', newTeam?.id);
 
-      // Pass the freshly created team so loadData never hangs waiting for propagation
+      toast.success('Lag opprettet!', { id: 'create-team' });
+
       await loadData(newTeam);
       navigate(createPageUrl('Dashboard'));
     } catch (err) {
       console.error('Team creation failed:', err);
-      toast.error('Kunne ikke opprette laget: ' + (err?.message || 'Ukjent feil'));
+      toast.error('Kunne ikke opprette laget: ' + (err?.message || 'Ukjent feil'), { id: 'create-team' });
     } finally {
       setSaving(false);
     }
@@ -93,7 +108,11 @@ export default function Onboarding() {
                   <Label>NIF-nummer (valgfritt)</Label>
                   <Input placeholder="Valgfritt" value={form.nif_number} onChange={e => setForm({ ...form, nif_number: e.target.value })} />
                 </div>
-                <Button onClick={() => { if (form.name && form.sport_type) setStep(2); }} disabled={!form.name || !form.sport_type} className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-base">
+                <Button
+                  onClick={() => { if (form.name && form.sport_type) setStep(2); }}
+                  disabled={!form.name || !form.sport_type}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-base"
+                >
                   Neste <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </>
@@ -105,15 +124,31 @@ export default function Onboarding() {
                   <p>Du kan når som helst be om å slette all data knyttet til laget via innstillinger.</p>
                   <p>Vi deler aldri data med tredjeparter utover betalingsbehandling via Stripe.</p>
                 </div>
+
+                {/* Native checkbox to avoid any hydration issues with Radix Checkbox */}
                 <div className="flex items-start gap-3 pt-2">
-                  <Checkbox id="gdpr" checked={gdpr} onCheckedChange={setGdpr} className="mt-0.5" />
-                  <Label htmlFor="gdpr" className="text-sm leading-relaxed cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="gdpr"
+                    checked={gdpr}
+                    onChange={e => setGdpr(e.target.checked)}
+                    className="mt-1 w-4 h-4 accent-emerald-600 cursor-pointer"
+                  />
+                  <label htmlFor="gdpr" className="text-sm leading-relaxed cursor-pointer">
                     Jeg samtykker til behandling av data som beskrevet over, og bekrefter at jeg har myndighet til å opprette dette laget.
-                  </Label>
+                  </label>
                 </div>
+
                 <div className="flex gap-3 pt-2">
-                  <Button variant="outline" onClick={() => setStep(1)} className="flex-1">Tilbake</Button>
-                  <Button onClick={handleCreate} disabled={!gdpr || saving} className="flex-1 bg-emerald-600 hover:bg-emerald-700 h-12 text-base">
+                  <Button variant="outline" onClick={() => setStep(1)} className="flex-1" disabled={saving}>
+                    Tilbake
+                  </Button>
+                  {/* onClick always fires — validation is inside handleCreate */}
+                  <Button
+                    onClick={handleCreate}
+                    disabled={saving}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 h-12 text-base"
+                  >
                     {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                     Opprett lag
                   </Button>
