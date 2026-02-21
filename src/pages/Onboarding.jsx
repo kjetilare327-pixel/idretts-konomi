@@ -1,11 +1,10 @@
+// v5 – no useTeam, no Layout dependencies
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Shield, ArrowRight, Loader2 } from 'lucide-react';
 import { addDays, format } from 'date-fns';
@@ -20,33 +19,26 @@ export default function Onboarding() {
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
-  const handleCreate = async (e) => {
-    if (e) e.preventDefault();
-    console.log('createTeam click', { name: form.name, sport_type: form.sport_type, gdpr, saving });
+  console.log('Onboarding v5 render, step=', step);
 
-    if (!form.name || !form.sport_type) {
-      toast.error('Fyll inn lagsnavn og idrettstype.');
-      return;
-    }
-    if (!gdpr) {
-      toast.error('Du må samtykke til GDPR-vilkårene.');
-      return;
-    }
+  const handleCreate = async () => {
+    console.log('[Onboarding] handleCreate called', { gdpr, saving, name: form.name });
+    if (!form.name || !form.sport_type) { toast.error('Fyll inn lagsnavn og idrettstype.'); return; }
+    if (!gdpr) { toast.error('Du må samtykke til GDPR-vilkårene.'); return; }
     if (saving) return;
 
     setSaving(true);
-    toast.loading('Oppretter lag…', { id: 'create-team' });
+    toast.loading('Oppretter lag…', { id: 'ct' });
 
     try {
       const trialEnd = format(addDays(new Date(), 14), 'yyyy-MM-dd');
       let user = await base44.auth.me();
-      console.log('auth.me ok', user?.email, 'role:', user?.role);
+      console.log('[Onboarding] auth.me', user?.email, user?.role);
 
-      // Ensure admin role before any entity writes
       if (user?.role !== 'admin') {
         await base44.auth.updateMe({ role: 'admin' });
         user = await base44.auth.me();
-        console.log('Promoted user to admin, new role:', user?.role);
+        console.log('[Onboarding] promoted to admin');
       }
 
       const newTeam = await base44.entities.Team.create({
@@ -57,163 +49,123 @@ export default function Onboarding() {
         gdpr_consent: true,
         members: [{ email: user.email, role: 'admin' }],
       });
-      console.log('Team.create ok', newTeam?.id);
+      console.log('[Onboarding] Team.create ok', newTeam?.id);
 
-      toast.success('Lag opprettet!', { id: 'create-team' });
-
-      // Store so TeamContext picks it up on next mount
+      toast.success('Lag opprettet!', { id: 'ct' });
       localStorage.setItem('idrettsøkonomi_team_id', newTeam.id);
       navigate(createPageUrl('Dashboard'));
     } catch (err) {
-      console.error('Team creation failed:', err);
+      console.error('[Onboarding] Team creation failed', err);
       const msg = err?.response?.data?.message || err?.message || 'Ukjent feil';
-      toast.error('Kunne ikke opprette laget: ' + msg, { id: 'create-team' });
-    } finally {
+      toast.error('Feil: ' + msg, { id: 'ct' });
       setSaving(false);
     }
   };
 
+  const btnStyle = (active) => ({
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+    width: '100%', height: 48, fontSize: '1rem', fontWeight: 600,
+    border: 'none', borderRadius: 8, cursor: active ? 'pointer' : 'not-allowed',
+    backgroundColor: active ? '#059669' : '#d1fae5',
+    color: active ? '#fff' : '#6b7280',
+  });
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/20">
-            <Shield className="w-8 h-8 text-white" />
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#ecfdf5,#f8fafc)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div style={{ width: '100%', maxWidth: 480 }}>
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div style={{ width: 64, height: 64, borderRadius: 16, background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <Shield style={{ width: 32, height: 32, color: '#fff' }} />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">IdrettsØkonomi</h1>
-          <p className="text-slate-500 mt-2">Enkel økonomistyring for idrettslag</p>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, margin: 0 }}>IdrettsØkonomi</h1>
+          <p style={{ color: '#64748b', marginTop: 8 }}>Enkel økonomistyring for idrettslag</p>
         </div>
 
-        <Card className="shadow-xl border-0 dark:bg-slate-900">
-          <CardHeader>
-            <CardTitle>{step === 1 ? 'Opprett ditt lag' : 'GDPR-samtykke'}</CardTitle>
-            <CardDescription>
-              {step === 1 ? 'Fyll inn informasjon om idrettslaget' : 'Vi trenger ditt samtykke for å behandle data'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {step === 1 ? (
-              <form
-                onSubmit={e => { e.preventDefault(); if (form.name && form.sport_type) setStep(2); }}
-                className="space-y-5"
-              >
-                <div className="space-y-2">
-                  <Label htmlFor="team-name">Lagsnavn *</Label>
-                  <Input
-                    id="team-name"
-                    placeholder="F.eks. Lillestrøm FK"
-                    value={form.name}
-                    onChange={e => setForm({ ...form, name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Idrettstype *</Label>
-                  <Select value={form.sport_type} onValueChange={v => setForm({ ...form, sport_type: v })}>
+        {/* Card */}
+        <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.1)', padding: 32 }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 4 }}>
+            {step === 1 ? 'Opprett ditt lag' : 'GDPR-samtykke'}
+          </h2>
+          <p style={{ color: '#64748b', marginBottom: 24, fontSize: '0.875rem' }}>
+            {step === 1 ? 'Fyll inn informasjon om idrettslaget' : 'Vi trenger ditt samtykke for å behandle data'}
+          </p>
+
+          {step === 1 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div>
+                <Label htmlFor="team-name">Lagsnavn *</Label>
+                <Input id="team-name" placeholder="F.eks. Lillestrøm FK" value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))} style={{ marginTop: 6 }} />
+              </div>
+              <div>
+                <Label>Idrettstype *</Label>
+                <div style={{ marginTop: 6 }}>
+                  <Select value={form.sport_type} onValueChange={v => setForm(f => ({ ...f, sport_type: v }))}>
                     <SelectTrigger><SelectValue placeholder="Velg idrett" /></SelectTrigger>
                     <SelectContent>
                       {SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="members">Estimert antall medlemmer</Label>
-                  <Input
-                    id="members"
-                    type="number"
-                    placeholder="25"
-                    value={form.estimated_members}
-                    onChange={e => setForm({ ...form, estimated_members: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nif">NIF-nummer (valgfritt)</Label>
-                  <Input
-                    id="nif"
-                    placeholder="Valgfritt"
-                    value={form.nif_number}
-                    onChange={e => setForm({ ...form, nif_number: e.target.value })}
-                  />
-                </div>
+              </div>
+              <div>
+                <Label htmlFor="members">Estimert antall medlemmer</Label>
+                <Input id="members" type="number" placeholder="25" value={form.estimated_members}
+                  onChange={e => setForm(f => ({ ...f, estimated_members: e.target.value }))} style={{ marginTop: 6 }} />
+              </div>
+              <div>
+                <Label htmlFor="nif">NIF-nummer (valgfritt)</Label>
+                <Input id="nif" placeholder="Valgfritt" value={form.nif_number}
+                  onChange={e => setForm(f => ({ ...f, nif_number: e.target.value }))} style={{ marginTop: 6 }} />
+              </div>
+              <button
+                onClick={() => { if (form.name && form.sport_type) { console.log('[Onboarding] step1->2'); setStep(2); } }}
+                style={btnStyle(form.name && form.sport_type)}
+              >
+                Neste <ArrowRight style={{ width: 16, height: 16 }} />
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div style={{ padding: 16, background: '#f8fafc', borderRadius: 12, fontSize: '0.875rem', lineHeight: 1.6 }}>
+                <p><strong>Personvern og databehandling</strong></p>
+                <p style={{ marginTop: 8 }}>Vi lagrer kun nødvendig informasjon for å drifte økonomistyringen for ditt lag.</p>
+                <p style={{ marginTop: 8 }}>Du kan når som helst be om å slette all data via innstillinger.</p>
+                <p style={{ marginTop: 8 }}>Vi deler aldri data med tredjeparter utover betalingsbehandling via Stripe.</p>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <input type="checkbox" id="gdpr" checked={gdpr} onChange={e => setGdpr(e.target.checked)}
+                  style={{ marginTop: 3, width: 18, height: 18, accentColor: '#059669', cursor: 'pointer', flexShrink: 0 }} />
+                <label htmlFor="gdpr" style={{ fontSize: '0.875rem', lineHeight: 1.6, cursor: 'pointer' }}>
+                  Jeg samtykker til behandling av data som beskrevet over, og bekrefter at jeg har myndighet til å opprette dette laget.
+                </label>
+              </div>
+
+              <div style={{ display: 'flex', gap: 12 }}>
                 <button
-                  type="submit"
-                  disabled={!form.name || !form.sport_type}
-                  style={{
-                    width: '100%',
-                    height: '48px',
-                    fontSize: '1rem',
-                    fontWeight: 600,
-                    backgroundColor: (!form.name || !form.sport_type) ? '#d1fae5' : '#059669',
-                    color: (!form.name || !form.sport_type) ? '#6b7280' : '#fff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: (!form.name || !form.sport_type) ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                  }}
+                  onClick={() => { setStep(1); console.log('[Onboarding] back to step1'); }}
+                  disabled={saving}
+                  style={{ flex: 1, height: 48, fontSize: '1rem', fontWeight: 500, background: 'transparent', border: '1px solid #e2e8f0', borderRadius: 8, cursor: 'pointer' }}
                 >
-                  Neste <ArrowRight style={{ width: 16, height: 16 }} />
+                  Tilbake
                 </button>
-              </form>
-            ) : (
-              <form onSubmit={handleCreate} className="space-y-5">
-                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm leading-relaxed space-y-3">
-                  <p><strong>Personvern og databehandling</strong></p>
-                  <p>Vi lagrer kun nødvendig informasjon for å drifte økonomistyringen for ditt lag. Data inkluderer lagnavn, transaksjoner og budsjettinformasjon.</p>
-                  <p>Du kan når som helst be om å slette all data knyttet til laget via innstillinger.</p>
-                  <p>Vi deler aldri data med tredjeparter utover betalingsbehandling via Stripe.</p>
-                </div>
-
-                <div className="flex items-start gap-3 pt-2">
-                  <input
-                    type="checkbox"
-                    id="gdpr"
-                    checked={gdpr}
-                    onChange={e => setGdpr(e.target.checked)}
-                    style={{ marginTop: 4, width: 18, height: 18, accentColor: '#059669', cursor: 'pointer' }}
-                  />
-                  <label htmlFor="gdpr" style={{ fontSize: '0.875rem', lineHeight: 1.6, cursor: 'pointer' }}>
-                    Jeg samtykker til behandling av data som beskrevet over, og bekrefter at jeg har myndighet til å opprette dette laget.
-                  </label>
-                </div>
-
-                <div style={{ display: 'flex', gap: 12, paddingTop: 8 }}>
-                  <button
-                    type="button"
-                    onClick={() => setStep(1)}
-                    disabled={saving}
-                    style={{
-                      flex: 1, height: 48, fontSize: '1rem', fontWeight: 500,
-                      backgroundColor: 'transparent', border: '1px solid #e2e8f0',
-                      borderRadius: 8, cursor: saving ? 'not-allowed' : 'pointer',
-                    }}
-                  >
-                    Tilbake
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    style={{
-                      flex: 1, height: 48, fontSize: '1rem', fontWeight: 600,
-                      backgroundColor: saving ? '#6ee7b7' : '#059669',
-                      color: '#fff', border: 'none', borderRadius: 8,
-                      cursor: saving ? 'not-allowed' : 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    }}
-                  >
-                    {saving && <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} />}
-                    Opprett lag
-                  </button>
-                </div>
-                <p style={{ fontSize: '0.75rem', textAlign: 'center', color: '#94a3b8' }}>
-                  14 dagers gratis prøveperiode – ingen kortinfo nødvendig
-                </p>
-              </form>
-            )}
-          </CardContent>
-        </Card>
+                <button
+                  onClick={handleCreate}
+                  disabled={saving}
+                  style={{ flex: 1, height: 48, fontSize: '1rem', fontWeight: 600, background: saving ? '#6ee7b7' : '#059669', color: '#fff', border: 'none', borderRadius: 8, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                >
+                  {saving && <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} />}
+                  Opprett lag
+                </button>
+              </div>
+              <p style={{ fontSize: '0.75rem', textAlign: 'center', color: '#94a3b8' }}>
+                14 dagers gratis prøveperiode – ingen kortinfo nødvendig
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
