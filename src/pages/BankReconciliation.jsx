@@ -85,8 +85,27 @@ export default function BankReconciliation() {
     URL.revokeObjectURL(url);
   };
 
+  const hasError = bankError || txError || claimsError;
+
   if (!currentTeam) {
     return <div className="p-6">Laster...</div>;
+  }
+
+  if (hasError) {
+    return (
+      <div className="p-6 space-y-4">
+        <h1 className="text-3xl font-bold">Bankavstemming</h1>
+        <Alert className="border-red-200 bg-red-50 dark:bg-red-950">
+          <AlertCircle className="w-4 h-4 text-red-600" />
+          <AlertDescription className="text-red-800 dark:text-red-200">
+            Kunne ikke laste data. Sjekk tilkoblingen og prøv igjen.
+            <Button variant="outline" size="sm" className="ml-4" onClick={() => { refetchBank(); }}>
+              Prøv igjen
+            </Button>
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
   return (
