@@ -313,5 +313,6 @@ export default function BudgetPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </PullToRefresh>
   );
 }
