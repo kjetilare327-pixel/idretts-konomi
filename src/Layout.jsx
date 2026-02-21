@@ -364,7 +364,11 @@ function InnerLayout({ children, currentPageName }) {
         if (!authChecked) return null;
         return (
           <TeamProvider>
-            <InnerLayout currentPageName={currentPageName}>{children}</InnerLayout>
+            <InnerLayout currentPageName={currentPageName}>
+              <AdminRouteGuard currentPageName={currentPageName}>
+                {children}
+              </AdminRouteGuard>
+            </InnerLayout>
           </TeamProvider>
         );
       }
@@ -391,11 +395,7 @@ function InnerLayout({ children, currentPageName }) {
         }
         return (
           <ThemeProvider>
-            <AuthGate currentPageName={currentPageName}>
-              <AdminRouteGuard currentPageName={currentPageName}>
-                {children}
-              </AdminRouteGuard>
-            </AuthGate>
+            <AuthGate currentPageName={currentPageName}>{children}</AuthGate>
           </ThemeProvider>
         );
       }
