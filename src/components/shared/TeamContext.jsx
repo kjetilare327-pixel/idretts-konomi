@@ -38,11 +38,24 @@ export function TeamProvider({ children }) {
   // without relying on async propagation.
   const loadData = async (freshTeam = null) => {
     try {
-      let u = await base44.auth.me();
+      let u;
+      try {
+      u = await base44.auth.me();
+      } catch (authErr) {
+      console.error('loadData: auth.me failed (session expired?)', authErr);
+      setLoading(false);
+      base44.auth.redirectToLogin(window.location.href);
+      return;
+      }
+      if (!u) {
+      setLoading(false);
+      base44.auth.redirectToLogin(window.location.href);
+      return;
+      }
       // Auto-promote to admin so entity RLS rules allow creating teams, players, transactions etc.
-      if (u?.role !== 'admin') {
-        await base44.auth.updateMe({ role: 'admin' });
-        u = await base44.auth.me();
+      if (u.role !== 'admin') {
+      await base44.auth.updateMe({ role: 'admin' });
+      u = await base44.auth.me();
       }
       setUser(u);
 
