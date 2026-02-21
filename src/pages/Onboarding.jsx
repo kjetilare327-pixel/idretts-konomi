@@ -9,8 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Shield, ArrowRight, Loader2 } from 'lucide-react';
+import { Shield, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { addDays, format } from 'date-fns';
+import { toast } from 'sonner';
 
 const SPORTS = ['Fotball', 'Håndball', 'Ski', 'Svømming', 'Friidrett', 'Basketball', 'Volleyball', 'Ishockey', 'Tennis', 'Annet'];
 
