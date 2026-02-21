@@ -324,12 +324,18 @@ function InnerLayout({ children, currentPageName }) {
       );
       }
 
+      const NO_LAYOUT_PAGES = ['Onboarding', 'GdprConsent'];
+
       export default function Layout({ children, currentPageName }) {
-      return (
-      <ThemeProvider>
-      <TeamProvider>
-        <InnerLayout currentPageName={currentPageName}>{children}</InnerLayout>
-      </TeamProvider>
-      </ThemeProvider>
-      );
+        // Bypass ALL layout (no TeamProvider, no overlays, no fixed elements) for these pages
+        if (NO_LAYOUT_PAGES.includes(currentPageName)) {
+          return <ThemeProvider>{children}</ThemeProvider>;
+        }
+        return (
+          <ThemeProvider>
+            <TeamProvider>
+              <InnerLayout currentPageName={currentPageName}>{children}</InnerLayout>
+            </TeamProvider>
+          </ThemeProvider>
+        );
       }
