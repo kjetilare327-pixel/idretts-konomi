@@ -102,10 +102,7 @@ function InnerLayout({ children, currentPageName }) {
   const userRole = getUserRole();
   const activeAdvanced = ADVANCED_NAV.some(i => i.page === currentPageName);
 
-  const noLayoutPages = ['Onboarding', 'GdprConsent'];
-  if (noLayoutPages.includes(currentPageName)) {
-    return <>{children}</>;
-  }
+  // (handled at top-level Layout now – this branch is never reached for no-layout pages)
 
   return (
     <div className={`h-screen flex overflow-hidden ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
