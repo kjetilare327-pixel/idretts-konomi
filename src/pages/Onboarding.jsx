@@ -22,8 +22,9 @@ export default function Onboarding() {
   // v6 – hardened click handling
   console.log('[Onboarding v6] render, step=', step, 'saving=', saving);
 
-  const handleCreate = async () => {
-    console.log('[Onboarding] handleCreate called', { gdpr, saving, name: form.name });
+  const handleCreate = async (e) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    console.log('[Onboarding v6] handleCreate called', { gdpr, saving, name: form.name });
     if (!form.name || !form.sport_type) { toast.error('Fyll inn lagsnavn og idrettstype.'); return; }
     if (!gdpr) { toast.error('Du må samtykke til GDPR-vilkårene.'); return; }
     if (saving) return;
