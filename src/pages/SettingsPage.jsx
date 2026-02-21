@@ -184,12 +184,12 @@ export default function SettingsPage() {
           </div>
           <div className="space-y-2">
             <Label>Idrettstype</Label>
-            <Select value={form.sport_type || ''} onValueChange={v => setForm({ ...form, sport_type: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <NativeSelect
+              value={form.sport_type || ''}
+              onValueChange={v => setForm({ ...form, sport_type: v })}
+              title="Idrettstype"
+              options={SPORTS.map(s => ({ value: s, label: s }))}
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
