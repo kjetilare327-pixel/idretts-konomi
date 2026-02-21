@@ -327,13 +327,19 @@ function InnerLayout({ children, currentPageName }) {
         const [authChecked, setAuthChecked] = React.useState(false);
 
         React.useEffect(() => {
-          base44.auth.isAuthenticated().then(authenticated => {
-            if (!authenticated) {
-              base44.auth.redirectToLogin(window.location.href);
-            } else {
+          base44.auth.isAuthenticated()
+            .then(authenticated => {
+              if (authenticated) {
+                setAuthChecked(true);
+              } else {
+                base44.auth.redirectToLogin(window.location.href);
+              }
+            })
+            .catch(() => {
+              // isAuthenticated() itself failed (e.g. network error or 401 on custom domain).
+              // Still render the app – TeamContext will handle the auth error gracefully.
               setAuthChecked(true);
-            }
-          });
+            });
         }, []);
 
         if (!authChecked) return null;
