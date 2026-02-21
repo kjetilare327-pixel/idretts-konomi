@@ -323,8 +323,16 @@ function InnerLayout({ children, currentPageName }) {
 
       const NO_LAYOUT_PAGES = ['Onboarding', 'GdprConsent'];
 
+      // Pages that require admin team role — redirect non-admins to Dashboard
+      const ADMIN_ONLY_PAGES = [
+        'Transactions', 'BankReconciliation', 'Budget', 'InvoiceAutomation',
+        'Communications', 'AuditLog', 'AdvancedAnalytics', 'Sponsors',
+        'AccountingIntegration', 'Players', 'Reports', 'SettingsPage',
+      ];
+
       function AuthGate({ children, currentPageName }) {
         const [authChecked, setAuthChecked] = React.useState(false);
+        const navigate = useNavigate();
 
         React.useEffect(() => {
           (async () => {
@@ -338,11 +346,13 @@ function InnerLayout({ children, currentPageName }) {
               base44.auth.redirectToLogin(window.location.href);
               return;
             }
-            // Ensure every user is admin so RLS rules allow all entity operations
+            // Promote to admin BEFORE TeamProvider mounts so RLS and nav are correct on first render
             try {
               const u = await base44.auth.me();
               if (u && u.role !== 'admin') {
                 await base44.auth.updateMe({ role: 'admin' });
+                // Re-fetch to confirm promotion took effect
+                await base44.auth.me();
               }
             } catch (e) {
               console.warn('[AuthGate] role promotion failed', e);
@@ -359,13 +369,33 @@ function InnerLayout({ children, currentPageName }) {
         );
       }
 
+      // Guard: if non-admin lands on admin-only page, redirect to Dashboard
+      function AdminRouteGuard({ children, currentPageName }) {
+        const { isTeamAdmin, loading, teams } = useTeam();
+        const navigate = useNavigate();
+        const isAdmin = isTeamAdmin();
+
+        React.useEffect(() => {
+          if (loading) return;
+          if (ADMIN_ONLY_PAGES.includes(currentPageName) && !isAdmin && teams.length > 0) {
+            navigate(createPageUrl('Dashboard'), { replace: true });
+          }
+        }, [loading, isAdmin, currentPageName, teams.length]);
+
+        return children;
+      }
+
       export default function Layout({ children, currentPageName }) {
         if (NO_LAYOUT_PAGES.includes(currentPageName)) {
           return <ThemeProvider>{children}</ThemeProvider>;
         }
         return (
           <ThemeProvider>
-            <AuthGate currentPageName={currentPageName}>{children}</AuthGate>
+            <AuthGate currentPageName={currentPageName}>
+              <AdminRouteGuard currentPageName={currentPageName}>
+                {children}
+              </AdminRouteGuard>
+            </AuthGate>
           </ThemeProvider>
         );
       }
