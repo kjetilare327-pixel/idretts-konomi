@@ -323,16 +323,34 @@ function InnerLayout({ children, currentPageName }) {
 
       const NO_LAYOUT_PAGES = ['Onboarding', 'GdprConsent'];
 
+      function AuthGate({ children, currentPageName }) {
+        const [authChecked, setAuthChecked] = React.useState(false);
+
+        React.useEffect(() => {
+          base44.auth.isAuthenticated().then(authenticated => {
+            if (!authenticated) {
+              base44.auth.redirectToLogin(window.location.href);
+            } else {
+              setAuthChecked(true);
+            }
+          });
+        }, []);
+
+        if (!authChecked) return null;
+        return (
+          <TeamProvider>
+            <InnerLayout currentPageName={currentPageName}>{children}</InnerLayout>
+          </TeamProvider>
+        );
+      }
+
       export default function Layout({ children, currentPageName }) {
-        // Bypass ALL layout (no TeamProvider, no overlays, no fixed elements) for these pages
         if (NO_LAYOUT_PAGES.includes(currentPageName)) {
           return <ThemeProvider>{children}</ThemeProvider>;
         }
         return (
           <ThemeProvider>
-            <TeamProvider>
-              <InnerLayout currentPageName={currentPageName}>{children}</InnerLayout>
-            </TeamProvider>
+            <AuthGate currentPageName={currentPageName}>{children}</AuthGate>
           </ThemeProvider>
         );
       }
