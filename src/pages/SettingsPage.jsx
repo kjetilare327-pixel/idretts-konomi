@@ -394,13 +394,12 @@ export default function SettingsPage() {
             </div>
             <div className="space-y-2">
               <Label>Type</Label>
-              <Select value={categoryForm.type} onValueChange={v => setCategoryForm({ ...categoryForm, type: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="income">Inntekt</SelectItem>
-                  <SelectItem value="expense">Utgift</SelectItem>
-                </SelectContent>
-              </Select>
+              <NativeSelect
+                value={categoryForm.type}
+                onValueChange={v => setCategoryForm({ ...categoryForm, type: v })}
+                title="Type"
+                options={[{ value: 'income', label: 'Inntekt' }, { value: 'expense', label: 'Utgift' }]}
+              />
             </div>
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => setShowCategoryForm(false)} className="flex-1">Avbryt</Button>
