@@ -65,6 +65,7 @@ import SettingsPage from './pages/SettingsPage';
 import Sponsors from './pages/Sponsors';
 import Transactions from './pages/Transactions';
 import VolunteerManagement from './pages/VolunteerManagement';
+import Onboarding from './pages/Onboarding';
 import __Layout from './Layout.jsx';
 
 
@@ -87,6 +88,7 @@ export const PAGES = {
     "Sponsors": Sponsors,
     "Transactions": Transactions,
     "VolunteerManagement": VolunteerManagement,
+    "Onboarding": Onboarding,
 }
 
 export const pagesConfig = {
