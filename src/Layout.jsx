@@ -25,6 +25,7 @@ import {
   Building2,
   Sparkles,
   Lock,
+  ArrowLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import NotificationCenter from './components/notifications/NotificationCenter';
