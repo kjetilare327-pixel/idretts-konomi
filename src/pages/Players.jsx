@@ -176,9 +176,14 @@ export default function Players() {
 
   if (!currentTeam) return <p className="text-center py-12 text-slate-500">Velg et lag for å se spillere.</p>;
 
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['players', currentTeam?.id] });
+  };
+
   // Player view (ikke admin)
   if (!isAdmin) {
     return (
+      <PullToRefresh onRefresh={handleRefresh}>
       <div className="space-y-6 max-w-4xl">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Min profil</h1>
