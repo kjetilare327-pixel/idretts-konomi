@@ -19,7 +19,8 @@ export default function Onboarding() {
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
-  console.log('Onboarding v5 render, step=', step);
+  // v6 – hardened click handling
+  console.log('[Onboarding v6] render, step=', step, 'saving=', saving);
 
   const handleCreate = async () => {
     console.log('[Onboarding] handleCreate called', { gdpr, saving, name: form.name });
