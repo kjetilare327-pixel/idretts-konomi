@@ -1,5 +1,5 @@
 // v5-restored – original working onboarding
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -104,6 +104,13 @@ export default function Onboarding() {
           <h1 style={{ fontSize: '1.75rem', fontWeight: 700, margin: 0 }}>IdrettsØkonomi</h1>
           <p style={{ color: '#64748b', marginTop: 8 }}>Enkel økonomistyring for idrettslag</p>
         </div>
+
+        {/* Role error banner */}
+        {roleError && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 12, padding: '12px 16px', marginBottom: 16, color: '#dc2626', fontSize: '0.875rem' }}>
+            ⚠️ {roleError}
+          </div>
+        )}
 
         {/* Card */}
         <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.1)', padding: 32 }}>
