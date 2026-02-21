@@ -297,10 +297,7 @@ function InnerLayout({ children, currentPageName }) {
 
       {/* Main content */}
       <main
-        className="flex-1 lg:ml-64 min-h-0 overflow-y-auto"
-        style={{
-          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 56px)',
-        }}
+        className="flex-1 lg:ml-64 min-h-0 overflow-y-auto pt-14 lg:pt-0"
       >
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
