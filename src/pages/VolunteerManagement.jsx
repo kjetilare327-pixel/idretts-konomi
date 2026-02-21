@@ -118,6 +118,11 @@ export default function VolunteerManagement() {
 
   const isAdmin = isTeamAdmin();
 
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['volunteer-tasks', currentTeam?.id] });
+    await queryClient.invalidateQueries({ queryKey: ['volunteer-assignments', currentTeam?.id] });
+  };
+
   if (!currentTeam) return <div className="p-6">Laster...</div>;
 
   const openTasks = tasks.filter(t => t.status === 'open' || t.status === 'in_progress');
