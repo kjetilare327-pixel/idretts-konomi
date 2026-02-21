@@ -269,22 +269,22 @@ export default function BudgetPage() {
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
               <Label>Type</Label>
-              <Select value={form.type} onValueChange={v => setForm({ ...form, type: v, category: '' })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="income">Inntekt</SelectItem>
-                  <SelectItem value="expense">Utgift</SelectItem>
-                </SelectContent>
-              </Select>
+              <NativeSelect
+                value={form.type}
+                onValueChange={v => setForm({ ...form, type: v, category: '' })}
+                title="Type"
+                options={[{ value: 'income', label: 'Inntekt' }, { value: 'expense', label: 'Utgift' }]}
+              />
             </div>
             <div className="space-y-2">
               <Label>Kategori</Label>
-              <Select value={form.category} onValueChange={v => setForm({ ...form, category: v })}>
-                <SelectTrigger><SelectValue placeholder="Velg kategori" /></SelectTrigger>
-                <SelectContent>
-                  {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <NativeSelect
+                value={form.category}
+                onValueChange={v => setForm({ ...form, category: v })}
+                title="Kategori"
+                placeholder="Velg kategori"
+                options={categories.map(c => ({ value: c, label: c }))}
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
@@ -293,13 +293,12 @@ export default function BudgetPage() {
               </div>
               <div className="space-y-2">
                 <Label>Periode</Label>
-                <Select value={form.period} onValueChange={v => setForm({ ...form, period: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="monthly">Månedlig</SelectItem>
-                    <SelectItem value="yearly">Årlig</SelectItem>
-                  </SelectContent>
-                </Select>
+                <NativeSelect
+                  value={form.period}
+                  onValueChange={v => setForm({ ...form, period: v })}
+                  title="Periode"
+                  options={[{ value: 'monthly', label: 'Månedlig' }, { value: 'yearly', label: 'Årlig' }]}
+                />
               </div>
             </div>
             <div className="flex gap-3 pt-2">
