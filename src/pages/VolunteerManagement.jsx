@@ -139,7 +139,7 @@ export default function VolunteerManagement() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-    <div className="space-y-6">
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold mb-2">Dugnad & Arrangementer (økonomi)</h1>
