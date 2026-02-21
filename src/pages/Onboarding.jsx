@@ -32,8 +32,24 @@ export default function Onboarding() {
 
     try {
       const trialEnd = format(addDays(new Date(), 14), 'yyyy-MM-dd');
-      let user = await base44.auth.me();
-      console.log('[Onboarding] auth.me', user?.email, user?.role);
+      let user;
+      try {
+        user = await base44.auth.me();
+        console.log('[Onboarding] auth.me', user?.email, user?.role);
+      } catch (authErr) {
+        console.error('[Onboarding] auth.me failed (401?) – redirecting to login', authErr);
+        toast.error('Sesjonen er utløpt – logg inn igjen.', { id: 'ct' });
+        setSaving(false);
+        base44.auth.redirectToLogin(window.location.href);
+        return;
+      }
+
+      if (!user) {
+        toast.error('Sesjonen er utløpt – logg inn igjen.', { id: 'ct' });
+        setSaving(false);
+        base44.auth.redirectToLogin(window.location.href);
+        return;
+      }
 
       if (user?.role !== 'admin') {
         await base44.auth.updateMe({ role: 'admin' });
