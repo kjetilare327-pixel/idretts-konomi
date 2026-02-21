@@ -22,10 +22,10 @@ export default function Onboarding() {
   const { loadData } = useTeam();
   const navigate = useNavigate();
 
-  const handleCreate = async () => {
-    console.log('createTeam click', { form, gdpr, saving });
+  const handleCreate = async (e) => {
+    if (e) e.preventDefault();
+    console.log('createTeam click', { name: form.name, sport_type: form.sport_type, gdpr, saving });
 
-    // Surface validation failures visibly instead of silent no-op
     if (!form.name || !form.sport_type) {
       toast.error('Fyll inn lagsnavn og idrettstype.');
       return;
@@ -41,13 +41,14 @@ export default function Onboarding() {
 
     try {
       const trialEnd = format(addDays(new Date(), 14), 'yyyy-MM-dd');
-      const user = await base44.auth.me();
+      let user = await base44.auth.me();
       console.log('auth.me ok', user?.email, 'role:', user?.role);
 
-      // Ensure the user has admin role so entity RLS rules allow creates
+      // Ensure admin role before any entity writes
       if (user?.role !== 'admin') {
         await base44.auth.updateMe({ role: 'admin' });
-        console.log('Promoted user to admin');
+        user = await base44.auth.me();
+        console.log('Promoted user to admin, new role:', user?.role);
       }
 
       const newTeam = await base44.entities.Team.create({
@@ -66,17 +67,15 @@ export default function Onboarding() {
       navigate(createPageUrl('Dashboard'));
     } catch (err) {
       console.error('Team creation failed:', err);
-      toast.error('Kunne ikke opprette laget: ' + (err?.message || 'Ukjent feil'), { id: 'create-team' });
+      const msg = err?.response?.data?.message || err?.message || 'Ukjent feil';
+      toast.error('Kunne ikke opprette laget: ' + msg, { id: 'create-team' });
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div
-      className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-4"
-      onClick={e => e.stopPropagation()}
-    >
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-emerald-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/20">
@@ -93,12 +92,21 @@ export default function Onboarding() {
               {step === 1 ? 'Fyll inn informasjon om idrettslaget' : 'Vi trenger ditt samtykke for å behandle data'}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-5">
+          <CardContent>
             {step === 1 ? (
-              <>
+              <form
+                onSubmit={e => { e.preventDefault(); if (form.name && form.sport_type) setStep(2); }}
+                className="space-y-5"
+              >
                 <div className="space-y-2">
-                  <Label>Lagsnavn *</Label>
-                  <Input placeholder="F.eks. Lillestrøm FK" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                  <Label htmlFor="team-name">Lagsnavn *</Label>
+                  <Input
+                    id="team-name"
+                    placeholder="F.eks. Lillestrøm FK"
+                    value={form.name}
+                    onChange={e => setForm({ ...form, name: e.target.value })}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Idrettstype *</Label>
@@ -110,23 +118,48 @@ export default function Onboarding() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Estimert antall medlemmer</Label>
-                  <Input type="number" placeholder="25" value={form.estimated_members} onChange={e => setForm({ ...form, estimated_members: e.target.value })} />
+                  <Label htmlFor="members">Estimert antall medlemmer</Label>
+                  <Input
+                    id="members"
+                    type="number"
+                    placeholder="25"
+                    value={form.estimated_members}
+                    onChange={e => setForm({ ...form, estimated_members: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label>NIF-nummer (valgfritt)</Label>
-                  <Input placeholder="Valgfritt" value={form.nif_number} onChange={e => setForm({ ...form, nif_number: e.target.value })} />
+                  <Label htmlFor="nif">NIF-nummer (valgfritt)</Label>
+                  <Input
+                    id="nif"
+                    placeholder="Valgfritt"
+                    value={form.nif_number}
+                    onChange={e => setForm({ ...form, nif_number: e.target.value })}
+                  />
                 </div>
-                <Button
-                  onClick={() => { if (form.name && form.sport_type) setStep(2); }}
+                <button
+                  type="submit"
                   disabled={!form.name || !form.sport_type}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-base"
+                  style={{
+                    width: '100%',
+                    height: '48px',
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    backgroundColor: (!form.name || !form.sport_type) ? '#d1fae5' : '#059669',
+                    color: (!form.name || !form.sport_type) ? '#6b7280' : '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: (!form.name || !form.sport_type) ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                  }}
                 >
-                  Neste <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </>
+                  Neste <ArrowRight style={{ width: 16, height: 16 }} />
+                </button>
+              </form>
             ) : (
-              <>
+              <form onSubmit={handleCreate} className="space-y-5">
                 <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm leading-relaxed space-y-3">
                   <p><strong>Personvern og databehandling</strong></p>
                   <p>Vi lagrer kun nødvendig informasjon for å drifte økonomistyringen for ditt lag. Data inkluderer lagnavn, transaksjoner og budsjettinformasjon.</p>
@@ -134,36 +167,51 @@ export default function Onboarding() {
                   <p>Vi deler aldri data med tredjeparter utover betalingsbehandling via Stripe.</p>
                 </div>
 
-                {/* Native checkbox to avoid any hydration issues with Radix Checkbox */}
                 <div className="flex items-start gap-3 pt-2">
                   <input
                     type="checkbox"
                     id="gdpr"
                     checked={gdpr}
                     onChange={e => setGdpr(e.target.checked)}
-                    className="mt-1 w-4 h-4 accent-emerald-600 cursor-pointer"
+                    style={{ marginTop: 4, width: 18, height: 18, accentColor: '#059669', cursor: 'pointer' }}
                   />
-                  <label htmlFor="gdpr" className="text-sm leading-relaxed cursor-pointer">
+                  <label htmlFor="gdpr" style={{ fontSize: '0.875rem', lineHeight: 1.6, cursor: 'pointer' }}>
                     Jeg samtykker til behandling av data som beskrevet over, og bekrefter at jeg har myndighet til å opprette dette laget.
                   </label>
                 </div>
 
-                <div className="flex gap-3 pt-2">
-                  <Button variant="outline" onClick={() => setStep(1)} className="flex-1" disabled={saving}>
-                    Tilbake
-                  </Button>
-                  {/* onClick always fires — validation is inside handleCreate */}
-                  <Button
-                    onClick={handleCreate}
+                <div style={{ display: 'flex', gap: 12, paddingTop: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
                     disabled={saving}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 h-12 text-base"
+                    style={{
+                      flex: 1, height: 48, fontSize: '1rem', fontWeight: 500,
+                      backgroundColor: 'transparent', border: '1px solid #e2e8f0',
+                      borderRadius: 8, cursor: saving ? 'not-allowed' : 'pointer',
+                    }}
                   >
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    Tilbake
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    style={{
+                      flex: 1, height: 48, fontSize: '1rem', fontWeight: 600,
+                      backgroundColor: saving ? '#6ee7b7' : '#059669',
+                      color: '#fff', border: 'none', borderRadius: 8,
+                      cursor: saving ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    }}
+                  >
+                    {saving && <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} />}
                     Opprett lag
-                  </Button>
+                  </button>
                 </div>
-                <p className="text-xs text-center text-slate-500">14 dagers gratis prøveperiode – ingen kortinfo nødvendig</p>
-              </>
+                <p style={{ fontSize: '0.75rem', textAlign: 'center', color: '#94a3b8' }}>
+                  14 dagers gratis prøveperiode – ingen kortinfo nødvendig
+                </p>
+              </form>
             )}
           </CardContent>
         </Card>
