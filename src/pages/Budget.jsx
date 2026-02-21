@@ -110,9 +110,15 @@ export default function BudgetPage() {
   const totalBudgetIncome = incomeBudgets.reduce((s, b) => s + b.monthly_amount, 0);
   const totalBudgetExpense = expenseBudgets.reduce((s, b) => s + b.monthly_amount, 0);
 
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['budgets', currentTeam?.id] });
+    await queryClient.invalidateQueries({ queryKey: ['transactions', currentTeam?.id] });
+  };
+
   if (!currentTeam) return <p className="text-center py-12 text-slate-500">Velg et lag for å se budsjett.</p>;
 
   return (
+    <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
