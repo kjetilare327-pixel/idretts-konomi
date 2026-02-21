@@ -30,8 +30,8 @@ export default function Onboarding() {
       const trialEnd = format(addDays(new Date(), 14), 'yyyy-MM-dd');
       const user = await base44.auth.me();
 
-      // Create team immediately — no Stripe blocking this
-      await base44.entities.Team.create({
+      // Create team with membership embedded — deterministic, no async propagation needed
+      const newTeam = await base44.entities.Team.create({
         ...form,
         estimated_members: Number(form.estimated_members) || 0,
         subscription_status: 'trial',
@@ -40,14 +40,8 @@ export default function Onboarding() {
         members: [{ email: user.email, role: 'admin' }],
       });
 
-      // loadData can hang — give it a 5s timeout, then navigate regardless
-      await Promise.race([
-        loadData(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('loadData timeout')), 5000)),
-      ]).catch(err => {
-        console.warn('loadData skipped or timed out:', err.message);
-      });
-
+      // Pass the freshly created team so loadData never hangs waiting for propagation
+      await loadData(newTeam);
       navigate(createPageUrl('Dashboard'));
     } catch (err) {
       console.error('Team creation failed:', err);
