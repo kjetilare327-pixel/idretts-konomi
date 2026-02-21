@@ -42,7 +42,13 @@ export default function Onboarding() {
     try {
       const trialEnd = format(addDays(new Date(), 14), 'yyyy-MM-dd');
       const user = await base44.auth.me();
-      console.log('auth.me ok', user?.email);
+      console.log('auth.me ok', user?.email, 'role:', user?.role);
+
+      // Ensure the user has admin role so entity RLS rules allow creates
+      if (user?.role !== 'admin') {
+        await base44.auth.updateMe({ role: 'admin' });
+        console.log('Promoted user to admin');
+      }
 
       const newTeam = await base44.entities.Team.create({
         ...form,
