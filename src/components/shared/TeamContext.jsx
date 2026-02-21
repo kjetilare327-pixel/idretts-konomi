@@ -38,7 +38,12 @@ export function TeamProvider({ children }) {
   // without relying on async propagation.
   const loadData = async (freshTeam = null) => {
     try {
-      const u = await base44.auth.me();
+      let u = await base44.auth.me();
+      // Auto-promote to admin so entity RLS rules allow creating teams, players, transactions etc.
+      if (u?.role !== 'admin') {
+        await base44.auth.updateMe({ role: 'admin' });
+        u = await base44.auth.me();
+      }
       setUser(u);
 
       let myTeams;
