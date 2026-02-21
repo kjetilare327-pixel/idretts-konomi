@@ -61,7 +61,8 @@ export default function Onboarding() {
 
       toast.success('Lag opprettet!', { id: 'create-team' });
 
-      await loadData(newTeam);
+      // Store so TeamContext picks it up on next mount
+      localStorage.setItem('idrettsøkonomi_team_id', newTeam.id);
       navigate(createPageUrl('Dashboard'));
     } catch (err) {
       console.error('Team creation failed:', err);
