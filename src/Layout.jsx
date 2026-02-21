@@ -296,7 +296,9 @@ function InnerLayout({ children, currentPageName }) {
       </div>
 
       {/* Main content */}
-      <main className="flex-1 lg:ml-64 min-h-0 overflow-y-auto pt-14 lg:pt-0">
+      <main className="flex-1 lg:ml-64 min-h-0 overflow-y-auto lg:pt-0" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 56px)' }}
+        onScroll={undefined}
+      >
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={currentPageName}
