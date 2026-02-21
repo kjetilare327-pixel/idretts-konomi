@@ -26,18 +26,27 @@ export default function Onboarding() {
   const handleCreate = async () => {
     if (!form.name || !form.sport_type || !gdpr) return;
     setSaving(true);
-    const trialEnd = format(addDays(new Date(), 14), 'yyyy-MM-dd');
-    const user = await base44.auth.me();
-    await base44.entities.Team.create({
-      ...form,
-      estimated_members: Number(form.estimated_members) || 0,
-      subscription_status: 'trial',
-      trial_end_date: trialEnd,
-      gdpr_consent: true,
-      members: [{ email: user.email, role: 'admin' }],
-    });
-    await loadData();
-    navigate(createPageUrl('Dashboard'));
+    try {
+      const trialEnd = format(addDays(new Date(), 14), 'yyyy-MM-dd');
+      const user = await base44.auth.me();
+
+      // Create team immediately — no Stripe blocking this
+      await base44.entities.Team.create({
+        ...form,
+        estimated_members: Number(form.estimated_members) || 0,
+        subscription_status: 'trial',
+        trial_end_date: trialEnd,
+        gdpr_consent: true,
+        members: [{ email: user.email, role: 'admin' }],
+      });
+
+      await loadData();
+      navigate(createPageUrl('Dashboard'));
+    } catch (err) {
+      console.error('Team creation failed:', err);
+      toast.error('Kunne ikke opprette laget. Prøv igjen.');
+      setSaving(false);
+    }
   };
 
   return (
