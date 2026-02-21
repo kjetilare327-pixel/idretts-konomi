@@ -231,14 +231,26 @@ function InnerLayout({ children, currentPageName }) {
       </aside>
 
       {/* Mobile header */}
-              <div className="lg:hidden fixed top-0 left-0 right-0 z-40" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-                <div className={`flex items-center justify-between px-4 py-3 border-b ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
-                <Shield className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-bold text-sm">IdrettsØkonomi</span>
-            </div>
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className={`flex items-center justify-between px-4 py-3 border-b ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+          <div className="flex items-center gap-2">
+            {isChildRoute ? (
+              <button
+                onClick={() => navigate(-1)}
+                className={`flex items-center gap-1 text-sm font-medium ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`}
+              >
+                <ArrowLeft className="w-5 h-5" />
+                Tilbake
+              </button>
+            ) : (
+              <>
+                <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
+                  <Shield className="w-4 h-4 text-white" />
+                </div>
+                <span className="font-bold text-sm">IdrettsØkonomi</span>
+              </>
+            )}
+          </div>
             <div className="flex items-center gap-2">
               <NotificationCenter userEmail={user?.email} teamId={currentTeam?.id} />
               <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2">
