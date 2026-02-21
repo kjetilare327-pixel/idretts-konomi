@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Users, Plus, Calendar, Clock, MapPin, CheckCircle2, UserPlus, DollarSign, TrendingUp } from 'lucide-react';
+import PullToRefresh from '@/components/mobile/PullToRefresh';
 
 export default function VolunteerManagement() {
   const { currentTeam, isTeamAdmin, playerProfile } = useTeam();

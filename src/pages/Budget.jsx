@@ -26,6 +26,8 @@ import {
 } from '@/components/ui/dialog';
 import { Plus, Pencil, Trash2, PiggyBank, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
 import BudgetDeviationBar from '@/components/dashboard/BudgetDeviationBar';
+import PullToRefresh from '@/components/mobile/PullToRefresh';
+import NativeSelect from '@/components/mobile/NativeSelect';
 
 export default function BudgetPage() {
   const { currentTeam } = useTeam();

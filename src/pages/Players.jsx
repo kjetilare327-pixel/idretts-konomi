@@ -28,6 +28,7 @@ import {
 import { Users, Plus, Pencil, Trash2, Mail, Loader2, Bell, FileText, AlertCircle } from 'lucide-react';
 import PlayerProfileCard from '../components/players/PlayerProfileCard';
 import PlayerLedgerDetail from '../components/players/PlayerLedgerDetail';
+import PullToRefresh from '@/components/mobile/PullToRefresh';
 
 export default function Players() {
   const { currentTeam, isTeamAdmin, playerProfile } = useTeam();
