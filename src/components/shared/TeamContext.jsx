@@ -143,6 +143,8 @@ export function TeamProvider({ children }) {
 
   const getUserTeamRole = (team = currentTeam) => {
     if (!team || !user) return 'player';
+    // Team creator is always admin, even if not explicitly in members array
+    if (team.created_by === user.email) return 'admin';
     const member = team.members?.find(m => m.email === user.email);
     return member?.role || 'player';
   };
