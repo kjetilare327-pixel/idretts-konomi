@@ -1,13 +1,10 @@
-// v5 – no useTeam, no Layout dependencies
+// v7 – standalone, zero layout/provider dependencies
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, ArrowRight, Loader2 } from 'lucide-react';
 import { addDays, format } from 'date-fns';
+import { Shield, ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SPORTS = ['Fotball', 'Håndball', 'Ski', 'Svømming', 'Friidrett', 'Basketball', 'Volleyball', 'Ishockey', 'Tennis', 'Annet'];
@@ -19,12 +16,7 @@ export default function Onboarding() {
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
-  // v6 – hardened click handling
-  console.log('[Onboarding v6] render, step=', step, 'saving=', saving);
-
-  const handleCreate = async (e) => {
-    if (e) { e.preventDefault(); e.stopPropagation(); }
-    console.log('[Onboarding v6] handleCreate called', { gdpr, saving, name: form.name });
+  const handleCreate = async () => {
     if (!form.name || !form.sport_type) { toast.error('Fyll inn lagsnavn og idrettstype.'); return; }
     if (!gdpr) { toast.error('Du må samtykke til GDPR-vilkårene.'); return; }
     if (saving) return;
@@ -33,13 +25,10 @@ export default function Onboarding() {
     toast.loading('Oppretter lag…', { id: 'ct' });
 
     try {
-      const trialEnd = format(addDays(new Date(), 14), 'yyyy-MM-dd');
       let user;
       try {
         user = await base44.auth.me();
-        console.log('[Onboarding] auth.me', user?.email, user?.role);
-      } catch (authErr) {
-        console.error('[Onboarding] auth.me failed (401?) – redirecting to login', authErr);
+      } catch {
         toast.error('Sesjonen er utløpt – logg inn igjen.', { id: 'ct' });
         setSaving(false);
         base44.auth.redirectToLogin(window.location.href);
@@ -53,40 +42,32 @@ export default function Onboarding() {
         return;
       }
 
-      if (user?.role !== 'admin') {
+      if (user.role !== 'admin') {
         await base44.auth.updateMe({ role: 'admin' });
         user = await base44.auth.me();
-        console.log('[Onboarding] promoted to admin');
       }
 
+      const trialEnd = format(addDays(new Date(), 14), 'yyyy-MM-dd');
       const newTeam = await base44.entities.Team.create({
-        ...form,
+        name: form.name,
+        sport_type: form.sport_type,
         estimated_members: Number(form.estimated_members) || 0,
+        nif_number: form.nif_number,
         subscription_status: 'trial',
         trial_end_date: trialEnd,
         gdpr_consent: true,
         members: [{ email: user.email, role: 'admin' }],
       });
-      console.log('[Onboarding] Team.create ok', newTeam?.id);
 
       toast.success('Lag opprettet!', { id: 'ct' });
       localStorage.setItem('idrettsøkonomi_team_id', newTeam.id);
       navigate(createPageUrl('Dashboard'));
     } catch (err) {
-      console.error('[Onboarding] Team creation failed', err);
       const msg = err?.response?.data?.message || err?.message || 'Ukjent feil';
       toast.error('Feil: ' + msg, { id: 'ct' });
       setSaving(false);
     }
   };
-
-  const btnStyle = (active) => ({
-    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-    width: '100%', height: 48, fontSize: '1rem', fontWeight: 600,
-    border: 'none', borderRadius: 8, cursor: active ? 'pointer' : 'not-allowed',
-    backgroundColor: active ? '#059669' : '#d1fae5',
-    color: active ? '#fff' : '#6b7280',
-  });
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#ecfdf5,#f8fafc)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
@@ -112,34 +93,53 @@ export default function Onboarding() {
           {step === 1 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <div>
-                <Label htmlFor="team-name">Lagsnavn *</Label>
-                <Input id="team-name" placeholder="F.eks. Lillestrøm FK" value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))} style={{ marginTop: 6 }} />
+                <label htmlFor="team-name" style={{ fontSize: '0.875rem', fontWeight: 500 }}>Lagsnavn *</label>
+                <input
+                  id="team-name"
+                  placeholder="F.eks. Lillestrøm FK"
+                  value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  style={{ display: 'block', width: '100%', marginTop: 6, height: 40, padding: '0 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: '0.875rem', boxSizing: 'border-box' }}
+                />
               </div>
               <div>
-                <Label htmlFor="sport-type">Idrettstype *</Label>
-                <div style={{ marginTop: 6 }}>
-                  <Select value={form.sport_type} onValueChange={v => setForm(f => ({ ...f, sport_type: v }))}>
-                    <SelectTrigger id="sport-type" name="sport_type"><SelectValue placeholder="Velg idrett" /></SelectTrigger>
-                    <SelectContent>
-                      {SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <label htmlFor="sport-type" style={{ fontSize: '0.875rem', fontWeight: 500 }}>Idrettstype *</label>
+                <select
+                  id="sport-type"
+                  value={form.sport_type}
+                  onChange={e => setForm(f => ({ ...f, sport_type: e.target.value }))}
+                  style={{ display: 'block', width: '100%', marginTop: 6, height: 40, padding: '0 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: '0.875rem', boxSizing: 'border-box', background: '#fff' }}
+                >
+                  <option value="">Velg idrett</option>
+                  {SPORTS.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
               </div>
               <div>
-                <Label htmlFor="members">Estimert antall medlemmer</Label>
-                <Input id="members" type="number" placeholder="25" value={form.estimated_members}
-                  onChange={e => setForm(f => ({ ...f, estimated_members: e.target.value }))} style={{ marginTop: 6 }} />
+                <label htmlFor="members" style={{ fontSize: '0.875rem', fontWeight: 500 }}>Estimert antall medlemmer</label>
+                <input
+                  id="members"
+                  type="number"
+                  placeholder="25"
+                  value={form.estimated_members}
+                  onChange={e => setForm(f => ({ ...f, estimated_members: e.target.value }))}
+                  style={{ display: 'block', width: '100%', marginTop: 6, height: 40, padding: '0 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: '0.875rem', boxSizing: 'border-box' }}
+                />
               </div>
               <div>
-                <Label htmlFor="nif">NIF-nummer (valgfritt)</Label>
-                <Input id="nif" placeholder="Valgfritt" value={form.nif_number}
-                  onChange={e => setForm(f => ({ ...f, nif_number: e.target.value }))} style={{ marginTop: 6 }} />
+                <label htmlFor="nif" style={{ fontSize: '0.875rem', fontWeight: 500 }}>NIF-nummer (valgfritt)</label>
+                <input
+                  id="nif"
+                  placeholder="Valgfritt"
+                  value={form.nif_number}
+                  onChange={e => setForm(f => ({ ...f, nif_number: e.target.value }))}
+                  style={{ display: 'block', width: '100%', marginTop: 6, height: 40, padding: '0 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: '0.875rem', boxSizing: 'border-box' }}
+                />
               </div>
               <button
-                onClick={() => { if (form.name && form.sport_type) { console.log('[Onboarding] step1->2'); setStep(2); } }}
-                style={btnStyle(form.name && form.sport_type)}
+                type="button"
+                onClick={() => { if (form.name && form.sport_type) setStep(2); }}
+                disabled={!form.name || !form.sport_type}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%', height: 48, fontSize: '1rem', fontWeight: 600, border: 'none', borderRadius: 8, cursor: (form.name && form.sport_type) ? 'pointer' : 'not-allowed', backgroundColor: (form.name && form.sport_type) ? '#059669' : '#d1fae5', color: (form.name && form.sport_type) ? '#fff' : '#6b7280' }}
               >
                 Neste <ArrowRight style={{ width: 16, height: 16 }} />
               </button>
@@ -154,8 +154,13 @@ export default function Onboarding() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                <input type="checkbox" id="gdpr" checked={gdpr} onChange={e => setGdpr(e.target.checked)}
-                  style={{ marginTop: 3, width: 18, height: 18, accentColor: '#059669', cursor: 'pointer', flexShrink: 0 }} />
+                <input
+                  type="checkbox"
+                  id="gdpr"
+                  checked={gdpr}
+                  onChange={e => setGdpr(e.target.checked)}
+                  style={{ marginTop: 3, width: 18, height: 18, accentColor: '#059669', cursor: 'pointer', flexShrink: 0 }}
+                />
                 <label htmlFor="gdpr" style={{ fontSize: '0.875rem', lineHeight: 1.6, cursor: 'pointer' }}>
                   Jeg samtykker til behandling av data som beskrevet over, og bekrefter at jeg har myndighet til å opprette dette laget.
                 </label>
@@ -163,17 +168,18 @@ export default function Onboarding() {
 
               <div style={{ display: 'flex', gap: 12 }}>
                 <button
-                  onClick={() => { setStep(1); console.log('[Onboarding] back to step1'); }}
+                  type="button"
+                  onClick={() => setStep(1)}
                   disabled={saving}
                   style={{ flex: 1, height: 48, fontSize: '1rem', fontWeight: 500, background: 'transparent', border: '1px solid #e2e8f0', borderRadius: 8, cursor: 'pointer' }}
                 >
                   Tilbake
                 </button>
                 <button
-                 type="button"
-                 onClick={handleCreate}
-                 disabled={saving}
-                 style={{ flex: 1, height: 48, fontSize: '1rem', fontWeight: 600, background: saving ? '#6ee7b7' : '#059669', color: '#fff', border: 'none', borderRadius: 8, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, position: 'relative', zIndex: 10 }}
+                  type="button"
+                  onClick={handleCreate}
+                  disabled={saving}
+                  style={{ flex: 1, height: 48, fontSize: '1rem', fontWeight: 600, background: saving ? '#6ee7b7' : '#059669', color: '#fff', border: 'none', borderRadius: 8, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                 >
                   {saving && <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} />}
                   Opprett lag
