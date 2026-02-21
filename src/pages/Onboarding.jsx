@@ -12,12 +12,32 @@ import { toast } from 'sonner';
 
 const SPORTS = ['Fotball', 'Håndball', 'Ski', 'Svømming', 'Friidrett', 'Basketball', 'Volleyball', 'Ishockey', 'Tennis', 'Annet'];
 
+async function ensureAdmin() {
+  let user = await base44.auth.me();
+  if (user?.role === 'admin') return user;
+  await base44.auth.updateMe({ role: 'admin' });
+  user = await base44.auth.me();
+  if (user?.role !== 'admin') {
+    throw new Error(`Rollepromovering feilet – bruker har fortsatt rolle "${user?.role}". Kontakt support.`);
+  }
+  return user;
+}
+
 export default function Onboarding() {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({ name: '', sport_type: '', estimated_members: '', nif_number: '' });
   const [gdpr, setGdpr] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [roleError, setRoleError] = useState(null);
   const navigate = useNavigate();
+
+  // Promote to admin as early as possible, before any entity ops
+  React.useEffect(() => {
+    ensureAdmin().catch(err => {
+      setRoleError(err.message);
+      toast.error(err.message);
+    });
+  }, []);
 
   const handleCreate = async () => {
     if (!form.name || !form.sport_type) { toast.error('Fyll inn lagsnavn og idrettstype.'); return; }
