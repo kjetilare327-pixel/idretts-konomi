@@ -470,6 +470,6 @@ export default function Players() {
         </DialogContent>
       </Dialog>
     </div>
-    </PullToRefresh>
+  </PullToRefresh>
   );
 }
