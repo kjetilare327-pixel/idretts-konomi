@@ -80,12 +80,18 @@ function NavLink({ item, active, darkMode, onClick }) {
   );
 }
 
+// Root pages of each bottom nav tab — no back button on these
+const ROOT_PAGES = ['Dashboard', 'PaymentPortal', 'Players', 'Reports', 'SettingsPage', 'Onboarding'];
+
 function InnerLayout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const { currentTeam, teams, selectTeam, user, isTeamAdmin } = useTeam();
   const { darkMode, toggleDark } = useTheme();
+  const location = useLocation();
+  const navigate = useNavigate();
   const isAdmin = isTeamAdmin();
+  const isChildRoute = !ROOT_PAGES.includes(currentPageName);
   
   const getUserRole = () => {
     if (!currentTeam || !user) return 'player';
