@@ -291,13 +291,13 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="flex gap-2">
             <Input placeholder="E-postadresse" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} className="flex-1" />
-            <Select value={inviteRole} onValueChange={setInviteRole}>
-              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="viewer">Visning</SelectItem>
-              </SelectContent>
-            </Select>
+            <NativeSelect
+              value={inviteRole}
+              onValueChange={setInviteRole}
+              title="Rolle"
+              className="w-32"
+              options={[{ value: 'admin', label: 'Admin' }, { value: 'viewer', label: 'Visning' }]}
+            />
             <Button onClick={handleInvite} variant="outline" className="gap-1">
               <UserPlus className="w-4 h-4" /> Legg til
             </Button>
