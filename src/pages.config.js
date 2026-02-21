@@ -57,7 +57,6 @@ import Dashboard from './pages/Dashboard';
 import EventManagement from './pages/EventManagement';
 import InvoiceAutomation from './pages/InvoiceAutomation';
 import MemberManagement from './pages/MemberManagement';
-import Onboarding from './pages/Onboarding';
 import PaymentPortal from './pages/PaymentPortal';
 import Players from './pages/Players';
 import ReferralProgram from './pages/ReferralProgram';
@@ -80,7 +79,6 @@ export const PAGES = {
     "EventManagement": EventManagement,
     "InvoiceAutomation": InvoiceAutomation,
     "MemberManagement": MemberManagement,
-    "Onboarding": Onboarding,
     "PaymentPortal": PaymentPortal,
     "Players": Players,
     "ReferralProgram": ReferralProgram,
@@ -92,7 +90,7 @@ export const PAGES = {
 }
 
 export const pagesConfig = {
-    mainPage: "Onboarding",
+    mainPage: "AccountingIntegration",
     Pages: PAGES,
     Layout: __Layout,
 };
