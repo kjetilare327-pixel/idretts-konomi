@@ -40,11 +40,19 @@ export default function Onboarding() {
         members: [{ email: user.email, role: 'admin' }],
       });
 
-      await loadData();
+      // loadData can hang — give it a 5s timeout, then navigate regardless
+      await Promise.race([
+        loadData(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('loadData timeout')), 5000)),
+      ]).catch(err => {
+        console.warn('loadData skipped or timed out:', err.message);
+      });
+
       navigate(createPageUrl('Dashboard'));
     } catch (err) {
       console.error('Team creation failed:', err);
-      toast.error('Kunne ikke opprette laget. Prøv igjen.');
+      toast.error('Kunne ikke opprette laget: ' + (err?.message || 'Ukjent feil'));
+    } finally {
       setSaving(false);
     }
   };
