@@ -7,16 +7,19 @@ import { CheckCircle2, AlertCircle, Clock, TrendingUp } from 'lucide-react';
 import { formatNOK } from '@/components/shared/FormatUtils';
 
 export default function ReconciliationStatus({ teamId }) {
+  // Re-use the same query keys as the parent page to hit the cache
   const { data: bankTx = [] } = useQuery({
-    queryKey: ['bank-transactions', teamId],
-    queryFn: () => base44.entities.BankTransaction.filter({ team_id: teamId }),
-    enabled: !!teamId
+    queryKey: ['bankTransactions', teamId],
+    queryFn: () => base44.entities.BankTransaction.filter({ team_id: teamId }, '-transaction_date', 200),
+    enabled: !!teamId,
+    retry: 1,
   });
 
   const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions', teamId],
-    queryFn: () => base44.entities.Transaction.filter({ team_id: teamId }),
-    enabled: !!teamId
+    queryKey: ['unreconciledTransactions', teamId],
+    queryFn: () => base44.entities.Transaction.filter({ team_id: teamId, reconciled: 'unreconciled' }, '-date', 100),
+    enabled: !!teamId,
+    retry: 1,
   });
 
   const reconciled = bankTx.filter(tx => tx.reconciled).length;
