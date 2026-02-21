@@ -18,7 +18,6 @@ export default function Onboarding() {
   const [form, setForm] = useState({ name: '', sport_type: '', estimated_members: '', nif_number: '' });
   const [gdpr, setGdpr] = useState(false);
   const [saving, setSaving] = useState(false);
-  const { loadData } = useTeam();
   const navigate = useNavigate();
 
   const handleCreate = async (e) => {
