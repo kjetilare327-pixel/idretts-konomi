@@ -184,68 +184,68 @@ export default function Players() {
   if (!isAdmin) {
     return (
       <PullToRefresh onRefresh={handleRefresh}>
-      <div className="space-y-6 max-w-4xl">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Min profil</h1>
-          <p className="text-sm text-slate-500">Din profil og betalingsstatus for {currentTeam.name}</p>
+        <div className="space-y-6 max-w-4xl">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Min profil</h1>
+            <p className="text-sm text-slate-500">Din profil og betalingsstatus for {currentTeam.name}</p>
+          </div>
+
+          {/* My profile */}
+          {playerProfile && (
+            <PlayerProfileCard 
+              player={playerProfile}
+              ledger={getLedger(playerProfile)}
+              onUpdate={() => queryClient.invalidateQueries({ queryKey: ['players'] })} 
+              isOwnProfile={true}
+            />
+          )}
+
+          {/* Lagets betalingsoversikt */}
+          <Card className="border-0 shadow-md dark:bg-slate-900">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Users className="w-4 h-4 text-emerald-500" /> Lagets betalingsstatus
+              </CardTitle>
+              <CardDescription>Transparent oversikt over alle spillere</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{showNames ? 'Spiller' : 'ID'}</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Saldo</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {players.map((p, i) => {
+                    const l = getLedger(p);
+                    const cfg = STATUS_CONFIG[l.status] || STATUS_CONFIG.paid;
+                    return (
+                      <TableRow key={p.id}>
+                        <TableCell>{showNames ? p.full_name : `Spiller ${String.fromCharCode(65 + i)}`}</TableCell>
+                        <TableCell>
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badgeClass}`}>{cfg.label}</span>
+                        </TableCell>
+                        <TableCell className={`text-right font-medium ${l.balance > 0 ? 'text-red-600' : l.balance < 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                          {l.balance > 0 ? `+${formatNOK(l.balance)}` : l.balance < 0 ? formatNOK(l.balance) : '–'}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </div>
+      </PullToRefresh>
+    );
+  }
 
-        {/* My profile */}
-        {playerProfile && (
-          <PlayerProfileCard 
-            player={playerProfile}
-            ledger={getLedger(playerProfile)}
-            onUpdate={() => queryClient.invalidateQueries({ queryKey: ['players'] })} 
-            isOwnProfile={true}
-          />
-        )}
-
-        {/* Lagets betalingsoversikt */}
-        <Card className="border-0 shadow-md dark:bg-slate-900">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="w-4 h-4 text-emerald-500" /> Lagets betalingsstatus
-            </CardTitle>
-            <CardDescription>Transparent oversikt over alle spillere</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{showNames ? 'Spiller' : 'ID'}</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Saldo</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {players.map((p, i) => {
-                  const l = getLedger(p);
-                  const cfg = STATUS_CONFIG[l.status] || STATUS_CONFIG.paid;
-                  return (
-                    <TableRow key={p.id}>
-                      <TableCell>{showNames ? p.full_name : `Spiller ${String.fromCharCode(65 + i)}`}</TableCell>
-                      <TableCell>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badgeClass}`}>{cfg.label}</span>
-                      </TableCell>
-                      <TableCell className={`text-right font-medium ${l.balance > 0 ? 'text-red-600' : l.balance < 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                        {l.balance > 0 ? `+${formatNOK(l.balance)}` : l.balance < 0 ? formatNOK(l.balance) : '–'}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-        </div>
-        </PullToRefresh>
-        );
-        }
-
-        // Admin view
-        return (
-        <PullToRefresh onRefresh={handleRefresh}>
-        <div className="space-y-6">
+  // Admin view
+  return (
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Spillere & Betalinger</h1>
