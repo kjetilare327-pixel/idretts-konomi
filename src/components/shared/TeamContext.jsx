@@ -99,7 +99,10 @@ export function TeamProvider({ children }) {
           .catch(e => console.warn('Player profile fetch failed:', e));
       }
     } catch (e) {
-      console.error('loadData error:', e);
+      // Silently ignore auth errors – redirect already handled above
+      if (!e?.message?.includes('Authentication')) {
+        console.error('loadData error:', e);
+      }
     } finally {
       setLoading(false);
     }
