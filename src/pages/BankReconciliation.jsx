@@ -17,28 +17,35 @@ export default function BankReconciliation() {
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState(null);
 
-  const { data: bankTransactions = [], refetch: refetchBank } = useQuery({
+  const timeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms));
+  const withTimeout = (promise, ms = 8000) => Promise.race([promise, timeout(ms)]);
+
+  const { data: bankTransactions = [], refetch: refetchBank, isError: bankError } = useQuery({
     queryKey: ['bankTransactions', currentTeam?.id],
-    queryFn: () => base44.entities.BankTransaction.filter({ team_id: currentTeam.id }),
+    queryFn: () => withTimeout(base44.entities.BankTransaction.filter({ team_id: currentTeam.id }, '-transaction_date', 200)),
     enabled: !!currentTeam,
+    retry: 1,
   });
 
-  const { data: unreconciledTx = [] } = useQuery({
+  const { data: unreconciledTx = [], isError: txError } = useQuery({
     queryKey: ['unreconciledTransactions', currentTeam?.id],
-    queryFn: () => base44.entities.Transaction.filter({ team_id: currentTeam.id, reconciled: 'unreconciled' }),
+    queryFn: () => withTimeout(base44.entities.Transaction.filter({ team_id: currentTeam.id, reconciled: 'unreconciled' }, '-date', 100)),
     enabled: !!currentTeam,
+    retry: 1,
   });
 
-  const { data: claims = [] } = useQuery({
+  const { data: claims = [], isError: claimsError } = useQuery({
     queryKey: ['claims', currentTeam?.id],
-    queryFn: () => base44.entities.Claim.filter({ team_id: currentTeam.id }),
+    queryFn: () => withTimeout(base44.entities.Claim.filter({ team_id: currentTeam.id }, '-created_date', 100)),
     enabled: !!currentTeam,
+    retry: 1,
   });
 
   const { data: players = [] } = useQuery({
     queryKey: ['players', currentTeam?.id],
-    queryFn: () => base44.entities.Player.filter({ team_id: currentTeam.id }),
+    queryFn: () => withTimeout(base44.entities.Player.filter({ team_id: currentTeam.id }, '-created_date', 200)),
     enabled: !!currentTeam,
+    retry: 1,
   });
 
   const handleFileUpload = async (e) => {
