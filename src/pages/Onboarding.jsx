@@ -115,10 +115,10 @@ export default function Onboarding() {
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))} style={{ marginTop: 6 }} />
               </div>
               <div>
-                <Label>Idrettstype *</Label>
+                <Label htmlFor="sport-type">Idrettstype *</Label>
                 <div style={{ marginTop: 6 }}>
                   <Select value={form.sport_type} onValueChange={v => setForm(f => ({ ...f, sport_type: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Velg idrett" /></SelectTrigger>
+                    <SelectTrigger id="sport-type" name="sport_type"><SelectValue placeholder="Velg idrett" /></SelectTrigger>
                     <SelectContent>
                       {SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                     </SelectContent>
