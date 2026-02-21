@@ -51,12 +51,10 @@ export default function Onboarding() {
       const trialEnd = format(addDays(new Date(), 14), 'yyyy-MM-dd');
       let user;
       try {
-        user = await base44.auth.me();
-      } catch (authErr) {
-        console.error('[Onboarding] auth.me failed – redirecting to login', authErr);
-        toast.error('Sesjonen er utløpt – logg inn igjen.', { id: 'ct' });
+        user = await ensureAdmin();
+      } catch (roleErr) {
+        toast.error(roleErr.message, { id: 'ct' });
         setSaving(false);
-        base44.auth.redirectToLogin(window.location.href);
         return;
       }
 
@@ -65,11 +63,6 @@ export default function Onboarding() {
         setSaving(false);
         base44.auth.redirectToLogin(window.location.href);
         return;
-      }
-
-      if (user?.role !== 'admin') {
-        await base44.auth.updateMe({ role: 'admin' });
-        user = await base44.auth.me();
       }
 
       const newTeam = await base44.entities.Team.create({
