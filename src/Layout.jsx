@@ -1,3 +1,9 @@
+// iOS Safari/WebView polyfill: prevent ReferenceError on bare `Notification` identifier
+// Must run before ANY component code accesses `Notification`
+if (typeof window !== 'undefined' && typeof window.Notification === 'undefined') {
+  try { window.Notification = undefined; } catch(e) {}
+}
+
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
