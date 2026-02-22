@@ -324,35 +324,126 @@ function InnerLayout({ children, currentPageName }) {
 
       const NO_LAYOUT_PAGES = ['Onboarding', 'GdprConsent'];
 
-      function AuthGate({ children, currentPageName }) {
-        const [authChecked, setAuthChecked] = React.useState(false);
+      function BootLoader() {
+        return (
+          <div style={{
+            minHeight: '100vh', display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            background: '#f8fafc', fontFamily: 'system-ui, sans-serif'
+          }}>
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+              <Shield style={{ width: 26, height: 26, color: '#fff' }} />
+            </div>
+            <div style={{ width: 32, height: 32, border: '3px solid #d1fae5', borderTopColor: '#059669', borderRadius: '50%', animation: 'spin 0.8s linear infinite', marginBottom: 16 }} />
+            <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Laster inn…</p>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          </div>
+        );
+      }
 
-        React.useEffect(() => {
-          (async () => {
-            let authenticated;
+      function BootError({ message, onRetry }) {
+        return (
+          <div style={{
+            minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: '#f8fafc', padding: 24, fontFamily: 'system-ui, sans-serif'
+          }}>
+            <div style={{
+              background: '#fff', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+              padding: 32, maxWidth: 400, width: '100%', textAlign: 'center'
+            }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🔌</div>
+              <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: 8, color: '#1e293b' }}>Innlasting tok for lang tid</h2>
+              <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: 24 }}>
+                {message || 'Tilkoblingen mislyktes. Sjekk internett og prøv igjen.'}
+              </p>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button onClick={onRetry} style={{ background: '#059669', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}>
+                  Prøv igjen
+                </button>
+                <button onClick={() => base44.auth.redirectToLogin()} style={{ background: 'transparent', color: '#059669', border: '1px solid #059669', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}>
+                  Logg inn på nytt
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function AuthGate({ children, currentPageName }) {
+        const [status, setStatus] = React.useState('loading'); // 'loading' | 'ready' | 'error'
+        const [errorMsg, setErrorMsg] = React.useState('');
+
+        const boot = React.useCallback(async () => {
+          setStatus('loading');
+
+          // iOS-safe diagnostics
+          console.log('[Boot] UA:', navigator.userAgent);
+          console.log('[Boot] URL:', window.location.href);
+
+          // 10-second timeout
+          let timedOut = false;
+          const timeout = setTimeout(() => {
+            timedOut = true;
+            setErrorMsg('Innlasting tok for lang tid (>10s). Sjekk internettforbindelsen.');
+            setStatus('error');
+          }, 10000);
+
+          try {
+            let authenticated = false;
             try {
               authenticated = await base44.auth.isAuthenticated();
-            } catch {
+              console.log('[Boot] authenticated:', authenticated);
+            } catch (e) {
+              console.warn('[Boot] isAuthenticated failed:', e?.message);
               authenticated = false;
             }
+
+            if (timedOut) return;
+
             if (!authenticated) {
-              base44.auth.redirectToLogin(window.location.href);
+              clearTimeout(timeout);
+              // Check if this is a post-OAuth redirect with no session (iOS Safari issue)
+              const params = new URLSearchParams(window.location.search);
+              const reason = params.get('reason') || '';
+              if (reason === 'session') {
+                // Already redirected once — avoid loop, show error
+                setErrorMsg('Sesjonen kunne ikke opprettes etter innlogging. Prøv å logge inn på nytt.');
+                setStatus('error');
+              } else {
+                base44.auth.redirectToLogin(window.location.href);
+              }
               return;
             }
-            // Ensure every user is admin so RLS rules allow all entity operations
+
+            // Ensure admin role before anything renders
             try {
               const u = await base44.auth.me();
+              console.log('[Boot] user role:', u?.role, 'email:', u?.email);
               if (u && u.role !== 'admin') {
                 await base44.auth.updateMe({ role: 'admin' });
+                console.log('[Boot] promoted to admin');
               }
             } catch (e) {
-              console.warn('[AuthGate] role promotion failed', e);
+              console.warn('[AuthGate] role promotion failed', e?.message);
             }
-            setAuthChecked(true);
-          })();
+
+            if (timedOut) return;
+            clearTimeout(timeout);
+            setStatus('ready');
+          } catch (e) {
+            if (timedOut) return;
+            clearTimeout(timeout);
+            console.error('[Boot] fatal error:', e?.message);
+            setErrorMsg(e?.message || 'Oppstart feilet.');
+            setStatus('error');
+          }
         }, []);
 
-        if (!authChecked) return null;
+        React.useEffect(() => { boot(); }, [boot]);
+
+        if (status === 'loading') return <BootLoader />;
+        if (status === 'error') return <BootError message={errorMsg} onRetry={boot} />;
+
         return (
           <TeamProvider>
             <InnerLayout currentPageName={currentPageName}>{children}</InnerLayout>
@@ -362,11 +453,17 @@ function InnerLayout({ children, currentPageName }) {
 
       export default function Layout({ children, currentPageName }) {
         if (NO_LAYOUT_PAGES.includes(currentPageName)) {
-          return <ThemeProvider>{children}</ThemeProvider>;
+          return (
+            <ErrorBoundary>
+              <ThemeProvider>{children}</ThemeProvider>
+            </ErrorBoundary>
+          );
         }
         return (
-          <ThemeProvider>
-            <AuthGate currentPageName={currentPageName}>{children}</AuthGate>
-          </ThemeProvider>
+          <ErrorBoundary>
+            <ThemeProvider>
+              <AuthGate currentPageName={currentPageName}>{children}</AuthGate>
+            </ThemeProvider>
+          </ErrorBoundary>
         );
       }
