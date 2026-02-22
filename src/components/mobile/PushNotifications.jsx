@@ -36,7 +36,7 @@ export default function PushNotifications() {
         localStorage.setItem('push_notifications_enabled', 'true');
         
         // Show test notification
-        new Notification('Varsler aktivert! 🎉', {
+        new window.Notification('Varsler aktivert! 🎉', {
           body: 'Du vil nå motta viktige varsler fra IdrettsØkonomi',
           icon: '/icon-192.png',
           badge: '/icon-192.png'
