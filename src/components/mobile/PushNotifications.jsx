@@ -110,8 +110,13 @@ export default function PushNotifications() {
     }
   }, [enabled, permission, currentTeam, user]);
 
-  if (!('Notification' in window)) {
-    return null;
+  if (!isNotificationSupported()) {
+    return (
+      <div className="flex items-center gap-2 text-xs text-slate-400 px-1">
+        <BellOff className="w-4 h-4" />
+        <span>Push-varsler støttes ikke på denne enheten/nettleseren</span>
+      </div>
+    );
   }
 
   if (permission === 'denied') {
