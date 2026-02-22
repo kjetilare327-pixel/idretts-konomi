@@ -5,17 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Bell, BellOff } from 'lucide-react';
 
+const isNotificationSupported = () =>
+  typeof window !== 'undefined' && 'Notification' in window;
+
 export default function PushNotifications() {
   const { currentTeam, user } = useTeam();
-  const [permission, setPermission] = useState(Notification.permission);
+  const [permission, setPermission] = useState(() =>
+    isNotificationSupported() ? window.Notification.permission : 'unsupported'
+  );
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
-    // Check if notifications are supported
-    if (!('Notification' in window)) {
-      console.log('This browser does not support notifications');
-      return;
-    }
+    if (!isNotificationSupported()) return;
 
     // Load saved preference
     const savedPref = localStorage.getItem('push_notifications_enabled');
