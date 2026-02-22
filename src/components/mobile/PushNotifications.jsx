@@ -76,8 +76,8 @@ export default function PushNotifications() {
         });
 
         recent.forEach(notif => {
-          if (Notification.permission === 'granted') {
-            const notification = new Notification(notif.title, {
+          if (isNotificationSupported() && window.Notification.permission === 'granted') {
+            const notification = new window.Notification(notif.title, {
               body: notif.message,
               icon: '/icon-192.png',
               badge: '/icon-192.png',
