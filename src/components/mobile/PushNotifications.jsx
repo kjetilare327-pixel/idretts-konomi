@@ -26,8 +26,9 @@ export default function PushNotifications() {
   }, []);
 
   const requestPermission = async () => {
+    if (!isNotificationSupported()) return;
     try {
-      const result = await Notification.requestPermission();
+      const result = await window.Notification.requestPermission();
       setPermission(result);
       
       if (result === 'granted') {
