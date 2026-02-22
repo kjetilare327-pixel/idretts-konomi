@@ -52,15 +52,6 @@ export function TeamProvider({ children }) {
         base44.auth.redirectToLogin(window.location.href);
         return;
       }
-      // Auto-promote to admin so entity RLS rules allow creating teams, players, transactions etc.
-      if (u.role !== 'admin') {
-        try {
-          await base44.auth.updateMe({ role: 'admin' });
-          u = await base44.auth.me();
-        } catch (promoteErr) {
-          console.warn('loadData: promote to admin failed', promoteErr);
-        }
-      }
       setUser(u);
 
       let myTeams;

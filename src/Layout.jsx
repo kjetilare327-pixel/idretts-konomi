@@ -421,18 +421,6 @@ function InnerLayout({ children, currentPageName }) {
               return;
             }
 
-            // Ensure admin role before anything renders
-            try {
-              const u = await base44.auth.me();
-              console.log('[Boot] user role:', u?.role, 'email:', u?.email);
-              if (u && u.role !== 'admin') {
-                await base44.auth.updateMe({ role: 'admin' });
-                console.log('[Boot] promoted to admin');
-              }
-            } catch (e) {
-              console.warn('[AuthGate] role promotion failed', e?.message);
-            }
-
             if (timedOut) return;
             clearTimeout(timeout);
             setStatus('ready');
