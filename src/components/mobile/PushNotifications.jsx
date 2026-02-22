@@ -5,8 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Bell, BellOff } from 'lucide-react';
 
-const isNotificationSupported = () =>
-  typeof window !== 'undefined' && 'Notification' in window;
+// iOS Safari/WebView: 'Notification' in window can be true but window.Notification is undefined
+const isNotificationSupported = () => {
+  try {
+    return (
+      typeof window !== 'undefined' &&
+      typeof window.Notification !== 'undefined' &&
+      window.Notification !== null &&
+      typeof window.Notification.requestPermission === 'function'
+    );
+  } catch (e) {
+    return false;
+  }
+};
 
 export default function PushNotifications() {
   const { currentTeam, user } = useTeam();
