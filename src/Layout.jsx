@@ -5,6 +5,7 @@ import { createPageUrl } from './utils';
 import { TeamProvider, useTeam } from './components/shared/TeamContext';
 import { ThemeProvider, useTheme } from './components/shared/ThemeContext';
 import { base44 } from '@/api/base44Client';
+import ErrorBoundary from './components/shared/ErrorBoundary';
 import {
   LayoutDashboard,
   Receipt,
