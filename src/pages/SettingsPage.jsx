@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useTeam } from '@/components/shared/TeamContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import RoleManagement from '@/components/settings/RoleManagement';
+import TeamMembersManager from '@/components/settings/TeamMembersManager';
 import AlertThresholdSettings from '@/components/notifications/AlertThresholdSettings';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -25,7 +26,7 @@ import {
 const SPORTS = ['Fotball', 'Håndball', 'Ski', 'Svømming', 'Friidrett', 'Basketball', 'Volleyball', 'Ishockey', 'Tennis', 'Annet'];
 
 export default function SettingsPage() {
-  const { currentTeam, refreshTeams, user } = useTeam();
+  const { currentTeam, refreshTeams, user, currentTeamRole } = useTeam();
   const queryClient = useQueryClient();
 
   // All hooks at top level - call useQuery before any conditional logic
