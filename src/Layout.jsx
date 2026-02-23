@@ -97,7 +97,7 @@ function InnerLayout({ children, currentPageName }) {
   const { darkMode, toggleDark } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const isAdmin = isTeamAdmin();
+  const isAdmin = currentTeamRole === 'admin';
   const isChildRoute = !ROOT_PAGES.includes(currentPageName);
   
   const userRole = currentTeamRole || 'player';
