@@ -284,50 +284,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Members */}
-      <Card className="border-0 shadow-md dark:bg-slate-900">
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Users className="w-4 h-4 text-emerald-500" /> Medlemmer
-          </CardTitle>
-          <CardDescription>Gi tilgang til andre kasserere eller styremedlemmer</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Input placeholder="E-postadresse" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} className="flex-1" />
-            <NativeSelect
-              value={inviteRole}
-              onValueChange={setInviteRole}
-              title="Rolle"
-              className="w-32"
-              options={[{ value: 'admin', label: 'Admin' }, { value: 'viewer', label: 'Visning' }]}
-            />
-            <Button onClick={handleInvite} variant="outline" className="gap-1">
-              <UserPlus className="w-4 h-4" /> Legg til
-            </Button>
-          </div>
-          <div className="space-y-2">
-            {(currentTeam.members || []).map(m => (
-              <div key={m.email} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center text-xs font-bold text-emerald-700">
-                    {m.email?.[0]?.toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">{m.email}</p>
-                    <Badge variant="secondary" className="text-xs">{m.role === 'admin' ? 'Administrator' : 'Visning'}</Badge>
-                  </div>
-                </div>
-                {m.email !== user?.email && (
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => removeMember(m.email)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+
 
       {/* Subscription */}
       <Card className="border-0 shadow-md dark:bg-slate-900">
