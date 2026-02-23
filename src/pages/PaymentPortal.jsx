@@ -161,9 +161,9 @@ export default function PaymentPortal() {
                       </p>
                       <div className="flex flex-col gap-2">
                         <Button
-                          size="sm"
-                          onClick={() => createVippsPayment(claim.id)}
-                          disabled={processing === claim.id}
+                         size="sm"
+                         onClick={() => handleVippsPayment(claim)}
+                         disabled={processing === claim.id}
                           className="gap-2 bg-orange-600 hover:bg-orange-700"
                         >
                           {processing === claim.id ? (
