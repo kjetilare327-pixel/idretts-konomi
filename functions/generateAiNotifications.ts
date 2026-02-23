@@ -88,7 +88,7 @@ async function generateNotificationsForTeam(base44, team_id) {
 
   const highExpenses = recentExpenses.filter(t => t.amount > avgExpense * 2);
   if (highExpenses.length > 0) {
-    const adminPlayers = players.filter(p => p.role === 'admin');
+    const adminPlayers = players.filter(p => p.in_app_role === 'admin');
     for (const admin of adminPlayers) {
       notifications.push({
         team_id,
@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
     if (!isScheduled) {
       // Manual invocation — require auth
       const user = await base44.auth.me();
-      if (!user || user.role !== 'admin') {
+      if (!user || user.in_app_role !== 'admin') {
         return Response.json({ error: 'Unauthorized' }, { status: 403 });
       }
       const result = await generateNotificationsForTeam(base44, team_id);
