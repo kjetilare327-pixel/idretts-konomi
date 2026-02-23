@@ -17,9 +17,9 @@ Deno.serve(async (req) => {
       }, { status: 400 });
     }
 
-    // Verify user is admin
+    // Verify user is team admin
     const team = await base44.entities.Team.get(team_id);
-    const isAdmin = team.members?.some(m => m.email === user.email && m.role === 'admin');
+    const isAdmin = team.members?.some(m => m.email === user.email && ['admin', 'kasserer', 'styreleder'].includes(m.role));
 
     if (!isAdmin) {
       return Response.json({ error: 'Only admins can send notifications' }, { status: 403 });
