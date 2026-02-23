@@ -93,20 +93,14 @@ const ROOT_PAGES = ['Dashboard', 'PaymentPortal', 'Players', 'Reports', 'Setting
 function InnerLayout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const { currentTeam, teams, selectTeam, user, isTeamAdmin } = useTeam();
+  const { currentTeam, teams, selectTeam, user, isTeamAdmin, currentTeamRole } = useTeam();
   const { darkMode, toggleDark } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const isAdmin = isTeamAdmin();
   const isChildRoute = !ROOT_PAGES.includes(currentPageName);
   
-  const getUserRole = () => {
-    if (!currentTeam || !user) return 'player';
-    const member = currentTeam.members?.find(m => m.email === user.email);
-    return member?.role || 'player';
-  };
-  
-  const userRole = getUserRole();
+  const userRole = currentTeamRole || 'player';
   const activeAdvanced = ADVANCED_NAV.some(i => i.page === currentPageName);
 
   // (handled at top-level Layout now – this branch is never reached for no-layout pages)

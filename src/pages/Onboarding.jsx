@@ -47,6 +47,15 @@ export default function Onboarding() {
         members: [{ email: user.email, role: 'admin' }],
       });
 
+      // Insert creator as active admin in TeamMember
+      await base44.entities.TeamMember.create({
+        team_id: newTeam.id,
+        user_email: user.email.toLowerCase(),
+        role: 'admin',
+        status: 'active',
+        invited_by_email: user.email,
+      }).catch(e => console.warn('TeamMember create failed:', e));
+
       toast.success('Lag opprettet!', { id: 'ct' });
       localStorage.setItem('idrettsøkonomi_team_id', newTeam.id);
       navigate(createPageUrl('Dashboard'));
