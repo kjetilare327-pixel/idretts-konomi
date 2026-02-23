@@ -163,8 +163,11 @@ export default function SettingsPage() {
         <p className="text-sm text-slate-500">Administrer laget og kontoinnstillinger</p>
       </div>
 
+      {/* Team Members / Access Management */}
+      <TeamMembersManager />
+
       {/* Role management */}
-      {currentTeam?.members?.some(m => m.email === user?.email && m.role === 'admin') && (
+      {currentTeamRole === 'admin' && (
         <RoleManagement teamId={currentTeam?.id} />
       )}
 
