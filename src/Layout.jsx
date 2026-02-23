@@ -50,8 +50,8 @@ import {
 
 // Core nav items
 const CORE_NAV = [
-  { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'kasserer', 'styreleder', 'revisor', 'player', 'parent'] },
-  { name: 'Mine betalinger', page: 'PaymentPortal', icon: Receipt, roles: ['player', 'parent'] },
+  { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'kasserer', 'styreleder', 'revisor', 'player', 'forelder'] },
+  { name: 'Mine betalinger', page: 'PaymentPortal', icon: Receipt, roles: ['player', 'forelder'] },
   { name: 'Spillere', page: 'Players', icon: Users, roles: ['admin', 'kasserer', 'styreleder', 'revisor'] },
   { name: 'Transaksjoner', page: 'Transactions', icon: Receipt, roles: ['admin', 'kasserer', 'revisor'] },
   { name: 'Bankavstemming', page: 'BankReconciliation', icon: Receipt, roles: ['admin', 'kasserer'] },
