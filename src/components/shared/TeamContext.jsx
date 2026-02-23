@@ -1,17 +1,17 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 
 const TeamContext = createContext(null);
 
-// Fetch teams scoped to the current user — filter server-side by created_by,
-// then fall back to client-side members check (multi-tenant safe).
+// Roles that have access to financial/admin features
+export const FINANCE_ROLES = ['admin', 'kasserer', 'styreleder', 'revisor'];
+export const ADMIN_ROLES = ['admin'];
+
 async function fetchMyTeams(userEmail) {
   const [createdTeams, allTeams] = await Promise.all([
     base44.entities.Team.filter({ created_by: userEmail }).catch(() => []),
     base44.entities.Team.list().catch(() => []),
   ]);
-
-  // Merge: teams created by user OR teams where user is in members array
   const byId = new Map();
   for (const t of [...createdTeams, ...allTeams]) {
     const isMine =
@@ -28,15 +28,41 @@ export function TeamProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [playerProfile, setPlayerProfile] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  // TeamMember records for the current user (keyed by team_id)
+  const [myMemberships, setMyMemberships] = useState({}); // { [team_id]: TeamMember }
+  const [currentTeamRole, setCurrentTeamRole] = useState('player');
 
-  useEffect(() => {
-    loadData();
+  const loadMemberships = useCallback(async (userEmail, teamList) => {
+    if (!userEmail || !teamList.length) return {};
+    const memberships = await base44.entities.TeamMember.filter({ user_email: userEmail }).catch(() => []);
+    const map = {};
+    for (const m of memberships) map[m.team_id] = m;
+
+    // Backfill: if user created a team but has no TeamMember entry, create one
+    for (const team of teamList) {
+      if (team.created_by === userEmail && !map[team.id]) {
+        const created = await base44.entities.TeamMember.create({
+          team_id: team.id,
+          user_email: userEmail,
+          role: 'admin',
+          status: 'active',
+        }).catch(() => null);
+        if (created) map[team.id] = created;
+      }
+    }
+    return map;
   }, []);
 
-  // Accepts an optional `freshTeam` to inject immediately (post-create)
-  // without relying on async propagation.
-  const loadData = async (freshTeam = null) => {
+  const resolveRole = useCallback((teamId, membershipsMap, userEmail, teamObj) => {
+    const membership = membershipsMap[teamId];
+    if (membership) return membership.role;
+    // Legacy fallback: check Team.members array
+    if (teamObj?.created_by === userEmail) return 'admin';
+    const legacyMember = teamObj?.members?.find(m => m.email === userEmail);
+    return legacyMember?.role || 'player';
+  }, []);
+
+  const loadData = useCallback(async (freshTeam = null) => {
     try {
       let u;
       try {
@@ -56,7 +82,6 @@ export function TeamProvider({ children }) {
 
       let myTeams;
       if (freshTeam) {
-        // Deterministic: include the just-created team immediately
         const fetched = await fetchMyTeams(u.email);
         const has = fetched.some(t => t.id === freshTeam.id);
         myTeams = has ? fetched : [freshTeam, ...fetched];
@@ -64,15 +89,13 @@ export function TeamProvider({ children }) {
         myTeams = await fetchMyTeams(u.email);
       }
 
-      const adminTeams = myTeams.filter(t =>
-        t.members?.some(m => m.email === u.email && m.role === 'admin') ||
-        t.created_by === u.email
-      );
       setTeams(myTeams);
-      setIsAdmin(adminTeams.length > 0);
+
+      const membershipsMap = await loadMemberships(u.email, myTeams);
+      setMyMemberships(membershipsMap);
 
       const savedTeamId = localStorage.getItem('idrettsøkonomi_team_id');
-      let selected =
+      const selected =
         (savedTeamId && myTeams.find(t => t.id === savedTeamId)) ||
         freshTeam ||
         myTeams[0] ||
@@ -80,31 +103,35 @@ export function TeamProvider({ children }) {
 
       if (selected) {
         localStorage.setItem('idrettsøkonomi_team_id', selected.id);
-      }
-      setCurrentTeam(selected);
-
-      // Load player profile — non-blocking, never hangs loadData
-      if (selected) {
+        const role = resolveRole(selected.id, membershipsMap, u.email, selected);
+        setCurrentTeamRole(role);
+        setCurrentTeam(selected);
         base44.entities.Player.filter({ team_id: selected.id, user_email: u.email })
           .then(players => { if (players.length > 0) setPlayerProfile(players[0]); })
-          .catch(e => console.warn('Player profile fetch failed:', e));
+          .catch(() => {});
+      } else {
+        setCurrentTeam(null);
+        setCurrentTeamRole('player');
       }
     } catch (e) {
-      // Silently ignore auth errors – redirect already handled above
       if (!e?.message?.includes('Authentication')) {
         console.error('loadData error:', e);
       }
     } finally {
       setLoading(false);
     }
-  };
+  }, [loadMemberships, resolveRole]);
+
+  useEffect(() => { loadData(); }, []);
 
   const selectTeam = async (team) => {
     setCurrentTeam(team);
     localStorage.setItem('idrettsøkonomi_team_id', team.id);
+    const role = resolveRole(team.id, myMemberships, user?.email, team);
+    setCurrentTeamRole(role);
     base44.entities.Player.filter({ team_id: team.id, user_email: user?.email })
       .then(players => setPlayerProfile(players.length > 0 ? players[0] : null))
-      .catch(e => console.warn('selectTeam player fetch failed:', e));
+      .catch(() => {});
   };
 
   const refreshTeams = async () => {
@@ -117,33 +144,40 @@ export function TeamProvider({ children }) {
     }
   };
 
+  const refreshTeamMembers = async () => {
+    if (!user || !teams.length) return;
+    const membershipsMap = await loadMemberships(user.email, teams);
+    setMyMemberships(membershipsMap);
+    if (currentTeam) {
+      const role = resolveRole(currentTeam.id, membershipsMap, user.email, currentTeam);
+      setCurrentTeamRole(role);
+    }
+  };
+
   const refreshPlayerProfile = async () => {
     if (!currentTeam || !user) return;
     base44.entities.Player.filter({ team_id: currentTeam.id, user_email: user.email })
       .then(players => setPlayerProfile(players.length > 0 ? players[0] : null))
-      .catch(e => console.warn('refreshPlayerProfile failed:', e));
+      .catch(() => {});
   };
 
+  // Legacy helpers for backward compatibility
   const isTeamAdmin = (team = currentTeam) => {
     if (!team || !user) return false;
-    return (
-      team.created_by === user.email ||
-      team.members?.some(m => m.email === user.email && ['admin', 'kasserer', 'styreleder', 'revisor'].includes(m.role))
-    );
+    const role = resolveRole(team.id, myMemberships, user.email, team);
+    return FINANCE_ROLES.includes(role);
   };
 
   const getUserTeamRole = (team = currentTeam) => {
     if (!team || !user) return 'player';
-    // Team creator is always admin, even if not explicitly in members array
-    if (team.created_by === user.email) return 'admin';
-    const member = team.members?.find(m => m.email === user.email);
-    return member?.role || 'player';
+    return resolveRole(team.id, myMemberships, user.email, team);
   };
 
   const canViewFinance = (team = currentTeam) => {
-    const role = getUserTeamRole(team);
-    return ['admin', 'kasserer', 'styreleder', 'revisor'].includes(role);
+    return FINANCE_ROLES.includes(getUserTeamRole(team));
   };
+
+  const isAdmin = teams.some(t => resolveRole(t.id, myMemberships, user?.email, t) === 'admin');
 
   return (
     <TeamContext.Provider value={{
@@ -153,8 +187,11 @@ export function TeamProvider({ children }) {
       user,
       playerProfile,
       isAdmin,
+      currentTeamRole,
+      myMemberships,
       selectTeam,
       refreshTeams,
+      refreshTeamMembers,
       refreshPlayerProfile,
       loadData,
       isTeamAdmin,
