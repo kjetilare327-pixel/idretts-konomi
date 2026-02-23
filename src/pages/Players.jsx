@@ -396,6 +396,16 @@ export default function Players() {
                     <PlayerLedgerDetail ledger={l} />
                   </div>
 
+                  {/* Vipps payment actions */}
+                  {needsReminder && (
+                    <div>
+                      <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                        <ExternalLink className="w-4 h-4 text-orange-500" /> Vipps betalingslenker
+                      </h3>
+                      <VippsClaimActions claims={l.claims} teamId={currentTeam?.id} />
+                    </div>
+                  )}
+
                   {/* Actions */}
                   {needsReminder && (
                     <Button onClick={() => handleSendReminder(selectedPlayer)} disabled={sendingReminder === selectedPlayer.id} className="w-full bg-amber-600 hover:bg-amber-700 gap-2">
