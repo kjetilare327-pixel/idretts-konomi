@@ -37,25 +37,22 @@ export default function PaymentPortal() {
   const unpaidClaims = claims.filter(c => c.status !== 'paid' && c.status !== 'cancelled');
   const totalUnpaid = unpaidClaims.reduce((sum, c) => sum + c.amount, 0);
 
-  const createVippsPayment = async (claimId) => {
-    setProcessing(claimId);
+  const handleVippsPayment = async (claim) => {
+    setProcessing(claim.id);
     try {
-      const response = await base44.functions.invoke('createVippsPayment', { claim_id: claimId });
-      
+      // If claim already has a link, open it directly
+      if (claim.vipps_payment_link) {
+        window.open(claim.vipps_payment_link, '_blank');
+        setProcessing(null);
+        return;
+      }
+      // Otherwise generate a new one
+      const response = await base44.functions.invoke('createVippsPayment', { claim_id: claim.id });
       if (response.data.success) {
-        // Åpne Vipps-lenke i ny fane
         window.open(response.data.payment_link, '_blank');
-        
-        // Simuler betaling etter 3 sekunder (i demo-modus)
-        setTimeout(async () => {
-          await base44.functions.invoke('processPayment', {
-            payment_id: response.data.payment_id,
-            status: 'completed'
-          });
-          queryClient.invalidateQueries({ queryKey: ['my-claims'] });
-          queryClient.invalidateQueries({ queryKey: ['my-payments'] });
-          alert('Betaling fullført! Kvittering er tilgjengelig.');
-        }, 3000);
+        queryClient.invalidateQueries({ queryKey: ['my-claims'] });
+      } else {
+        alert(response.data.error || 'Kunne ikke opprette betalingslenke');
       }
     } catch (err) {
       console.error('Payment error:', err);
