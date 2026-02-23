@@ -174,7 +174,7 @@ export default function PaymentPortal() {
                           ) : (
                             <>
                               <ExternalLink className="w-4 h-4" />
-                              Betal med Vipps
+                              {claim.vipps_payment_link ? 'Betal med Vipps' : 'Generer Vipps-lenke'}
                             </>
                           )}
                         </Button>
