@@ -30,12 +30,6 @@ export const SETUP_STEPS = [
     description: 'Send e-post eller varsel',
     page: 'Communications',
   },
-  {
-    id: 'bank_matching',
-    label: 'Kjør bankmatching',
-    description: 'Match betalinger eller marker betalt',
-    page: 'BankReconciliation',
-  },
 ];
 
 export function getCompletedSteps(players, transactions, claims, sentMessages) {
