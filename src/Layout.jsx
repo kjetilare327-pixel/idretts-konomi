@@ -29,7 +29,6 @@ import {
   Users,
   ScrollText,
   Mail,
-  Building2,
   Sparkles,
   Lock,
   ArrowLeft,
