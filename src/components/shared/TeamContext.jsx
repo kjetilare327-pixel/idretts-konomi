@@ -22,16 +22,44 @@ async function fetchMyTeams(userEmail) {
   return [...byId.values()];
 }
 
+// Compute the initial team state synchronously from bootData so that
+// the very first render already has correct values — no useEffect gap.
+function computeInitialState(bootData) {
+  if (!bootData) {
+    return { currentTeam: null, teams: [], myMemberships: {}, currentTeamRole: 'player', loading: true, user: null };
+  }
+  const userEmail = bootData.user?.email;
+  const myTeams = bootData.teams || [];
+  const map = {};
+  if (bootData.memberTeams) {
+    for (const m of bootData.memberTeams) map[m.team_id] = m;
+  }
+  const savedTeamId = typeof localStorage !== 'undefined' ? localStorage.getItem('idrettsøkonomi_team_id') : null;
+  const selected = (savedTeamId && myTeams.find(t => t.id === savedTeamId)) || myTeams[0] || null;
+  let role = 'player';
+  if (selected) {
+    const membership = map[selected.id];
+    if (membership) role = membership.role;
+    else if (selected.created_by === userEmail) role = 'admin';
+    else {
+      const leg = selected.members?.find(m => m.email === userEmail);
+      role = leg?.role || 'player';
+    }
+    try { localStorage.setItem('idrettsøkonomi_team_id', selected.id); } catch(_) {}
+  }
+  console.log('[TeamProvider] initial state from bootData — team=', selected?.name, 'role=', role);
+  return { currentTeam: selected, teams: myTeams, myMemberships: map, currentTeamRole: role, loading: false, user: bootData.user };
+}
+
 export function TeamProvider({ children, bootData }) {
-  const [currentTeam, setCurrentTeam] = useState(null);
-  const [teams, setTeams] = useState([]);
-  // If bootData is supplied by AuthGate we start in loaded state (no flash)
-  const [loading, setLoading] = useState(!bootData);
-  const [user, setUser] = useState(bootData?.user || null);
+  const init = computeInitialState(bootData);
+  const [currentTeam, setCurrentTeam] = useState(init.currentTeam);
+  const [teams, setTeams] = useState(init.teams);
+  const [loading, setLoading] = useState(init.loading);
+  const [user, setUser] = useState(init.user);
   const [playerProfile, setPlayerProfile] = useState(null);
-  // TeamMember records for the current user (keyed by team_id)
-  const [myMemberships, setMyMemberships] = useState({}); // { [team_id]: TeamMember }
-  const [currentTeamRole, setCurrentTeamRole] = useState('player');
+  const [myMemberships, setMyMemberships] = useState(init.myMemberships);
+  const [currentTeamRole, setCurrentTeamRole] = useState(init.currentTeamRole);
 
   const loadMemberships = useCallback(async (userEmail, teamList) => {
     if (!userEmail || !teamList.length) return {};
