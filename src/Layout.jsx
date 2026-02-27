@@ -432,7 +432,7 @@ function InnerLayout({ children, currentPageName }) {
 
         // Keep showing BootLoader during 'redirecting' so the page never flashes
         if (status === 'loading' || status === 'redirecting') return <BootLoader />;
-        if (status === 'error') return <BootError message={errorMsg} onRetry={() => setStatus('loading')} />;
+        if (status === 'error') return <BootError message={errorMsg} onRetry={() => { setErrorMsg(''); setStatus('loading'); }} />;
 
         // Only mount TeamProvider (and children) once we know the user has teams
         return (
