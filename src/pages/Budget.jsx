@@ -255,13 +255,21 @@ export default function BudgetPage() {
             </div>
             <div className="space-y-2">
               <Label>Kategori</Label>
-              <NativeSelect
-                value={form.category}
-                onValueChange={v => setForm({ ...form, category: v })}
-                title="Kategori"
-                placeholder="Velg kategori"
-                options={categories.map(c => ({ value: c, label: c }))}
-              />
+              {categories.length > 0 ? (
+                <NativeSelect
+                  value={form.category}
+                  onValueChange={v => setForm({ ...form, category: v })}
+                  title="Kategori"
+                  placeholder="Velg kategori"
+                  options={categories.map(c => ({ value: c, label: c }))}
+                />
+              ) : (
+                <Input
+                  value={form.category}
+                  onChange={e => setForm({ ...form, category: e.target.value })}
+                  placeholder="Skriv inn kategori..."
+                />
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
