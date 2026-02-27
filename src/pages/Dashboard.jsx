@@ -92,7 +92,8 @@ export default function Dashboard() {
   }
 
   if (!currentTeam && teams.length === 0) {
-    navigate(createPageUrl('Onboarding'));
+    // Redirect immediately – use replace so back button doesn't loop
+    navigate(createPageUrl('Onboarding'), { replace: true });
     return null;
   }
 
