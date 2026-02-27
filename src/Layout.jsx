@@ -367,75 +367,48 @@ function InnerLayout({ children, currentPageName }) {
       }
 
       function AuthGate({ children, currentPageName }) {
-        // 'loading' | 'ready' | 'onboarding' | 'error'
-        const [status, setStatus] = React.useState('loading');
+        const [status, setStatus] = React.useState('loading'); // 'loading' | 'ready' | 'error'
         const [errorMsg, setErrorMsg] = React.useState('');
 
-        React.useEffect(() => {
-          let cancelled = false;
+        const run = React.useCallback(async () => {
+          setStatus('loading');
+          try {
+            // 1. Auth check
+            let authenticated = false;
+            try { authenticated = await base44.auth.isAuthenticated(); } catch (e) {}
 
-          const timeout = setTimeout(() => {
-            if (!cancelled) {
-              setErrorMsg('Innlasting tok for lang tid (>10s). Sjekk internettforbindelsen.');
-              setStatus('error');
+            if (!authenticated) {
+              base44.auth.redirectToLogin(window.location.origin + '/?page=Onboarding');
+              return;
             }
-          }, 10000);
 
-          (async () => {
-            try {
-              // Step 1: check auth
-              let authenticated = false;
-              try { authenticated = await base44.auth.isAuthenticated(); } catch (e) {}
-
-              if (cancelled) return;
-
-              if (!authenticated) {
-                clearTimeout(timeout);
-                // Always send unauthenticated users to login → back to Onboarding
-                // so new users never land on Dashboard
-                base44.auth.redirectToLogin(window.location.origin + '/?page=Onboarding');
-                return;
-              }
-
-              // Step 2: check if user has any teams (skip if already on Onboarding)
-              if (currentPageName !== 'Onboarding') {
-                try {
-                  const user = await base44.auth.me();
-                  if (!cancelled && user) {
-                    const [createdTeams, memberTeams] = await Promise.all([
-                      base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
-                      base44.entities.TeamMember.filter({ user_email: user.email }).catch(() => []),
-                    ]);
-                    if (!cancelled && createdTeams.length === 0 && memberTeams.length === 0) {
-                      clearTimeout(timeout);
-                      // No teams – go to Onboarding without flashing current page
-                      window.location.replace(window.location.origin + '/?page=Onboarding');
-                      return;
-                    }
-                  }
-                } catch (e) {
-                  console.warn('[Boot] team check failed:', e?.message);
+            // 2. Team check – only needed when NOT already on Onboarding
+            if (currentPageName !== 'Onboarding') {
+              const user = await base44.auth.me();
+              if (user) {
+                const [createdTeams, memberTeams] = await Promise.all([
+                  base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
+                  base44.entities.TeamMember.filter({ user_email: user.email }).catch(() => []),
+                ]);
+                if (createdTeams.length === 0 && memberTeams.length === 0) {
+                  // No teams – redirect immediately, never render current page
+                  window.location.replace(window.location.origin + '/?page=Onboarding');
+                  return;
                 }
               }
-
-              if (!cancelled) {
-                clearTimeout(timeout);
-                setStatus('ready');
-              }
-            } catch (e) {
-              if (!cancelled) {
-                clearTimeout(timeout);
-                setErrorMsg(e?.message || 'Oppstart feilet.');
-                setStatus('error');
-              }
             }
-          })();
 
-          return () => { cancelled = true; clearTimeout(timeout); };
+            setStatus('ready');
+          } catch (e) {
+            setErrorMsg(e?.message || 'Oppstart feilet.');
+            setStatus('error');
+          }
         }, [currentPageName]);
 
+        React.useEffect(() => { run(); }, [run]);
+
         if (status === 'loading') return <BootLoader />;
-        if (status === 'error') return <BootError message={errorMsg} onRetry={() => setStatus('loading')} />;
+        if (status === 'error') return <BootError message={errorMsg} onRetry={run} />;
 
         return (
           <TeamProvider>
