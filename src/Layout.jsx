@@ -373,10 +373,6 @@ function InnerLayout({ children, currentPageName }) {
         const boot = React.useCallback(async () => {
           setStatus('loading');
 
-          // iOS-safe diagnostics
-          console.log('[Boot] UA:', navigator.userAgent);
-          console.log('[Boot] URL:', window.location.href);
-
           // 10-second timeout
           let timedOut = false;
           const timeout = setTimeout(() => {
@@ -389,7 +385,6 @@ function InnerLayout({ children, currentPageName }) {
             let authenticated = false;
             try {
               authenticated = await base44.auth.isAuthenticated();
-              console.log('[Boot] authenticated:', authenticated);
             } catch (e) {
               console.warn('[Boot] isAuthenticated failed:', e?.message);
               authenticated = false;
@@ -399,11 +394,9 @@ function InnerLayout({ children, currentPageName }) {
 
             if (!authenticated) {
               clearTimeout(timeout);
-              // Check if this is a post-OAuth redirect with no session (iOS Safari issue)
               const params = new URLSearchParams(window.location.search);
               const reason = params.get('reason') || '';
               if (reason === 'session') {
-                // Already redirected once — avoid loop, show error
                 setErrorMsg('Sesjonen kunne ikke opprettes etter innlogging. Prøv å logge inn på nytt.');
                 setStatus('error');
               } else {
@@ -413,6 +406,30 @@ function InnerLayout({ children, currentPageName }) {
             }
 
             if (timedOut) return;
+
+            // If not already on Onboarding, check if user has any teams
+            if (currentPageName !== 'Onboarding') {
+              try {
+                const user = await base44.auth.me();
+                if (user) {
+                  const [createdTeams, memberTeams] = await Promise.all([
+                    base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
+                    base44.entities.TeamMember.filter({ user_email: user.email }).catch(() => []),
+                  ]);
+                  const hasTeam = createdTeams.length > 0 || memberTeams.length > 0;
+                  if (!hasTeam) {
+                    clearTimeout(timeout);
+                    // No teams — send to Onboarding immediately
+                    window.location.replace(window.location.origin + '/?page=Onboarding');
+                    return;
+                  }
+                }
+              } catch (e) {
+                // If check fails, proceed normally
+                console.warn('[Boot] team check failed:', e?.message);
+              }
+            }
+
             clearTimeout(timeout);
             setStatus('ready');
           } catch (e) {
@@ -422,7 +439,7 @@ function InnerLayout({ children, currentPageName }) {
             setErrorMsg(e?.message || 'Oppstart feilet.');
             setStatus('error');
           }
-        }, []);
+        }, [currentPageName]);
 
         React.useEffect(() => { boot(); }, [boot]);
 
