@@ -65,8 +65,6 @@ const CORE_NAV = [
 
 // Advanced (Pro) nav items – shown in collapsible section
 const ADVANCED_NAV = [
-  { name: 'Avanserte analyser', page: 'AdvancedAnalytics', icon: FileBarChart, roles: ['admin', 'kasserer', 'styreleder'] },
-  { name: 'Sponsorer', page: 'Sponsors', icon: Building2, roles: ['admin', 'kasserer', 'styreleder'] },
   { name: 'Regnskap', page: 'AccountingIntegration', icon: FileBarChart, roles: ['admin', 'kasserer'] },
 ];
 
