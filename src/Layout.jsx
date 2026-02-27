@@ -400,7 +400,9 @@ function InnerLayout({ children, currentPageName }) {
                 setErrorMsg('Sesjonen kunne ikke opprettes etter innlogging. Prøv å logge inn på nytt.');
                 setStatus('error');
               } else {
-                base44.auth.redirectToLogin(window.location.href);
+                // Redirect to login, but come back to Onboarding so new users skip Dashboard
+                const onboardingUrl = window.location.origin + '/?page=Onboarding';
+                base44.auth.redirectToLogin(onboardingUrl);
               }
               return;
             }
@@ -419,13 +421,11 @@ function InnerLayout({ children, currentPageName }) {
                   const hasTeam = createdTeams.length > 0 || memberTeams.length > 0;
                   if (!hasTeam) {
                     clearTimeout(timeout);
-                    // No teams — send to Onboarding immediately
                     window.location.replace(window.location.origin + '/?page=Onboarding');
                     return;
                   }
                 }
               } catch (e) {
-                // If check fails, proceed normally
                 console.warn('[Boot] team check failed:', e?.message);
               }
             }
