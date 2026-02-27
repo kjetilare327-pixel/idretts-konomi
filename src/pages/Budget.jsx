@@ -138,30 +138,11 @@ export default function BudgetPage() {
 
       <AiBudgetPlanner teamId={currentTeam?.id} onApplyBudget={() => queryClient.invalidateQueries({ queryKey: ['budgets'] })} />
 
-      {/* AI Expense Predictions */}
-      <ExpensePredictions teamId={currentTeam?.id} />
-
       {/* Smart budget alerts with cashflow */}
       <BudgetAlertConfig transactions={transactions} budgets={budgets} claims={[]} />
 
       {/* Budget deviation alerts */}
       <BudgetDeviationAlerts transactions={transactions} budgets={budgets} />
-
-      {/* AI Seasonal forecast */}
-      <AISeasonalForecast teamId={currentTeam?.id} transactions={transactions} budgets={budgets} />
-
-      {/* AI Budget Adjustments */}
-      <AIBudgetAdjustments budgets={budgets} transactions={transactions} onApply={(adj) => {
-        const match = budgets.find(b => b.category === adj.category);
-        if (match) {
-          setEditData(match);
-          setForm({ category: match.category, type: match.type, monthly_amount: String(adj.suggested_amount), period: match.period || 'monthly' });
-          setShowForm(true);
-        }
-      }} />
-
-      {/* Project Budgets */}
-      <ProjectBudget transactions={transactions} />
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
