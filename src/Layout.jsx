@@ -367,84 +367,75 @@ function InnerLayout({ children, currentPageName }) {
       }
 
       function AuthGate({ children, currentPageName }) {
-        const [status, setStatus] = React.useState('loading'); // 'loading' | 'ready' | 'error'
+        // 'loading' | 'ready' | 'onboarding' | 'error'
+        const [status, setStatus] = React.useState('loading');
         const [errorMsg, setErrorMsg] = React.useState('');
 
-        const boot = React.useCallback(async () => {
-          setStatus('loading');
+        React.useEffect(() => {
+          let cancelled = false;
 
-          // 10-second timeout
-          let timedOut = false;
           const timeout = setTimeout(() => {
-            timedOut = true;
-            setErrorMsg('Innlasting tok for lang tid (>10s). Sjekk internettforbindelsen.');
-            setStatus('error');
+            if (!cancelled) {
+              setErrorMsg('Innlasting tok for lang tid (>10s). Sjekk internettforbindelsen.');
+              setStatus('error');
+            }
           }, 10000);
 
-          try {
-            let authenticated = false;
+          (async () => {
             try {
-              authenticated = await base44.auth.isAuthenticated();
-            } catch (e) {
-              console.warn('[Boot] isAuthenticated failed:', e?.message);
-              authenticated = false;
-            }
+              // Step 1: check auth
+              let authenticated = false;
+              try { authenticated = await base44.auth.isAuthenticated(); } catch (e) {}
 
-            if (timedOut) return;
+              if (cancelled) return;
 
-            if (!authenticated) {
-              clearTimeout(timeout);
-              const params = new URLSearchParams(window.location.search);
-              const reason = params.get('reason') || '';
-              if (reason === 'session') {
-                setErrorMsg('Sesjonen kunne ikke opprettes etter innlogging. Prøv å logge inn på nytt.');
-                setStatus('error');
-              } else {
-                // Redirect to login, but come back to Onboarding so new users skip Dashboard
-                const onboardingUrl = window.location.origin + '/?page=Onboarding';
-                base44.auth.redirectToLogin(onboardingUrl);
+              if (!authenticated) {
+                clearTimeout(timeout);
+                // Always send unauthenticated users to login → back to Onboarding
+                // so new users never land on Dashboard
+                base44.auth.redirectToLogin(window.location.origin + '/?page=Onboarding');
+                return;
               }
-              return;
-            }
 
-            if (timedOut) return;
-
-            // If not already on Onboarding, check if user has any teams
-            if (currentPageName !== 'Onboarding') {
-              try {
-                const user = await base44.auth.me();
-                if (user) {
-                  const [createdTeams, memberTeams] = await Promise.all([
-                    base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
-                    base44.entities.TeamMember.filter({ user_email: user.email }).catch(() => []),
-                  ]);
-                  const hasTeam = createdTeams.length > 0 || memberTeams.length > 0;
-                  if (!hasTeam) {
-                    clearTimeout(timeout);
-                    window.location.replace(window.location.origin + '/?page=Onboarding');
-                    return;
+              // Step 2: check if user has any teams (skip if already on Onboarding)
+              if (currentPageName !== 'Onboarding') {
+                try {
+                  const user = await base44.auth.me();
+                  if (!cancelled && user) {
+                    const [createdTeams, memberTeams] = await Promise.all([
+                      base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
+                      base44.entities.TeamMember.filter({ user_email: user.email }).catch(() => []),
+                    ]);
+                    if (!cancelled && createdTeams.length === 0 && memberTeams.length === 0) {
+                      clearTimeout(timeout);
+                      // No teams – go to Onboarding without flashing current page
+                      window.location.replace(window.location.origin + '/?page=Onboarding');
+                      return;
+                    }
                   }
+                } catch (e) {
+                  console.warn('[Boot] team check failed:', e?.message);
                 }
-              } catch (e) {
-                console.warn('[Boot] team check failed:', e?.message);
+              }
+
+              if (!cancelled) {
+                clearTimeout(timeout);
+                setStatus('ready');
+              }
+            } catch (e) {
+              if (!cancelled) {
+                clearTimeout(timeout);
+                setErrorMsg(e?.message || 'Oppstart feilet.');
+                setStatus('error');
               }
             }
+          })();
 
-            clearTimeout(timeout);
-            setStatus('ready');
-          } catch (e) {
-            if (timedOut) return;
-            clearTimeout(timeout);
-            console.error('[Boot] fatal error:', e?.message);
-            setErrorMsg(e?.message || 'Oppstart feilet.');
-            setStatus('error');
-          }
+          return () => { cancelled = true; clearTimeout(timeout); };
         }, [currentPageName]);
 
-        React.useEffect(() => { boot(); }, [boot]);
-
         if (status === 'loading') return <BootLoader />;
-        if (status === 'error') return <BootError message={errorMsg} onRetry={boot} />;
+        if (status === 'error') return <BootError message={errorMsg} onRetry={() => setStatus('loading')} />;
 
         return (
           <TeamProvider>
