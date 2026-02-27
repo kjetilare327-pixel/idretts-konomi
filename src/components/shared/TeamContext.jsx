@@ -133,7 +133,35 @@ export function TeamProvider({ children, bootData }) {
     }
   }, [loadMemberships, resolveRole]);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    if (bootData) {
+      // AuthGate already verified the user has teams — use prefetched data
+      console.log('[TeamContext] using bootData, teams=', bootData.teams?.length);
+      const userEmail = bootData.user?.email;
+      const myTeams = bootData.teams || [];
+      setTeams(myTeams);
+      // Build memberships map from prefetched member records
+      const map = {};
+      if (bootData.memberTeams) {
+        for (const m of bootData.memberTeams) map[m.team_id] = m;
+      }
+      setMyMemberships(map);
+      const savedTeamId = localStorage.getItem('idrettsøkonomi_team_id');
+      const selected = (savedTeamId && myTeams.find(t => t.id === savedTeamId)) || myTeams[0] || null;
+      if (selected) {
+        localStorage.setItem('idrettsøkonomi_team_id', selected.id);
+        const role = resolveRole(selected.id, map, userEmail, selected);
+        setCurrentTeamRole(role);
+        setCurrentTeam(selected);
+        base44.entities.Player.filter({ team_id: selected.id, user_email: userEmail })
+          .then(players => { if (players.length > 0) setPlayerProfile(players[0]); })
+          .catch(() => {});
+      }
+      setLoading(false);
+    } else {
+      loadData();
+    }
+  }, []);
 
   const selectTeam = async (team) => {
     setCurrentTeam(team);
