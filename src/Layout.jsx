@@ -367,49 +367,74 @@ function InnerLayout({ children, currentPageName }) {
       }
 
       function AuthGate({ children, currentPageName }) {
-        const [status, setStatus] = React.useState('loading'); // 'loading' | 'ready' | 'error'
+        const [status, setStatus] = React.useState('loading'); // 'loading' | 'ready' | 'redirecting' | 'error'
         const [errorMsg, setErrorMsg] = React.useState('');
 
-        const run = React.useCallback(async () => {
-          setStatus('loading');
-          try {
-            // 1. Auth check
-            let authenticated = false;
-            try { authenticated = await base44.auth.isAuthenticated(); } catch (e) {}
+        React.useEffect(() => {
+          let cancelled = false;
+          console.log('[AuthGate] boot start, page=', currentPageName);
 
-            if (!authenticated) {
-              base44.auth.redirectToLogin(window.location.origin + '/?page=Onboarding');
-              return;
-            }
+          (async () => {
+            try {
+              // ── Step 1: authentication ──────────────────────────────────
+              let authenticated = false;
+              try { authenticated = await base44.auth.isAuthenticated(); } catch (_) {}
+              console.log('[AuthGate] authenticated=', authenticated);
 
-            // 2. Team check – only needed when NOT already on Onboarding
-            if (currentPageName !== 'Onboarding') {
-              const user = await base44.auth.me();
-              if (user) {
-                const [createdTeams, memberTeams] = await Promise.all([
-                  base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
-                  base44.entities.TeamMember.filter({ user_email: user.email }).catch(() => []),
-                ]);
-                if (createdTeams.length === 0 && memberTeams.length === 0) {
-                  // No teams – redirect immediately, never render current page
-                  window.location.replace(window.location.origin + '/?page=Onboarding');
-                  return;
+              if (cancelled) return;
+              if (!authenticated) {
+                console.log('[AuthGate] not authenticated → redirecting to login');
+                base44.auth.redirectToLogin(window.location.origin + '/?page=Onboarding');
+                return;
+              }
+
+              // ── Step 2: team check (skip when already on Onboarding) ────
+              if (currentPageName !== 'Onboarding') {
+                const user = await base44.auth.me();
+                console.log('[AuthGate] user=', user?.email);
+                if (cancelled) return;
+
+                if (user) {
+                  const [createdTeams, memberTeams] = await Promise.all([
+                    base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
+                    base44.entities.TeamMember.filter({ user_email: user.email }).catch(() => []),
+                  ]);
+                  console.log('[AuthGate] createdTeams=', createdTeams.length, 'memberTeams=', memberTeams.length);
+                  if (cancelled) return;
+
+                  const hasTeam = createdTeams.length > 0 || memberTeams.length > 0;
+                  if (!hasTeam) {
+                    console.log('[AuthGate] no teams → redirecting to Onboarding');
+                    // Use replace so the history entry is clean
+                    if (!cancelled) setStatus('redirecting');
+                    window.location.replace(window.location.origin + '/?page=Onboarding');
+                    return;
+                  }
                 }
               }
-            }
 
-            setStatus('ready');
-          } catch (e) {
-            setErrorMsg(e?.message || 'Oppstart feilet.');
-            setStatus('error');
-          }
+              // ── Step 3: all good, render the app ───────────────────────
+              if (!cancelled) {
+                console.log('[AuthGate] ready → rendering app');
+                setStatus('ready');
+              }
+            } catch (e) {
+              if (!cancelled) {
+                console.error('[AuthGate] boot error:', e?.message);
+                setErrorMsg(e?.message || 'Oppstart feilet.');
+                setStatus('error');
+              }
+            }
+          })();
+
+          return () => { cancelled = true; };
         }, [currentPageName]);
 
-        React.useEffect(() => { run(); }, [run]);
+        // Keep showing BootLoader during 'redirecting' so the page never flashes
+        if (status === 'loading' || status === 'redirecting') return <BootLoader />;
+        if (status === 'error') return <BootError message={errorMsg} onRetry={() => setStatus('loading')} />;
 
-        if (status === 'loading') return <BootLoader />;
-        if (status === 'error') return <BootError message={errorMsg} onRetry={run} />;
-
+        // Only mount TeamProvider (and children) once we know the user has teams
         return (
           <TeamProvider>
             <InnerLayout currentPageName={currentPageName}>{children}</InnerLayout>
