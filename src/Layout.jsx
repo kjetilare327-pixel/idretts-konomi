@@ -370,94 +370,119 @@ function InnerLayout({ children, currentPageName }) {
         // 'loading' | 'ready' | 'redirecting' | 'error'
         const [status, setStatus] = React.useState('loading');
         const [errorMsg, setErrorMsg] = React.useState('');
-        // Prefetched boot data passed into TeamProvider to avoid double-fetch
-        const [bootData, setBootData] = React.useState(null); // { user, teams }
+        const [bootData, setBootData] = React.useState(null);
+        // Ref to prevent double-run in React StrictMode / re-mount
+        const ranRef = React.useRef(false);
 
         React.useEffect(() => {
-          let cancelled = false;
+          if (ranRef.current) {
+            console.log('[AuthGate] skipping duplicate effect run');
+            return;
+          }
+          ranRef.current = true;
+
           const t0 = Date.now();
-          console.log('[AuthGate] boot start, page=', currentPageName, 'url=', window.location.href);
+          const attempt = Math.random().toString(36).slice(2, 6);
+          console.log(`[AuthGate:${attempt}] boot start — page=${currentPageName} url=${window.location.href}`);
+
+          let timeoutId;
+          let done = false;
+
+          const finish = () => { done = true; clearTimeout(timeoutId); };
+
+          // Safety timeout: if boot takes >12s, show error instead of looping forever
+          timeoutId = setTimeout(() => {
+            if (!done) {
+              console.error(`[AuthGate:${attempt}] TIMEOUT after 12s`);
+              setErrorMsg('Lasting tok for lang tid. Sjekk internettforbindelsen din.');
+              setStatus('error');
+            }
+          }, 12000);
 
           (async () => {
             try {
-              // ── 1. Auth ──────────────────────────────────────────────────
+              // ── 1. Auth check ────────────────────────────────────────────
               let authenticated = false;
               try { authenticated = await base44.auth.isAuthenticated(); } catch (_) {}
-              console.log('[AuthGate] authenticated=', authenticated, `+${Date.now()-t0}ms`);
-              if (cancelled) return;
+              console.log(`[AuthGate:${attempt}] authenticated=${authenticated} +${Date.now()-t0}ms`);
 
               if (!authenticated) {
-                console.log('[AuthGate] → login redirect');
-                window.location.replace(
-                  'https://base44.app/auth/login?next=' +
-                  encodeURIComponent(window.location.origin + '/?page=Onboarding')
-                );
+                finish();
+                console.log(`[AuthGate:${attempt}] → redirecting to login`);
+                base44.auth.redirectToLogin(window.location.origin + '/?page=Onboarding');
                 return;
               }
 
               // ── 2. Get user ──────────────────────────────────────────────
               const user = await base44.auth.me();
-              console.log('[AuthGate] user=', user?.email, `+${Date.now()-t0}ms`);
-              if (cancelled) return;
+              console.log(`[AuthGate:${attempt}] user=${user?.email} +${Date.now()-t0}ms`);
 
-              // ── 3. Team check (not needed on Onboarding page) ───────────
+              if (!user) {
+                finish();
+                base44.auth.redirectToLogin(window.location.origin + '/?page=Onboarding');
+                return;
+              }
+
+              // ── 3. Skip team check if already on Onboarding ─────────────
               if (currentPageName === 'Onboarding') {
-                setBootData({ user, teams: [] });
+                finish();
+                setBootData({ user, teams: [], memberTeams: [] });
                 setStatus('ready');
                 return;
               }
 
-              const [createdTeams, allTeams] = await Promise.all([
+              // ── 4. Parallel team fetch ───────────────────────────────────
+              const [createdTeams, memberTeams] = await Promise.all([
                 base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
-                base44.entities.Team.list().catch(() => []),
+                base44.entities.TeamMember.filter({ user_email: user.email }).catch(() => []),
               ]);
-              if (cancelled) return;
+              console.log(`[AuthGate:${attempt}] createdTeams=${createdTeams.length} memberRecords=${memberTeams.length} +${Date.now()-t0}ms`);
 
-              // Merge teams the user is part of
+              // Build team map: user's own teams + teams they're a member of
               const byId = new Map();
-              for (const t of [...createdTeams, ...allTeams]) {
-                const mine = t.created_by === user.email || t.members?.some(m => m.email === user.email);
-                if (mine) byId.set(t.id, t);
+              for (const t of createdTeams) byId.set(t.id, t);
+
+              // For member teams we need the actual Team objects
+              const memberTeamIds = memberTeams.map(m => m.team_id).filter(id => id && !byId.has(id));
+              if (memberTeamIds.length > 0) {
+                // Fetch missing team objects
+                const extraTeams = await base44.entities.Team.list().catch(() => []);
+                for (const t of extraTeams) {
+                  if (memberTeamIds.includes(t.id)) byId.set(t.id, t);
+                }
               }
-              // Also check TeamMember records
-              const memberTeams = await base44.entities.TeamMember.filter({ user_email: user.email }).catch(() => []);
-              if (cancelled) return;
 
-              const memberTeamIds = memberTeams.map(m => m.team_id).filter(Boolean);
-              console.log('[AuthGate] createdTeams=', createdTeams.length, 'memberRecords=', memberTeams.length, `+${Date.now()-t0}ms`);
-
-              const hasTeam = byId.size > 0 || memberTeamIds.length > 0;
+              const hasTeam = byId.size > 0;
+              console.log(`[AuthGate:${attempt}] hasTeam=${hasTeam} teamCount=${byId.size} +${Date.now()-t0}ms`);
 
               if (!hasTeam) {
-                console.log('[AuthGate] no teams → Onboarding (replace)');
-                if (!cancelled) {
-                  setStatus('redirecting');
-                  window.location.replace(window.location.origin + '/?page=Onboarding');
-                }
+                finish();
+                console.log(`[AuthGate:${attempt}] no teams → replacing to Onboarding`);
+                // Set redirecting BEFORE replace so BootLoader stays visible
+                setStatus('redirecting');
+                window.location.replace(window.location.origin + '/?page=Onboarding');
                 return;
               }
 
-              // ── 4. Ready — pass prefetched data to TeamProvider ──────────
-              console.log('[AuthGate] ready, hasTeam=true', `+${Date.now()-t0}ms`);
-              if (!cancelled) {
-                setBootData({ user, teams: [...byId.values()], memberTeams });
-                setStatus('ready');
-              }
+              // ── 5. Ready ─────────────────────────────────────────────────
+              finish();
+              console.log(`[AuthGate:${attempt}] ready +${Date.now()-t0}ms`);
+              setBootData({ user, teams: [...byId.values()], memberTeams });
+              setStatus('ready');
+
             } catch (e) {
-              if (!cancelled) {
-                console.error('[AuthGate] boot error:', e?.message);
-                setErrorMsg(e?.message || 'Oppstart feilet.');
-                setStatus('error');
-              }
+              finish();
+              console.error(`[AuthGate:${attempt}] error:`, e?.message);
+              setErrorMsg(e?.message || 'Oppstart feilet.');
+              setStatus('error');
             }
           })();
 
-          return () => { cancelled = true; };
-        }, [currentPageName]);
+          // No cleanup that resets ranRef — we only want one boot per mount
+        }, []);  // ← empty deps: run ONCE per mount, not on every page change
 
-        // NEVER render children until status is 'ready'
         if (status === 'loading' || status === 'redirecting') return <BootLoader />;
-        if (status === 'error') return <BootError message={errorMsg} onRetry={() => { setErrorMsg(''); setStatus('loading'); }} />;
+        if (status === 'error') return <BootError message={errorMsg} onRetry={() => { ranRef.current = false; setErrorMsg(''); setStatus('loading'); }} />;
 
         return (
           <TeamProvider bootData={bootData}>
