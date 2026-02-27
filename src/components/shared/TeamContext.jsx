@@ -22,11 +22,12 @@ async function fetchMyTeams(userEmail) {
   return [...byId.values()];
 }
 
-export function TeamProvider({ children }) {
+export function TeamProvider({ children, bootData }) {
   const [currentTeam, setCurrentTeam] = useState(null);
   const [teams, setTeams] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
+  // If bootData is supplied by AuthGate we start in loaded state (no flash)
+  const [loading, setLoading] = useState(!bootData);
+  const [user, setUser] = useState(bootData?.user || null);
   const [playerProfile, setPlayerProfile] = useState(null);
   // TeamMember records for the current user (keyed by team_id)
   const [myMemberships, setMyMemberships] = useState({}); // { [team_id]: TeamMember }
