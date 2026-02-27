@@ -103,6 +103,7 @@ export function TeamProvider({ children }) {
         null;
 
       if (selected) {
+        console.log('[TeamContext] team selected:', selected.name);
         localStorage.setItem('idrettsøkonomi_team_id', selected.id);
         const role = resolveRole(selected.id, membershipsMap, u.email, selected);
         setCurrentTeamRole(role);
