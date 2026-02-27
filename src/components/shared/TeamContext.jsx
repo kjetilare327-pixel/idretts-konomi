@@ -112,6 +112,13 @@ export function TeamProvider({ children }) {
       } else {
         setCurrentTeam(null);
         setCurrentTeamRole('player');
+        // No teams found – redirect to Onboarding
+        if (!window.location.pathname.includes('Onboarding') && !window.location.search.includes('Onboarding')) {
+          const params = new URLSearchParams(window.location.search);
+          if (!['Onboarding', 'GdprConsent'].includes(params.get('page'))) {
+            window.location.replace(window.location.origin + '?page=Onboarding');
+          }
+        }
       }
     } catch (e) {
       if (!e?.message?.includes('Authentication')) {
