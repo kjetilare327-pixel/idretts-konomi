@@ -5,7 +5,7 @@ import { useTeam } from '@/components/shared/TeamContext';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { formatNOK } from '@/components/shared/FormatUtils';
-import { Wallet, TrendingUp, TrendingDown, AlertCircle, ArrowRight, Loader2, Lock } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
