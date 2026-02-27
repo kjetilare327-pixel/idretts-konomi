@@ -112,32 +112,6 @@ export default function Communications() {
     );
   };
 
-  const loadAiStrategies = async () => {
-    setLoadingStrategies(true);
-    try {
-      const response = await base44.functions.invoke('suggestCommunicationStrategy', { team_id: currentTeam.id });
-      setAiStrategies(response.data);
-    } catch (error) {
-      console.error('Failed to load AI strategies:', error);
-    } finally {
-      setLoadingStrategies(false);
-    }
-  };
-
-  const applyStrategy = (strategy) => {
-    setSubject(strategy.title || '');
-    setMessage(strategy.suggested_content || '');
-    
-    // Sett mottakere basert på segment
-    if (strategy.target_segment === 'all') {
-      setRecipientType('all');
-    } else if (strategy.target_segment === 'high_risk' || strategy.target_segment === 'medium_risk') {
-      setRecipientType('unpaid');
-    } else {
-      setRecipientType('all');
-    }
-  };
-
   const handleTemplateSelect = (template) => {
     const body = template.body
       .replace(/\{\{name\}\}/g, '[navn]')
