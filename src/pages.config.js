@@ -48,7 +48,6 @@
  * The mainPage value must match a key in the PAGES object exactly.
  */
 import AccountingIntegration from './pages/AccountingIntegration';
-import AdvancedAnalytics from './pages/AdvancedAnalytics';
 import AuditLog from './pages/AuditLog';
 import BankReconciliation from './pages/BankReconciliation';
 import Budget from './pages/Budget';
@@ -60,18 +59,14 @@ import MemberManagement from './pages/MemberManagement';
 import Onboarding from './pages/Onboarding';
 import PaymentPortal from './pages/PaymentPortal';
 import Players from './pages/Players';
-import ReferralProgram from './pages/ReferralProgram';
 import Reports from './pages/Reports';
 import SettingsPage from './pages/SettingsPage';
-import Sponsors from './pages/Sponsors';
 import Transactions from './pages/Transactions';
-import VolunteerManagement from './pages/VolunteerManagement';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "AccountingIntegration": AccountingIntegration,
-    "AdvancedAnalytics": AdvancedAnalytics,
     "AuditLog": AuditLog,
     "BankReconciliation": BankReconciliation,
     "Budget": Budget,
@@ -83,12 +78,9 @@ export const PAGES = {
     "Onboarding": Onboarding,
     "PaymentPortal": PaymentPortal,
     "Players": Players,
-    "ReferralProgram": ReferralProgram,
     "Reports": Reports,
     "SettingsPage": SettingsPage,
-    "Sponsors": Sponsors,
     "Transactions": Transactions,
-    "VolunteerManagement": VolunteerManagement,
 }
 
 export const pagesConfig = {
