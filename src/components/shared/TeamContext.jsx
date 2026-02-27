@@ -63,6 +63,7 @@ export function TeamProvider({ children }) {
   }, []);
 
   const loadData = useCallback(async (freshTeam = null) => {
+    console.log('[TeamContext] loadData start');
     try {
       let u;
       try {
