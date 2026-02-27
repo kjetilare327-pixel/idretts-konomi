@@ -55,7 +55,7 @@ export default function SubscriptionBanner({ team }) {
       </div>
       {(status === 'trial' || status === 'expired') && (
         <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white shrink-0">
-          Oppgrader – 99 kr/mnd
+          Oppgrader – 89 kr/mnd
         </Button>
       )}
     </div>

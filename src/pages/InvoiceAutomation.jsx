@@ -4,7 +4,6 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import PaymentReminderManager from '@/components/invoicing/PaymentReminderManager';
 import AIInvoiceGenerator from '@/components/invoicing/AIInvoiceGenerator';
-import AICollectionAdvisor from '@/components/invoicing/AICollectionAdvisor';
 import ReceivablesReport from '@/components/invoicing/ReceivablesReport';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -226,9 +225,6 @@ export default function InvoiceAutomation() {
 
       {/* AI Invoice Generator */}
       <AIInvoiceGenerator teamId={currentTeam?.id} players={players} claims={claims} />
-
-      {/* AI Collection Advisor */}
-      <AICollectionAdvisor teamId={currentTeam?.id} players={players} claims={claims} />
 
       {/* Receivables Report */}
       <ReceivablesReport claims={claims} players={players} />
