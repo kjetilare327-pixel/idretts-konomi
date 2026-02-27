@@ -366,20 +366,34 @@ function InnerLayout({ children, currentPageName }) {
         );
       }
 
+      // Module-level boot state — survives React remounts/StrictMode double-invocations
+      // This is the ONLY reliable way to prevent re-running boot on remount
+      let _bootState = null; // null | { status, bootData, errorMsg }
+      let _bootPromise = null; // in-flight boot promise
+
       function AuthGate({ children, currentPageName }) {
-        // 'loading' | 'ready' | 'redirecting' | 'error'
-        const [status, setStatus] = React.useState('loading');
-        const [errorMsg, setErrorMsg] = React.useState('');
-        const [bootData, setBootData] = React.useState(null);
-        // Ref to prevent double-run in React StrictMode / re-mount
-        const ranRef = React.useRef(false);
+        const [tick, setTick] = React.useState(0); // used only to force re-render
+
+        // Sync local view from module-level state
+        const state = _bootState;
+        const status = state?.status ?? 'loading';
+        const bootData = state?.bootData ?? null;
+        const errorMsg = state?.errorMsg ?? '';
 
         React.useEffect(() => {
-          if (ranRef.current) {
-            console.log('[AuthGate] skipping duplicate effect run');
+          // If boot already completed (e.g. remount), just re-render with cached result
+          if (_bootState && _bootState.status !== 'loading') {
+            console.log('[AuthGate] reusing cached boot state:', _bootState.status);
+            setTick(t => t + 1);
             return;
           }
-          ranRef.current = true;
+
+          // If already in-flight, attach to existing promise
+          if (_bootPromise) {
+            console.log('[AuthGate] boot already in-flight, waiting...');
+            _bootPromise.then(() => setTick(t => t + 1));
+            return;
+          }
 
           const t0 = Date.now();
           const attempt = Math.random().toString(36).slice(2, 6);
@@ -387,21 +401,21 @@ function InnerLayout({ children, currentPageName }) {
 
           let timeoutId;
           let done = false;
-
           const finish = () => { done = true; clearTimeout(timeoutId); };
 
-          // Safety timeout: if boot takes >12s, show error instead of looping forever
+          // Safety timeout: 10s max
           timeoutId = setTimeout(() => {
             if (!done) {
-              console.error(`[AuthGate:${attempt}] TIMEOUT after 12s`);
-              setErrorMsg('Lasting tok for lang tid. Sjekk internettforbindelsen din.');
-              setStatus('error');
+              console.error(`[AuthGate:${attempt}] TIMEOUT after 10s`);
+              _bootState = { status: 'error', bootData: null, errorMsg: 'Lasting tok for lang tid. Sjekk internettforbindelsen din.' };
+              _bootPromise = null;
+              setTick(t => t + 1);
             }
-          }, 12000);
+          }, 10000);
 
-          (async () => {
+          _bootPromise = (async () => {
             try {
-              // ── 1. Auth check ────────────────────────────────────────────
+              // ── 1. Auth ────────────────────────────────────────────────
               let authenticated = false;
               try { authenticated = await base44.auth.isAuthenticated(); } catch (_) {}
               console.log(`[AuthGate:${attempt}] authenticated=${authenticated} +${Date.now()-t0}ms`);
@@ -409,43 +423,45 @@ function InnerLayout({ children, currentPageName }) {
               if (!authenticated) {
                 finish();
                 console.log(`[AuthGate:${attempt}] → redirecting to login`);
+                _bootState = { status: 'redirecting', bootData: null, errorMsg: '' };
+                setTick(t => t + 1);
                 base44.auth.redirectToLogin(window.location.origin + '/?page=Onboarding');
                 return;
               }
 
-              // ── 2. Get user ──────────────────────────────────────────────
+              // ── 2. User ────────────────────────────────────────────────
               const user = await base44.auth.me();
               console.log(`[AuthGate:${attempt}] user=${user?.email} +${Date.now()-t0}ms`);
 
               if (!user) {
                 finish();
+                _bootState = { status: 'redirecting', bootData: null, errorMsg: '' };
+                setTick(t => t + 1);
                 base44.auth.redirectToLogin(window.location.origin + '/?page=Onboarding');
                 return;
               }
 
-              // ── 3. Skip team check if already on Onboarding ─────────────
+              // ── 3. Onboarding page — no team check needed ──────────────
               if (currentPageName === 'Onboarding') {
                 finish();
-                setBootData({ user, teams: [], memberTeams: [] });
-                setStatus('ready');
+                _bootState = { status: 'ready', bootData: { user, teams: [], memberTeams: [] }, errorMsg: '' };
+                setTick(t => t + 1);
                 return;
               }
 
-              // ── 4. Parallel team fetch ───────────────────────────────────
+              // ── 4. Fetch teams ─────────────────────────────────────────
               const [createdTeams, memberTeams] = await Promise.all([
                 base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
                 base44.entities.TeamMember.filter({ user_email: user.email }).catch(() => []),
               ]);
               console.log(`[AuthGate:${attempt}] createdTeams=${createdTeams.length} memberRecords=${memberTeams.length} +${Date.now()-t0}ms`);
 
-              // Build team map: user's own teams + teams they're a member of
               const byId = new Map();
               for (const t of createdTeams) byId.set(t.id, t);
 
-              // For member teams we need the actual Team objects
+              // Fetch team objects for member-only teams
               const memberTeamIds = memberTeams.map(m => m.team_id).filter(id => id && !byId.has(id));
               if (memberTeamIds.length > 0) {
-                // Fetch missing team objects
                 const extraTeams = await base44.entities.Team.list().catch(() => []);
                 for (const t of extraTeams) {
                   if (memberTeamIds.includes(t.id)) byId.set(t.id, t);
@@ -457,32 +473,38 @@ function InnerLayout({ children, currentPageName }) {
 
               if (!hasTeam) {
                 finish();
-                console.log(`[AuthGate:${attempt}] no teams → replacing to Onboarding`);
-                // Set redirecting BEFORE replace so BootLoader stays visible
-                setStatus('redirecting');
+                console.log(`[AuthGate:${attempt}] no teams → Onboarding`);
+                _bootState = { status: 'redirecting', bootData: null, errorMsg: '' };
+                setTick(t => t + 1);
                 window.location.replace(window.location.origin + '/?page=Onboarding');
                 return;
               }
 
-              // ── 5. Ready ─────────────────────────────────────────────────
+              // ── 5. Ready ───────────────────────────────────────────────
               finish();
               console.log(`[AuthGate:${attempt}] ready +${Date.now()-t0}ms`);
-              setBootData({ user, teams: [...byId.values()], memberTeams });
-              setStatus('ready');
+              _bootState = { status: 'ready', bootData: { user, teams: [...byId.values()], memberTeams }, errorMsg: '' };
+              setTick(t => t + 1);
 
             } catch (e) {
               finish();
               console.error(`[AuthGate:${attempt}] error:`, e?.message);
-              setErrorMsg(e?.message || 'Oppstart feilet.');
-              setStatus('error');
+              _bootState = { status: 'error', bootData: null, errorMsg: e?.message || 'Oppstart feilet.' };
+              setTick(t => t + 1);
+            } finally {
+              _bootPromise = null;
             }
           })();
 
-          // No cleanup that resets ranRef — we only want one boot per mount
-        }, []);  // ← empty deps: run ONCE per mount, not on every page change
+          _bootPromise.then(() => setTick(t => t + 1));
+        }, []); // run once per mount
 
         if (status === 'loading' || status === 'redirecting') return <BootLoader />;
-        if (status === 'error') return <BootError message={errorMsg} onRetry={() => { ranRef.current = false; setErrorMsg(''); setStatus('loading'); }} />;
+        if (status === 'error') return <BootError message={errorMsg} onRetry={() => {
+          _bootState = null;
+          _bootPromise = null;
+          setTick(t => t + 1);
+        }} />;
 
         return (
           <TeamProvider bootData={bootData}>
