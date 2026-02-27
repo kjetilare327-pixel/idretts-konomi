@@ -124,9 +124,10 @@ export function TeamProvider({ children }) {
       }
     } catch (e) {
       if (!e?.message?.includes('Authentication')) {
-        console.error('loadData error:', e);
+        console.error('[TeamContext] loadData error:', e);
       }
     } finally {
+      console.log('[TeamContext] loadData done');
       setLoading(false);
     }
   }, [loadMemberships, resolveRole]);
