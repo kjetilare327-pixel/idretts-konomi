@@ -55,8 +55,7 @@ export default function Communications() {
   const [recipientType, setRecipientType] = useState('all');
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
-  const [aiStrategies, setAiStrategies] = useState(null);
-  const [loadingStrategies, setLoadingStrategies] = useState(false);
+
 
   const { data: players = [] } = useQuery({
     queryKey: ['players', currentTeam?.id],

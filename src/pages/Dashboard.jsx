@@ -162,25 +162,9 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Setup + Forecast lock – side by side on wide screens */}
+      {/* Setup progress */}
       {isAdmin && !setupComplete && showSetup && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2">
-            <SetupProgress completedSteps={completedSteps} onDismiss={() => setShowSetup(false)} />
-          </div>
-          <Card className="border-0 shadow-md dark:bg-slate-900 flex flex-col justify-center items-center text-center p-6 gap-3">
-            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-              <Lock className="w-6 h-6 text-slate-400" />
-            </div>
-            <div>
-              <p className="font-semibold text-sm">Kontantstrømprognose</p>
-              <p className="text-xs text-slate-400 mt-1">Tilgjengelig når oppsett er fullført</p>
-            </div>
-            <Button variant="outline" size="sm" className="gap-2 mt-1" onClick={() => navigate(createPageUrl('AdvancedAnalytics'))}>
-              <Lock className="w-3.5 h-3.5" /> Lås opp prognose
-            </Button>
-          </Card>
-        </div>
+        <SetupProgress completedSteps={completedSteps} onDismiss={() => setShowSetup(false)} />
       )}
 
       {/* Outstanding claims – top 5 */}
