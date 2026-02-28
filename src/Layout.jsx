@@ -4,7 +4,7 @@ if (typeof window !== 'undefined' && typeof window.Notification === 'undefined')
   try { window.Notification = undefined; } catch(e) {}
 }
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createPageUrl } from './utils';
