@@ -85,8 +85,11 @@ export default function Onboarding() {
     color: active ? '#fff' : '#6b7280',
   });
 
+  if (checkingUser) return null;
+
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#ecfdf5,#f8fafc)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      {!tosAccepted && <TermsModal onAccepted={() => setTosAccepted(true)} />}
       <div style={{ width: '100%', maxWidth: 480 }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
