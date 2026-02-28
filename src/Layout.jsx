@@ -3,9 +3,9 @@ if (typeof window !== 'undefined' && typeof window.Notification === 'undefined')
   try { window.Notification = undefined; } catch(e) {}
 }
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { TeamProvider, useTeam } from './components/shared/TeamContext';
 import { ThemeProvider, useTheme } from './components/shared/ThemeContext';
