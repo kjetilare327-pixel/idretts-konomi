@@ -482,9 +482,9 @@ function InnerLayout({ children, currentPageName }) {
         if (bootStatus === 'loading') return <BootLoader />;
         if (bootStatus === 'error') return (
           <BootError message={errorMsg} onRetry={() => {
-            bootedRef.current = false;
             setErrorMsg('');
             setBootStatus('loading');
+            setRetryKey(k => k + 1);
           }} />
         );
 
