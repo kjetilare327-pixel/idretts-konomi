@@ -320,6 +320,7 @@ function InnerLayout({ children, currentPageName }) {
       }
 
       const NO_LAYOUT_PAGES = ['Onboarding', 'GdprConsent', 'TermsOfService'];
+      const NO_AUTH_PAGES = ['Onboarding', 'GdprConsent', 'TermsOfService'];
 
       function BootLoader() {
         return (
