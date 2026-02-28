@@ -87,8 +87,8 @@ export default function Dashboard() {
     [claims]
   );
 
-  // Show loader while team data is being resolved (AuthGate handles the actual redirect for new users)
-  if (teamLoading || (!currentTeam && teams.length === 0)) {
+  // AuthGate guarantees teams exist before Dashboard renders — this is just a safety net
+  if (teamLoading) {
     return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-8 h-8 animate-spin text-emerald-500" /></div>;
   }
 
