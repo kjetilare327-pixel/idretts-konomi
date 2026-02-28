@@ -1,10 +1,9 @@
 // iOS Safari/WebView polyfill: prevent ReferenceError on bare `Notification` identifier
-// Must run before ANY component code accesses `Notification`
 if (typeof window !== 'undefined' && typeof window.Notification === 'undefined') {
   try { window.Notification = undefined; } catch(e) {}
 }
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createPageUrl } from './utils';
@@ -30,7 +29,6 @@ import {
   ScrollText,
   Mail,
   Sparkles,
-  Lock,
   ArrowLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -47,7 +45,9 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
-// Core nav items
+// Pages that skip AuthGate entirely — rendered with no sidebar/team context
+const NO_LAYOUT_PAGES = ['Onboarding', 'GdprConsent', 'TermsOfService'];
+
 const CORE_NAV = [
   { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'kasserer', 'styreleder', 'revisor', 'player', 'forelder'] },
   { name: 'Mine betalinger', page: 'PaymentPortal', icon: Receipt, roles: ['player', 'forelder'] },
@@ -62,10 +62,11 @@ const CORE_NAV = [
   { name: 'Innstillinger', page: 'SettingsPage', icon: Settings, roles: ['admin', 'kasserer', 'styreleder'] },
 ];
 
-// Advanced (Pro) nav items – shown in collapsible section
 const ADVANCED_NAV = [
   { name: 'Regnskap', page: 'AccountingIntegration', icon: FileBarChart, roles: ['admin', 'kasserer'] },
 ];
+
+const ROOT_PAGES = ['Dashboard', 'PaymentPortal', 'Players', 'Reports', 'SettingsPage', 'Onboarding'];
 
 function NavLink({ item, active, darkMode, onClick }) {
   return (
@@ -84,59 +85,33 @@ function NavLink({ item, active, darkMode, onClick }) {
   );
 }
 
-// Root pages of each bottom nav tab — no back button on these
-const ROOT_PAGES = ['Dashboard', 'PaymentPortal', 'Players', 'Reports', 'SettingsPage', 'Onboarding'];
-
 function InnerLayout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const { currentTeam, teams, selectTeam, user, isTeamAdmin, currentTeamRole } = useTeam();
+  const { currentTeam, teams, selectTeam, user, currentTeamRole } = useTeam();
   const { darkMode, toggleDark } = useTheme();
-  const location = useLocation();
   const navigate = useNavigate();
-  const isAdmin = currentTeamRole === 'admin';
   const isChildRoute = !ROOT_PAGES.includes(currentPageName);
-  
   const userRole = currentTeamRole || 'player';
   const activeAdvanced = ADVANCED_NAV.some(i => i.page === currentPageName);
-
-  // (handled at top-level Layout now – this branch is never reached for no-layout pages)
 
   return (
     <div className={`h-screen flex overflow-hidden ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
       <style>{`
-        :root {
-          --brand: #10b981;
-          --brand-dark: #059669;
-          --danger: #ef4444;
-          --warning: #f59e0b;
-        }
-        .dark { --bg-card: #1e293b; --bg-surface: #0f172a; --text-muted: #94a3b8; }
-        :not(.dark) { --bg-card: #ffffff; --bg-surface: #f8fafc; --text-muted: #64748b; }
-
-        /* Mobile-first touch optimizations */
+        :root { --brand: #10b981; --brand-dark: #059669; }
+        .dark { --bg-card: #1e293b; --bg-surface: #0f172a; }
+        :not(.dark) { --bg-card: #ffffff; --bg-surface: #f8fafc; }
         @media (max-width: 768px) {
-          * {
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-          }
-
-          button, a {
-            min-height: 44px;
-            min-width: 44px;
-          }
+          * { -webkit-tap-highlight-color: transparent; }
+          button, a { min-height: 44px; min-width: 44px; }
         }
-
-        /* Smooth scrolling */
-        html {
-          scroll-behavior: smooth;
-          -webkit-overflow-scrolling: touch;
-        }
+        html { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
       <OfflineManager />
 
-      {/* Sidebar – desktop */}
+      {/* Desktop Sidebar */}
       <aside className={`hidden lg:flex flex-col w-64 border-r ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} fixed h-screen z-30`}>
         <div className="p-6 border-b border-inherit flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -150,7 +125,6 @@ function InnerLayout({ children, currentPageName }) {
           </div>
         </div>
 
-        {/* Team selector */}
         {teams.length > 0 && (
           <div className="px-4 py-3 border-b border-inherit flex-shrink-0">
             <DropdownMenu>
@@ -162,9 +136,7 @@ function InnerLayout({ children, currentPageName }) {
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56">
                 {teams.map(t => (
-                  <DropdownMenuItem key={t.id} onClick={() => selectTeam(t)}>
-                    {t.name}
-                  </DropdownMenuItem>
+                  <DropdownMenuItem key={t.id} onClick={() => selectTeam(t)}>{t.name}</DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
@@ -176,29 +148,24 @@ function InnerLayout({ children, currentPageName }) {
         )}
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto min-h-0">
-          {CORE_NAV.filter(item => !item.roles || item.roles.includes(userRole)).map(item => (
+          {CORE_NAV.filter(item => item.roles.includes(userRole)).map(item => (
             <NavLink key={item.page} item={item} active={currentPageName === item.page} darkMode={darkMode} />
           ))}
-
-          {/* Advanced / Pro section */}
-          {ADVANCED_NAV.some(i => !i.roles || i.roles.includes(userRole)) && (
+          {ADVANCED_NAV.some(i => i.roles.includes(userRole)) && (
             <div className="pt-2">
               <button
                 onClick={() => setAdvancedOpen(o => !o)}
                 className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors ${
-                  activeAdvanced
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : darkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'
+                  activeAdvanced ? 'text-emerald-600' : darkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 Avansert
-
                 <ChevronRight className={`w-3.5 h-3.5 ml-auto transition-transform ${advancedOpen || activeAdvanced ? 'rotate-90' : ''}`} />
               </button>
               {(advancedOpen || activeAdvanced) && (
                 <div className="mt-1 space-y-1 pl-2 border-l-2 border-slate-100 dark:border-slate-800 ml-2">
-                  {ADVANCED_NAV.filter(item => !item.roles || item.roles.includes(userRole)).map(item => (
+                  {ADVANCED_NAV.filter(item => item.roles.includes(userRole)).map(item => (
                     <NavLink key={item.page} item={item} active={currentPageName === item.page} darkMode={darkMode} />
                   ))}
                 </div>
@@ -208,19 +175,14 @@ function InnerLayout({ children, currentPageName }) {
         </nav>
 
         <div className="p-4 border-t border-inherit space-y-2 flex-shrink-0">
-          <div className="px-3 py-2">
-            <PushNotifications />
-          </div>
-          <div className="px-3 py-2">
-            <NotificationCenter userEmail={user?.email} teamId={currentTeam?.id} />
-          </div>
+          <div className="px-3 py-2"><PushNotifications /></div>
+          <div className="px-3 py-2"><NotificationCenter userEmail={user?.email} teamId={currentTeam?.id} /></div>
           <button onClick={toggleDark} className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm ${darkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}>
             {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             {darkMode ? 'Lyst tema' : 'Mørkt tema'}
           </button>
           <button onClick={() => base44.auth.logout()} className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm ${darkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}>
-            <LogOut className="w-4 h-4" />
-            Logg ut
+            <LogOut className="w-4 h-4" /> Logg ut
           </button>
         </div>
       </aside>
@@ -230,12 +192,8 @@ function InnerLayout({ children, currentPageName }) {
         <div className={`flex items-center justify-between px-4 py-3 border-b ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
           <div className="flex items-center gap-2">
             {isChildRoute ? (
-              <button
-                onClick={() => navigate(-1)}
-                className={`flex items-center gap-1 text-sm font-medium ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`}
-              >
-                <ArrowLeft className="w-5 h-5" />
-                Tilbake
+              <button onClick={() => navigate(-1)} className={`flex items-center gap-1 text-sm font-medium ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                <ArrowLeft className="w-5 h-5" /> Tilbake
               </button>
             ) : (
               <>
@@ -246,34 +204,34 @@ function InnerLayout({ children, currentPageName }) {
               </>
             )}
           </div>
-            <div className="flex items-center gap-2">
-              <NotificationCenter userEmail={user?.email} teamId={currentTeam?.id} />
-              <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2">
-                {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
-            </div>
+          <div className="flex items-center gap-2">
+            <NotificationCenter userEmail={user?.email} teamId={currentTeam?.id} />
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2">
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
+        </div>
         {mobileOpen && (
           <div className={`border-b ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} px-4 py-3 space-y-1 max-h-[calc(100vh-60px)] overflow-y-auto`}>
             {teams.length > 1 && (
               <div className="pb-2 mb-2 border-b border-inherit">
                 {teams.map(t => (
                   <button key={t.id} onClick={() => { selectTeam(t); setMobileOpen(false); }}
-                    className={`block w-full text-left px-3 py-1.5 rounded text-sm ${currentTeam?.id === t.id ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' : ''}`}>
+                    className={`block w-full text-left px-3 py-1.5 rounded text-sm ${currentTeam?.id === t.id ? 'bg-emerald-50 text-emerald-700' : ''}`}>
                     {t.name}
                   </button>
                 ))}
               </div>
             )}
-            {CORE_NAV.filter(item => !item.roles || item.roles.includes(userRole)).map(item => (
+            {CORE_NAV.filter(item => item.roles.includes(userRole)).map(item => (
               <NavLink key={item.page} item={item} active={currentPageName === item.page} darkMode={darkMode} onClick={() => setMobileOpen(false)} />
             ))}
-            {ADVANCED_NAV.some(i => !i.roles || i.roles.includes(userRole)) && (
+            {ADVANCED_NAV.some(i => i.roles.includes(userRole)) && (
               <>
                 <p className="px-3 pt-2 pb-1 text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
                   <Sparkles className="w-3 h-3" /> Avansert
                 </p>
-                {ADVANCED_NAV.filter(item => !item.roles || item.roles.includes(userRole)).map(item => (
+                {ADVANCED_NAV.filter(item => item.roles.includes(userRole)).map(item => (
                   <NavLink key={item.page} item={item} active={currentPageName === item.page} darkMode={darkMode} onClick={() => setMobileOpen(false)} />
                 ))}
               </>
@@ -291,10 +249,7 @@ function InnerLayout({ children, currentPageName }) {
       </div>
 
       {/* Main content */}
-      <main
-        className="flex-1 lg:ml-64 min-h-0 overflow-y-auto lg:pt-0"
-        style={{ paddingTop: 'calc(3.5rem + env(safe-area-inset-top))' }}
-      >
+      <main className="flex-1 lg:ml-64 min-h-0 overflow-y-auto" style={{ paddingTop: 'calc(3.5rem + env(safe-area-inset-top))' }}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={currentPageName}
@@ -310,250 +265,211 @@ function InnerLayout({ children, currentPageName }) {
         </AnimatePresence>
       </main>
 
-      {/* Bottom nav – mobile only */}
       <BottomNav currentPageName={currentPageName} />
-
-      {/* Support chatbot */}
       {currentTeam && <SupportChatbot teamId={currentTeam.id} />}
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────
+// Boot UI helpers
+// ──────────────────────────────────────────────
+function BootLoader() {
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', fontFamily: 'system-ui, sans-serif' }}>
+      <div style={{ width: 48, height: 48, borderRadius: 12, background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+        <Shield style={{ width: 26, height: 26, color: '#fff' }} />
       </div>
-      );
-      }
+      <div style={{ width: 32, height: 32, border: '3px solid #d1fae5', borderTopColor: '#059669', borderRadius: '50%', animation: 'spin 0.8s linear infinite', marginBottom: 16 }} />
+      <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Laster inn…</p>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
 
-      // Pages that skip AuthGate entirely — rendered standalone with no team context
-      const NO_LAYOUT_PAGES = ['Onboarding', 'GdprConsent', 'TermsOfService'];
+function BootError({ message, onRetry }) {
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', padding: 24, fontFamily: 'system-ui, sans-serif' }}>
+      <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.1)', padding: 32, maxWidth: 400, width: '100%', textAlign: 'center' }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>🔌</div>
+        <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: 8, color: '#1e293b' }}>Innlasting mislyktes</h2>
+        <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: 24 }}>{message || 'Sjekk internettilkoblingen og prøv igjen.'}</p>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button onClick={onRetry} style={{ background: '#059669', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}>
+            Prøv igjen
+          </button>
+          <button onClick={() => base44.auth.redirectToLogin()} style={{ background: 'transparent', color: '#059669', border: '1px solid #059669', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}>
+            Logg inn på nytt
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-      function BootLoader() {
-        return (
-          <div style={{
-            minHeight: '100vh', display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            background: '#f8fafc', fontFamily: 'system-ui, sans-serif'
-          }}>
-            <div style={{ width: 48, height: 48, borderRadius: 12, background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-              <Shield style={{ width: 26, height: 26, color: '#fff' }} />
-            </div>
-            <div style={{ width: 32, height: 32, border: '3px solid #d1fae5', borderTopColor: '#059669', borderRadius: '50%', animation: 'spin 0.8s linear infinite', marginBottom: 16 }} />
-            <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Laster inn…</p>
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          </div>
-        );
-      }
+// ──────────────────────────────────────────────
+// AuthGate — runs ONCE per page load, no loops
+// ──────────────────────────────────────────────
+// Module-level cache so React StrictMode double-invoke & re-mounts don't repeat the boot
+let _bootCache = null; // null | { status: 'ready'|'redirecting', data? }
 
-      function BootError({ message, onRetry }) {
-        return (
-          <div style={{
-            minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: '#f8fafc', padding: 24, fontFamily: 'system-ui, sans-serif'
-          }}>
-            <div style={{
-              background: '#fff', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-              padding: 32, maxWidth: 400, width: '100%', textAlign: 'center'
-            }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>🔌</div>
-              <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: 8, color: '#1e293b' }}>Innlasting tok for lang tid</h2>
-              <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: 24 }}>
-                {message || 'Tilkoblingen mislyktes. Sjekk internett og prøv igjen.'}
-              </p>
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-                <button onClick={onRetry} style={{ background: '#059669', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}>
-                  Prøv igjen
-                </button>
-                <button onClick={() => base44.auth.redirectToLogin()} style={{ background: 'transparent', color: '#059669', border: '1px solid #059669', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}>
-                  Logg inn på nytt
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      }
+function AuthGate({ children, currentPageName }) {
+  const [phase, setPhase] = React.useState(() => {
+    if (_bootCache?.status === 'ready') return 'ready';
+    return 'loading';
+  });
+  const [bootData, setBootData] = React.useState(() => {
+    if (_bootCache?.status === 'ready') return _bootCache.data;
+    return null;
+  });
+  const [errorMsg, setErrorMsg] = React.useState('');
+  const didRunRef = React.useRef(false);
 
-      // Global flag to prevent AuthGate from running more than once per page load
-      // (survives React StrictMode double-invoke because it's module-level)
-      let _authGateBooted = false;
-      let _authGateBootData = null;
-      let _authGateBootStatus = 'idle'; // 'idle' | 'loading' | 'ready' | 'redirecting' | 'error'
+  React.useEffect(() => {
+    // Already resolved from cache or previous mount
+    if (phase === 'ready') return;
+    // Prevent double-invoke (StrictMode)
+    if (didRunRef.current) return;
+    didRunRef.current = true;
 
-      function AuthGate({ children, currentPageName }) {
-        const [bootStatus, setBootStatus] = React.useState(() => {
-          // If a previous mount already completed, reuse the result immediately
-          if (_authGateBootStatus === 'ready' && _authGateBootData) return 'ready';
-          return 'loading';
-        });
-        const [bootData, setBootData] = React.useState(() => {
-          if (_authGateBootStatus === 'ready' && _authGateBootData) return _authGateBootData;
-          return null;
-        });
-        const [errorMsg, setErrorMsg] = React.useState('');
-        const runningRef = React.useRef(false);
+    // If another instance is already running (shouldn't happen, but guard it)
+    if (_bootCache?.status === 'running') return;
+    _bootCache = { status: 'running' };
 
-        React.useEffect(() => {
-          // Already done from a prior mount — nothing to do
-          if (bootStatus === 'ready') return;
-          // Prevent concurrent boot (StrictMode double-invoke protection)
-          if (runningRef.current) return;
-          // Global dedup: only one boot sequence per page load
-          if (_authGateBooted && _authGateBootStatus === 'ready') {
-            setBootData(_authGateBootData);
-            setBootStatus('ready');
-            return;
-          }
-          if (_authGateBooted) return; // another instance is already running
+    const t0 = Date.now();
+    let cancelled = false;
 
-          _authGateBooted = true;
-          runningRef.current = true;
-          _authGateBootStatus = 'loading';
+    const timeoutId = setTimeout(() => {
+      if (cancelled) return;
+      cancelled = true;
+      _bootCache = null;
+      setErrorMsg('Tilkoblingen tok for lang tid. Sjekk internett og prøv igjen.');
+      setPhase('error');
+    }, 12000);
 
-          const t0 = Date.now();
-          console.log('[AuthGate] boot start — page=', currentPageName);
+    (async () => {
+      try {
+        // ① Auth check
+        let authenticated = false;
+        try { authenticated = await base44.auth.isAuthenticated(); } catch (_) {}
+        if (cancelled) return;
 
-          const timeoutId = setTimeout(() => {
-            console.error('[AuthGate] TIMEOUT after 12s');
-            _authGateBooted = false; // allow retry
-            _authGateBootStatus = 'error';
-            setErrorMsg('Innlasting tok for lang tid – sjekk internettilkoblingen og prøv igjen.');
-            setBootStatus('error');
-          }, 12000);
-
-          (async () => {
-            try {
-              // Step 1: Check authentication
-              let authenticated = false;
-              try {
-                authenticated = await base44.auth.isAuthenticated();
-              } catch(e) {
-                console.warn('[AuthGate] isAuthenticated threw:', e?.message);
-              }
-              console.log('[AuthGate] authenticated=', authenticated, '+' + (Date.now()-t0) + 'ms');
-
-              if (!authenticated) {
-                clearTimeout(timeoutId);
-                _authGateBootStatus = 'redirecting';
-                console.log('[AuthGate] → not authenticated, going to login');
-                // redirectToLogin will come back to /?page=Dashboard after login
-                base44.auth.redirectToLogin(window.location.origin + '/?page=Dashboard');
-                return;
-              }
-
-              // Step 2: Get current user
-              let user = null;
-              try {
-                user = await base44.auth.me();
-              } catch(e) {
-                console.warn('[AuthGate] auth.me threw:', e?.message);
-              }
-              console.log('[AuthGate] user=', user?.email, '+' + (Date.now()-t0) + 'ms');
-
-              if (!user) {
-                clearTimeout(timeoutId);
-                _authGateBootStatus = 'redirecting';
-                base44.auth.redirectToLogin(window.location.origin + '/?page=Dashboard');
-                return;
-              }
-
-              // Step 3: Fetch teams (created by user + team memberships)
-              const userEmail = user.email.toLowerCase();
-              console.log('[AuthGate] fetching teams for', userEmail, '...');
-
-              const [createdTeams, memberRecords] = await Promise.all([
-                base44.entities.Team.filter({ created_by: user.email }).catch(e => {
-                  console.warn('[AuthGate] createdTeams error:', e?.message);
-                  return [];
-                }),
-                base44.entities.TeamMember.filter({ user_email: userEmail }).catch(e => {
-                  console.warn('[AuthGate] memberRecords error:', e?.message);
-                  return [];
-                }),
-              ]);
-              console.log('[AuthGate] createdTeams=', createdTeams.length, 'memberRecords=', memberRecords.length, '+' + (Date.now()-t0) + 'ms');
-
-              // Build a deduplicated map of all teams the user belongs to
-              const byId = new Map();
-              for (const t of createdTeams) byId.set(t.id, t);
-
-              // Fetch team objects for any membership records not already in the map
-              const missingIds = memberRecords.map(m => m.team_id).filter(id => id && !byId.has(id));
-              if (missingIds.length > 0) {
-                console.log('[AuthGate] fetching', missingIds.length, 'extra team objects...');
-                const allTeams = await base44.entities.Team.list().catch(() => []);
-                for (const t of allTeams) {
-                  if (missingIds.includes(t.id)) byId.set(t.id, t);
-                }
-              }
-
-              const hasTeam = byId.size > 0;
-              console.log('[AuthGate] hasTeam=', hasTeam, 'total=', byId.size, '+' + (Date.now()-t0) + 'ms');
-              clearTimeout(timeoutId);
-
-              if (!hasTeam) {
-                // New user with no teams → send to Onboarding (skips AuthGate entirely)
-                _authGateBootStatus = 'redirecting';
-                console.log('[AuthGate] no teams → Onboarding');
-                window.location.replace('/?page=Onboarding');
-                return;
-              }
-
-              // All good — render the app
-              const data = { user, teams: [...byId.values()], memberTeams: memberRecords };
-              _authGateBootData = data;
-              _authGateBootStatus = 'ready';
-              console.log('[AuthGate] ready +' + (Date.now()-t0) + 'ms');
-              setBootData(data);
-              setBootStatus('ready');
-
-            } catch (e) {
-              clearTimeout(timeoutId);
-              _authGateBooted = false; // allow retry
-              _authGateBootStatus = 'error';
-              console.error('[AuthGate] unexpected error:', e?.message, e);
-              setErrorMsg('Noe gikk galt – prøv igjen.');
-              setBootStatus('error');
-            }
-          })();
-
-          return () => { /* no cleanup needed — we rely on module-level flag */ };
-        }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-        if (bootStatus === 'loading') return <BootLoader />;
-        if (bootStatus === 'error') return (
-          <BootError message={errorMsg} onRetry={() => {
-            _authGateBooted = false;
-            _authGateBootStatus = 'idle';
-            _authGateBootData = null;
-            setErrorMsg('');
-            setBootStatus('loading');
-          }} />
-        );
-
-        return (
-          <TeamProvider bootData={bootData}>
-            <InnerLayout currentPageName={currentPageName}>{children}</InnerLayout>
-          </TeamProvider>
-        );
-      }
-
-      export default function Layout({ children, currentPageName }) {
-        // ALWAYS read URL authoritatively to avoid stale prop value races
-        const urlPage = typeof window !== 'undefined'
-          ? new URLSearchParams(window.location.search).get('page')
-          : null;
-
-        // Use URL param first (most reliable), fall back to prop
-        const effectivePage = urlPage || currentPageName || '';
-
-        // Standalone pages — no AuthGate, no TeamProvider, no sidebar
-        if (NO_LAYOUT_PAGES.includes(effectivePage)) {
-          return (
-            <ErrorBoundary>
-              <ThemeProvider>{children}</ThemeProvider>
-            </ErrorBoundary>
-          );
+        if (!authenticated) {
+          clearTimeout(timeoutId);
+          _bootCache = { status: 'redirecting' };
+          // Return to /?page=Dashboard after login so AuthGate runs again cleanly
+          base44.auth.redirectToLogin(window.location.origin + '/?page=Dashboard');
+          return;
         }
 
-        return (
-          <ErrorBoundary>
-            <ThemeProvider>
-              <AuthGate currentPageName={effectivePage}>{children}</AuthGate>
-            </ThemeProvider>
-          </ErrorBoundary>
-        );
+        // ② Get user profile
+        let user = null;
+        try { user = await base44.auth.me(); } catch (_) {}
+        if (cancelled) return;
+
+        if (!user) {
+          clearTimeout(timeoutId);
+          _bootCache = { status: 'redirecting' };
+          base44.auth.redirectToLogin(window.location.origin + '/?page=Dashboard');
+          return;
+        }
+
+        // ③ Fetch teams — in parallel, gracefully degrading on RLS errors
+        const userEmail = user.email.toLowerCase();
+        const [createdTeams, memberRecords] = await Promise.all([
+          base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
+          base44.entities.TeamMember.filter({ user_email: userEmail }).catch(() => []),
+        ]);
+        if (cancelled) return;
+
+        // Build deduplicated team map
+        const byId = new Map();
+        for (const t of createdTeams) byId.set(t.id, t);
+
+        // Fetch objects for any member teams not yet loaded
+        const missingIds = memberRecords.map(m => m.team_id).filter(id => id && !byId.has(id));
+        if (missingIds.length > 0) {
+          const allTeams = await base44.entities.Team.list().catch(() => []);
+          if (cancelled) return;
+          for (const t of allTeams) {
+            if (missingIds.includes(t.id)) byId.set(t.id, t);
+          }
+        }
+
+        clearTimeout(timeoutId);
+        if (cancelled) return;
+
+        if (byId.size === 0) {
+          // New user — send to Onboarding (which is in NO_LAYOUT_PAGES, skips AuthGate)
+          _bootCache = { status: 'redirecting' };
+          window.location.replace('/?page=Onboarding');
+          return;
+        }
+
+        // Existing user — boot complete
+        const data = { user, teams: [...byId.values()], memberTeams: memberRecords };
+        _bootCache = { status: 'ready', data };
+        console.log('[AuthGate] ready in', Date.now() - t0, 'ms');
+        setBootData(data);
+        setPhase('ready');
+
+      } catch (e) {
+        clearTimeout(timeoutId);
+        if (cancelled) return;
+        _bootCache = null;
+        console.error('[AuthGate] unexpected error:', e?.message);
+        setErrorMsg('Noe gikk galt – prøv igjen.');
+        setPhase('error');
       }
+    })();
+
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (phase === 'loading') return <BootLoader />;
+  if (phase === 'error') return (
+    <BootError
+      message={errorMsg}
+      onRetry={() => {
+        _bootCache = null;
+        didRunRef.current = false;
+        setErrorMsg('');
+        setPhase('loading');
+      }}
+    />
+  );
+
+  return (
+    <TeamProvider bootData={bootData}>
+      <InnerLayout currentPageName={currentPageName}>{children}</InnerLayout>
+    </TeamProvider>
+  );
+}
+
+// ──────────────────────────────────────────────
+// Root Layout export
+// ──────────────────────────────────────────────
+export default function Layout({ children, currentPageName }) {
+  // Read URL param authoritatively to avoid stale prop races
+  const urlPage = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('page')
+    : null;
+  const effectivePage = urlPage || currentPageName || '';
+
+  // Standalone pages — skip AuthGate & sidebar entirely
+  if (NO_LAYOUT_PAGES.includes(effectivePage)) {
+    return (
+      <ErrorBoundary>
+        <ThemeProvider>{children}</ThemeProvider>
+      </ErrorBoundary>
+    );
+  }
+
+  return (
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthGate currentPageName={effectivePage}>{children}</AuthGate>
+      </ThemeProvider>
+    </ErrorBoundary>
+  );
+}
