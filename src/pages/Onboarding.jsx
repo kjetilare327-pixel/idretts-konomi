@@ -1,4 +1,3 @@
-// v5-restored – original working onboarding
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
@@ -9,11 +8,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Shield, ArrowRight, Loader2 } from 'lucide-react';
 import { addDays, format } from 'date-fns';
 import { toast } from 'sonner';
+import TermsModal from '@/components/shared/TermsModal';
 
 const SPORTS = ['Fotball', 'Håndball', 'Ski', 'Svømming', 'Friidrett', 'Basketball', 'Volleyball', 'Ishockey', 'Tennis', 'Annet'];
 
 export default function Onboarding() {
   const [step, setStep] = useState(1);
+  const [tosAccepted, setTosAccepted] = useState(false);
+  const [checkingUser, setCheckingUser] = useState(true);
+
+  // Check if user is logged in and whether they've already accepted ToS
+  useEffect(() => {
+    base44.auth.me().then(u => {
+      if (u?.tos_accepted) setTosAccepted(true);
+      setCheckingUser(false);
+    }).catch(() => setCheckingUser(false));
+  }, []);
   const [form, setForm] = useState({ name: '', sport_type: '', estimated_members: '', nif_number: '' });
   const [gdpr, setGdpr] = useState(false);
   const [saving, setSaving] = useState(false);
