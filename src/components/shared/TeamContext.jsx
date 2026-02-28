@@ -262,6 +262,22 @@ export function TeamProvider({ children, bootData }) {
 
 export function useTeam() {
   const ctx = useContext(TeamContext);
-  if (!ctx) throw new Error('useTeam must be used within TeamProvider');
+  if (!ctx) {
+    // Instead of throwing (which causes ErrorBoundary to show), redirect to login
+    // This happens if a component using useTeam is rendered outside TeamProvider
+    console.error('[useTeam] Called outside TeamProvider — redirecting to login');
+    if (typeof window !== 'undefined') {
+      base44.auth.redirectToLogin(window.location.origin + '/?page=Dashboard');
+    }
+    // Return a safe stub so the component doesn't crash before redirect completes
+    return {
+      currentTeam: null, teams: [], loading: true, user: null,
+      playerProfile: null, isAdmin: false, currentTeamRole: 'player',
+      myMemberships: {}, selectTeam: () => {}, refreshTeams: () => {},
+      refreshTeamMembers: () => {}, refreshPlayerProfile: () => {},
+      loadData: () => {}, isTeamAdmin: () => false,
+      getUserTeamRole: () => 'player', canViewFinance: () => false,
+    };
+  }
   return ctx;
 }
