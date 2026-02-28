@@ -12,24 +12,9 @@ import { ThemeProvider, useTheme } from './components/shared/ThemeContext';
 import { base44 } from '@/api/base44Client';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import {
-  LayoutDashboard,
-  Receipt,
-  PiggyBank,
-  FileBarChart,
-  Settings,
-  Menu,
-  X,
-  Sun,
-  Moon,
-  ChevronDown,
-  ChevronRight,
-  LogOut,
-  Shield,
-  Users,
-  ScrollText,
-  Mail,
-  Sparkles,
-  ArrowLeft,
+  LayoutDashboard, Receipt, PiggyBank, FileBarChart, Settings, Menu, X,
+  Sun, Moon, ChevronDown, ChevronRight, LogOut, Shield, Users, ScrollText,
+  Mail, Sparkles, ArrowLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import NotificationCenter from './components/notifications/NotificationCenter';
@@ -38,36 +23,36 @@ import OfflineManager from './components/mobile/OfflineManager';
 import PushNotifications from './components/mobile/PushNotifications';
 import BottomNav from './components/mobile/BottomNav';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuTrigger, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
-// Pages that skip AuthGate entirely — rendered with no sidebar/team context
+// ─── Pages that render WITHOUT AuthGate or sidebar ───────────────────────────
+// These pages handle their own auth/redirects internally.
 const NO_LAYOUT_PAGES = ['Onboarding', 'GdprConsent', 'TermsOfService'];
 
+// ─── Navigation ──────────────────────────────────────────────────────────────
 const CORE_NAV = [
-  { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'kasserer', 'styreleder', 'revisor', 'player', 'forelder'] },
-  { name: 'Mine betalinger', page: 'PaymentPortal', icon: Receipt, roles: ['player', 'forelder'] },
-  { name: 'Spillere', page: 'Players', icon: Users, roles: ['admin', 'kasserer', 'styreleder', 'revisor'] },
-  { name: 'Transaksjoner', page: 'Transactions', icon: Receipt, roles: ['admin', 'kasserer', 'revisor'] },
-  { name: 'Bankavstemming', page: 'BankReconciliation', icon: Receipt, roles: ['admin', 'kasserer'] },
-  { name: 'Budsjett', page: 'Budget', icon: PiggyBank, roles: ['admin', 'kasserer', 'revisor'] },
-  { name: 'Fakturering', page: 'InvoiceAutomation', icon: Receipt, roles: ['admin', 'kasserer'] },
-  { name: 'Rapporter', page: 'Reports', icon: FileBarChart, roles: ['admin', 'kasserer', 'styreleder', 'revisor'] },
-  { name: 'Kommunikasjon', page: 'Communications', icon: Mail, roles: ['admin', 'kasserer'] },
-  { name: 'Revisjonslogg', page: 'AuditLog', icon: ScrollText, roles: ['admin', 'styreleder', 'revisor'] },
-  { name: 'Innstillinger', page: 'SettingsPage', icon: Settings, roles: ['admin', 'kasserer', 'styreleder'] },
+  { name: 'Dashboard',       page: 'Dashboard',           icon: LayoutDashboard, roles: ['admin','kasserer','styreleder','revisor','player','forelder'] },
+  { name: 'Mine betalinger', page: 'PaymentPortal',       icon: Receipt,         roles: ['player','forelder'] },
+  { name: 'Spillere',        page: 'Players',             icon: Users,           roles: ['admin','kasserer','styreleder','revisor'] },
+  { name: 'Transaksjoner',   page: 'Transactions',        icon: Receipt,         roles: ['admin','kasserer','revisor'] },
+  { name: 'Bankavstemming',  page: 'BankReconciliation',  icon: Receipt,         roles: ['admin','kasserer'] },
+  { name: 'Budsjett',        page: 'Budget',              icon: PiggyBank,       roles: ['admin','kasserer','revisor'] },
+  { name: 'Fakturering',     page: 'InvoiceAutomation',   icon: Receipt,         roles: ['admin','kasserer'] },
+  { name: 'Rapporter',       page: 'Reports',             icon: FileBarChart,    roles: ['admin','kasserer','styreleder','revisor'] },
+  { name: 'Kommunikasjon',   page: 'Communications',      icon: Mail,            roles: ['admin','kasserer'] },
+  { name: 'Revisjonslogg',   page: 'AuditLog',            icon: ScrollText,      roles: ['admin','styreleder','revisor'] },
+  { name: 'Innstillinger',   page: 'SettingsPage',        icon: Settings,        roles: ['admin','kasserer','styreleder'] },
 ];
 
 const ADVANCED_NAV = [
-  { name: 'Regnskap', page: 'AccountingIntegration', icon: FileBarChart, roles: ['admin', 'kasserer'] },
+  { name: 'Regnskap', page: 'AccountingIntegration', icon: FileBarChart, roles: ['admin','kasserer'] },
 ];
 
-const ROOT_PAGES = ['Dashboard', 'PaymentPortal', 'Players', 'Reports', 'SettingsPage', 'Onboarding'];
+const ROOT_PAGES = ['Dashboard','PaymentPortal','Players','Reports','SettingsPage','Onboarding'];
 
+// ─── NavLink ─────────────────────────────────────────────────────────────────
 function NavLink({ item, active, darkMode, onClick }) {
   return (
     <Link
@@ -76,7 +61,9 @@ function NavLink({ item, active, darkMode, onClick }) {
       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all touch-manipulation ${
         active
           ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
-          : darkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          : darkMode
+            ? 'text-slate-400 hover:text-white hover:bg-slate-800'
+            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
       }`}
     >
       <item.icon className="w-5 h-5 shrink-0" />
@@ -85,6 +72,7 @@ function NavLink({ item, active, darkMode, onClick }) {
   );
 }
 
+// ─── InnerLayout (requires TeamProvider context) ──────────────────────────────
 function InnerLayout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -249,7 +237,10 @@ function InnerLayout({ children, currentPageName }) {
       </div>
 
       {/* Main content */}
-      <main className="flex-1 lg:ml-64 min-h-0 overflow-y-auto" style={{ paddingTop: 'calc(3.5rem + env(safe-area-inset-top))' }}>
+      <main
+        className="flex-1 lg:ml-64 min-h-0 overflow-y-auto"
+        style={{ paddingTop: 'calc(3.5rem + env(safe-area-inset-top))' }}
+      >
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={currentPageName}
@@ -271,17 +262,40 @@ function InnerLayout({ children, currentPageName }) {
   );
 }
 
-// ──────────────────────────────────────────────
-// Boot UI helpers
-// ──────────────────────────────────────────────
-function BootLoader() {
+// ─── Boot UI ──────────────────────────────────────────────────────────────────
+function BootLoader({ onTimeout }) {
+  const [timedOut, setTimedOut] = React.useState(false);
+
+  React.useEffect(() => {
+    const id = setTimeout(() => setTimedOut(true), 10000);
+    return () => clearTimeout(id);
+  }, []);
+
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{
+      minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      background: '#f8fafc', fontFamily: 'system-ui, sans-serif',
+    }}>
       <div style={{ width: 48, height: 48, borderRadius: 12, background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
         <Shield style={{ width: 26, height: 26, color: '#fff' }} />
       </div>
-      <div style={{ width: 32, height: 32, border: '3px solid #d1fae5', borderTopColor: '#059669', borderRadius: '50%', animation: 'spin 0.8s linear infinite', marginBottom: 16 }} />
-      <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Laster inn…</p>
+      {timedOut ? (
+        <>
+          <p style={{ color: '#ef4444', fontSize: '0.875rem', marginBottom: 16 }}>Tilkoblingen tok for lang tid.</p>
+          <button
+            onClick={onTimeout}
+            style={{ background: '#059669', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}
+          >
+            Prøv igjen
+          </button>
+        </>
+      ) : (
+        <>
+          <div style={{ width: 32, height: 32, border: '3px solid #d1fae5', borderTopColor: '#059669', borderRadius: '50%', animation: 'spin 0.8s linear infinite', marginBottom: 16 }} />
+          <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Laster inn…</p>
+        </>
+      )}
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
@@ -298,7 +312,7 @@ function BootError({ message, onRetry }) {
           <button onClick={onRetry} style={{ background: '#059669', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}>
             Prøv igjen
           </button>
-          <button onClick={() => base44.auth.redirectToLogin()} style={{ background: 'transparent', color: '#059669', border: '1px solid #059669', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}>
+          <button onClick={() => base44.auth.logout()} style={{ background: 'transparent', color: '#059669', border: '1px solid #059669', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}>
             Logg inn på nytt
           </button>
         </div>
@@ -307,23 +321,25 @@ function BootError({ message, onRetry }) {
   );
 }
 
-// ──────────────────────────────────────────────
-// AuthGate — runs ONCE per page load via promise singleton
-// ──────────────────────────────────────────────
-// A single shared promise across all mounts (handles StrictMode double-invoke safely)
-let _bootPromise = null;    // Promise<{status,data?}> | null
-let _bootResult  = null;    // cached resolved result
+// ─── AuthGate boot logic (promise singleton — safe across StrictMode) ─────────
+// Only ONE boot sequence runs per page load, no matter how many times
+// AuthGate mounts/unmounts (StrictMode, HMR, etc.)
+let _bootPromise = null;  // Promise<result> | null
+let _bootResult  = null;  // cached resolved result | null
 
 async function runBoot() {
   const t0 = Date.now();
-  console.log('[AuthGate] boot start — page=', new URLSearchParams(window.location.search).get('page'));
+  const page = new URLSearchParams(window.location.search).get('page') || '(root)';
+  console.log('[AuthGate] boot start — page=', page);
 
-  // ① Auth
+  // ① Authentication check
   let authenticated = false;
   try { authenticated = await base44.auth.isAuthenticated(); } catch (_) {}
   console.log('[AuthGate] authenticated=', authenticated, `+${Date.now()-t0}ms`);
 
   if (!authenticated) {
+    console.log('[AuthGate] not authenticated → redirecting to login');
+    // After login, platform sends back to /?page=Dashboard; AuthGate runs fresh there
     base44.auth.redirectToLogin(window.location.origin + '/?page=Dashboard');
     return { status: 'redirecting' };
   }
@@ -334,23 +350,26 @@ async function runBoot() {
   console.log('[AuthGate] user=', user?.email, `+${Date.now()-t0}ms`);
 
   if (!user) {
+    console.log('[AuthGate] no user object → redirecting to login');
     base44.auth.redirectToLogin(window.location.origin + '/?page=Dashboard');
     return { status: 'redirecting' };
   }
 
-  // ③ Teams (parallel)
+  // ③ Teams — parallel fetch, graceful RLS degradation
   const userEmail = user.email.toLowerCase();
   console.log('[AuthGate] fetching teams for', userEmail, '...');
+
   const [createdTeams, memberRecords] = await Promise.all([
     base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
     base44.entities.TeamMember.filter({ user_email: userEmail }).catch(() => []),
   ]);
   console.log('[AuthGate] createdTeams=', createdTeams.length, 'memberRecords=', memberRecords.length, `+${Date.now()-t0}ms`);
 
+  // Deduplicate by id
   const byId = new Map();
   for (const t of createdTeams) byId.set(t.id, t);
 
-  // Fetch team objects for memberships not already loaded
+  // Load team objects for any membership records not yet in byId
   const missingIds = memberRecords.map(m => m.team_id).filter(id => id && !byId.has(id));
   if (missingIds.length > 0) {
     console.log('[AuthGate] fetching', missingIds.length, 'extra team objects...');
@@ -364,7 +383,7 @@ async function runBoot() {
   console.log('[AuthGate] hasTeam=', hasTeam, 'total=', byId.size, `+${Date.now()-t0}ms`);
 
   if (!hasTeam) {
-    // New user — redirect to Onboarding (in NO_LAYOUT_PAGES, bypasses AuthGate)
+    // Brand-new user — redirect to Onboarding (NO_LAYOUT_PAGES bypasses AuthGate entirely)
     console.log('[AuthGate] no teams → Onboarding');
     window.location.replace('/?page=Onboarding');
     return { status: 'redirecting' };
@@ -381,29 +400,31 @@ function getBootPromise() {
       _bootResult = result;
       return result;
     }).catch(err => {
-      console.error('[AuthGate] unexpected error:', err?.message);
+      console.error('[AuthGate] boot error:', err?.message);
       _bootPromise = null; // allow retry
+      _bootResult = null;
       return { status: 'error', message: err?.message || 'Ukjent feil' };
     });
   }
   return _bootPromise;
 }
 
+// ─── AuthGate component ───────────────────────────────────────────────────────
 function AuthGate({ children, currentPageName }) {
-  const [phase, setPhase] = React.useState(() => {
-    // If already resolved (cached), start in ready state immediately
-    if (_bootResult?.status === 'ready') return 'ready';
-    return 'loading';
-  });
-  const [bootData, setBootData] = React.useState(() => {
-    if (_bootResult?.status === 'ready') return _bootResult.data;
-    return null;
-  });
+  // Synchronously initialise from cache if already resolved — avoids any loading flash
+  const [phase, setPhase] = React.useState(() =>
+    _bootResult?.status === 'ready' ? 'ready' : 'loading'
+  );
+  const [bootData, setBootData] = React.useState(() =>
+    _bootResult?.status === 'ready' ? _bootResult.data : null
+  );
   const [errorMsg, setErrorMsg] = React.useState('');
 
   React.useEffect(() => {
-    // Already have a result — nothing to do
+    // Nothing to do if already resolved
     if (phase === 'ready') return;
+
+    // Sync check in case result arrived between render and effect
     if (_bootResult?.status === 'ready') {
       setBootData(_bootResult.data);
       setPhase('ready');
@@ -412,16 +433,7 @@ function AuthGate({ children, currentPageName }) {
 
     let alive = true;
 
-    // 12s hard timeout displayed to user
-    const timeoutId = setTimeout(() => {
-      if (!alive) return;
-      console.warn('[AuthGate] boot timeout');
-      setErrorMsg('Tilkoblingen tok for lang tid. Sjekk internett og prøv igjen.');
-      setPhase('error');
-    }, 12000);
-
     getBootPromise().then(result => {
-      clearTimeout(timeoutId);
       if (!alive) return;
       if (result.status === 'ready') {
         setBootData(result.data);
@@ -430,25 +442,22 @@ function AuthGate({ children, currentPageName }) {
         setErrorMsg(result.message || 'Noe gikk galt – prøv igjen.');
         setPhase('error');
       }
-      // 'redirecting' → navigation is already in progress, stay on loader
+      // 'redirecting' → navigation already in progress; keep showing loader
     });
 
-    return () => { alive = false; clearTimeout(timeoutId); };
+    return () => { alive = false; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (phase === 'loading') return <BootLoader />;
-  if (phase === 'error') return (
-    <BootError
-      message={errorMsg}
-      onRetry={() => {
-        _bootPromise = null;
-        _bootResult = null;
-        setBootData(null);
-        setErrorMsg('');
-        setPhase('loading');
-      }}
-    />
-  );
+  const handleRetry = () => {
+    _bootPromise = null;
+    _bootResult  = null;
+    setBootData(null);
+    setErrorMsg('');
+    setPhase('loading');
+  };
+
+  if (phase === 'loading') return <BootLoader onTimeout={handleRetry} />;
+  if (phase === 'error')   return <BootError message={errorMsg} onRetry={handleRetry} />;
 
   return (
     <TeamProvider bootData={bootData}>
@@ -457,17 +466,15 @@ function AuthGate({ children, currentPageName }) {
   );
 }
 
-// ──────────────────────────────────────────────
-// Root Layout export
-// ──────────────────────────────────────────────
+// ─── Root Layout export ───────────────────────────────────────────────────────
 export default function Layout({ children, currentPageName }) {
-  // Read URL param authoritatively to avoid stale prop races
+  // Read page name from URL param — more reliable than prop during navigations
   const urlPage = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('page')
     : null;
   const effectivePage = urlPage || currentPageName || '';
 
-  // Standalone pages — skip AuthGate & sidebar entirely
+  // NO_LAYOUT_PAGES: render bare (no AuthGate, no sidebar)
   if (NO_LAYOUT_PAGES.includes(effectivePage)) {
     return (
       <ErrorBoundary>
