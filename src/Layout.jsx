@@ -319,6 +319,7 @@ function InnerLayout({ children, currentPageName }) {
       );
       }
 
+      // Pages that skip AuthGate entirely — rendered standalone with no team context
       const NO_LAYOUT_PAGES = ['Onboarding', 'GdprConsent', 'TermsOfService'];
 
       function BootLoader() {
