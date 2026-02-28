@@ -55,6 +55,8 @@ export function TeamProvider({ children, bootData }) {
   const init = computeInitialState(bootData);
   const [currentTeam, setCurrentTeam] = useState(init.currentTeam);
   const [teams, setTeams] = useState(init.teams);
+  // status: 'loading' | 'ready' | 'error'  (consumed by TeamGate)
+  const [status, setStatus] = useState(init.loading ? 'loading' : 'ready');
   const [loading, setLoading] = useState(init.loading);
   const [user, setUser] = useState(init.user);
   const [playerProfile, setPlayerProfile] = useState(null);
