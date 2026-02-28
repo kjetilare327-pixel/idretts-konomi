@@ -491,12 +491,16 @@ function InnerLayout({ children, currentPageName }) {
       }
 
       export default function Layout({ children, currentPageName }) {
-        // Derive effective page from URL in case currentPageName lags behind navigation
-        const urlPage = new URLSearchParams(window.location.search).get('page');
-        const effectivePage = currentPageName || urlPage || '';
+        // ALWAYS read URL authoritatively to avoid stale prop value races
+        const urlPage = typeof window !== 'undefined'
+          ? new URLSearchParams(window.location.search).get('page')
+          : null;
 
-        // No-auth pages render immediately without AuthGate
-        if (NO_LAYOUT_PAGES.includes(effectivePage) || NO_LAYOUT_PAGES.includes(urlPage)) {
+        // Use URL param first (most reliable), fall back to prop
+        const effectivePage = urlPage || currentPageName || '';
+
+        // Standalone pages — no AuthGate, no TeamProvider, no sidebar
+        if (NO_LAYOUT_PAGES.includes(effectivePage)) {
           return (
             <ErrorBoundary>
               <ThemeProvider>{children}</ThemeProvider>
