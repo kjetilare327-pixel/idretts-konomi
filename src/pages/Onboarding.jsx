@@ -68,7 +68,8 @@ export default function Onboarding() {
 
       toast.success('Lag opprettet!', { id: 'ct' });
       localStorage.setItem('idrettsøkonomi_team_id', newTeam.id);
-      navigate(createPageUrl('Dashboard'));
+      // Force AuthGate to re-run on Dashboard so it picks up the new team
+      window.location.replace('/?page=Dashboard');
     } catch (err) {
       console.error('[Onboarding] Team creation failed', err);
       const msg = err?.response?.data?.message || err?.message || 'Ukjent feil';
