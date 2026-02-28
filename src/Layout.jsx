@@ -308,122 +308,132 @@ function BootError({ message, onRetry }) {
 }
 
 // ──────────────────────────────────────────────
-// AuthGate — runs ONCE per page load, no loops
+// AuthGate — runs ONCE per page load via promise singleton
 // ──────────────────────────────────────────────
-// Module-level cache so React StrictMode double-invoke & re-mounts don't repeat the boot
-let _bootCache = null; // null | { status: 'ready'|'redirecting', data? }
+// A single shared promise across all mounts (handles StrictMode double-invoke safely)
+let _bootPromise = null;    // Promise<{status,data?}> | null
+let _bootResult  = null;    // cached resolved result
+
+async function runBoot() {
+  const t0 = Date.now();
+  console.log('[AuthGate] boot start — page=', new URLSearchParams(window.location.search).get('page'));
+
+  // ① Auth
+  let authenticated = false;
+  try { authenticated = await base44.auth.isAuthenticated(); } catch (_) {}
+  console.log('[AuthGate] authenticated=', authenticated, `+${Date.now()-t0}ms`);
+
+  if (!authenticated) {
+    base44.auth.redirectToLogin(window.location.origin + '/?page=Dashboard');
+    return { status: 'redirecting' };
+  }
+
+  // ② User profile
+  let user = null;
+  try { user = await base44.auth.me(); } catch (_) {}
+  console.log('[AuthGate] user=', user?.email, `+${Date.now()-t0}ms`);
+
+  if (!user) {
+    base44.auth.redirectToLogin(window.location.origin + '/?page=Dashboard');
+    return { status: 'redirecting' };
+  }
+
+  // ③ Teams (parallel)
+  const userEmail = user.email.toLowerCase();
+  console.log('[AuthGate] fetching teams for', userEmail, '...');
+  const [createdTeams, memberRecords] = await Promise.all([
+    base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
+    base44.entities.TeamMember.filter({ user_email: userEmail }).catch(() => []),
+  ]);
+  console.log('[AuthGate] createdTeams=', createdTeams.length, 'memberRecords=', memberRecords.length, `+${Date.now()-t0}ms`);
+
+  const byId = new Map();
+  for (const t of createdTeams) byId.set(t.id, t);
+
+  // Fetch team objects for memberships not already loaded
+  const missingIds = memberRecords.map(m => m.team_id).filter(id => id && !byId.has(id));
+  if (missingIds.length > 0) {
+    console.log('[AuthGate] fetching', missingIds.length, 'extra team objects...');
+    const allTeams = await base44.entities.Team.list().catch(() => []);
+    for (const t of allTeams) {
+      if (missingIds.includes(t.id)) byId.set(t.id, t);
+    }
+  }
+
+  const hasTeam = byId.size > 0;
+  console.log('[AuthGate] hasTeam=', hasTeam, 'total=', byId.size, `+${Date.now()-t0}ms`);
+
+  if (!hasTeam) {
+    // New user — redirect to Onboarding (in NO_LAYOUT_PAGES, bypasses AuthGate)
+    console.log('[AuthGate] no teams → Onboarding');
+    window.location.replace('/?page=Onboarding');
+    return { status: 'redirecting' };
+  }
+
+  const data = { user, teams: [...byId.values()], memberTeams: memberRecords };
+  console.log('[AuthGate] ready', `+${Date.now()-t0}ms`);
+  return { status: 'ready', data };
+}
+
+function getBootPromise() {
+  if (!_bootPromise) {
+    _bootPromise = runBoot().then(result => {
+      _bootResult = result;
+      return result;
+    }).catch(err => {
+      console.error('[AuthGate] unexpected error:', err?.message);
+      _bootPromise = null; // allow retry
+      return { status: 'error', message: err?.message || 'Ukjent feil' };
+    });
+  }
+  return _bootPromise;
+}
 
 function AuthGate({ children, currentPageName }) {
   const [phase, setPhase] = React.useState(() => {
-    if (_bootCache?.status === 'ready') return 'ready';
+    // If already resolved (cached), start in ready state immediately
+    if (_bootResult?.status === 'ready') return 'ready';
     return 'loading';
   });
   const [bootData, setBootData] = React.useState(() => {
-    if (_bootCache?.status === 'ready') return _bootCache.data;
+    if (_bootResult?.status === 'ready') return _bootResult.data;
     return null;
   });
   const [errorMsg, setErrorMsg] = React.useState('');
-  const didRunRef = React.useRef(false);
 
   React.useEffect(() => {
-    // Already resolved from cache or previous mount
+    // Already have a result — nothing to do
     if (phase === 'ready') return;
-    // Prevent double-invoke (StrictMode)
-    if (didRunRef.current) return;
-    didRunRef.current = true;
+    if (_bootResult?.status === 'ready') {
+      setBootData(_bootResult.data);
+      setPhase('ready');
+      return;
+    }
 
-    // If another instance is already running (shouldn't happen, but guard it)
-    if (_bootCache?.status === 'running') return;
-    _bootCache = { status: 'running' };
+    let alive = true;
 
-    const t0 = Date.now();
-    let cancelled = false;
-
+    // 12s hard timeout displayed to user
     const timeoutId = setTimeout(() => {
-      if (cancelled) return;
-      cancelled = true;
-      _bootCache = null;
+      if (!alive) return;
+      console.warn('[AuthGate] boot timeout');
       setErrorMsg('Tilkoblingen tok for lang tid. Sjekk internett og prøv igjen.');
       setPhase('error');
     }, 12000);
 
-    (async () => {
-      try {
-        // ① Auth check
-        let authenticated = false;
-        try { authenticated = await base44.auth.isAuthenticated(); } catch (_) {}
-        if (cancelled) return;
-
-        if (!authenticated) {
-          clearTimeout(timeoutId);
-          _bootCache = { status: 'redirecting' };
-          // Return to /?page=Dashboard after login so AuthGate runs again cleanly
-          base44.auth.redirectToLogin(window.location.origin + '/?page=Dashboard');
-          return;
-        }
-
-        // ② Get user profile
-        let user = null;
-        try { user = await base44.auth.me(); } catch (_) {}
-        if (cancelled) return;
-
-        if (!user) {
-          clearTimeout(timeoutId);
-          _bootCache = { status: 'redirecting' };
-          base44.auth.redirectToLogin(window.location.origin + '/?page=Dashboard');
-          return;
-        }
-
-        // ③ Fetch teams — in parallel, gracefully degrading on RLS errors
-        const userEmail = user.email.toLowerCase();
-        const [createdTeams, memberRecords] = await Promise.all([
-          base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
-          base44.entities.TeamMember.filter({ user_email: userEmail }).catch(() => []),
-        ]);
-        if (cancelled) return;
-
-        // Build deduplicated team map
-        const byId = new Map();
-        for (const t of createdTeams) byId.set(t.id, t);
-
-        // Fetch objects for any member teams not yet loaded
-        const missingIds = memberRecords.map(m => m.team_id).filter(id => id && !byId.has(id));
-        if (missingIds.length > 0) {
-          const allTeams = await base44.entities.Team.list().catch(() => []);
-          if (cancelled) return;
-          for (const t of allTeams) {
-            if (missingIds.includes(t.id)) byId.set(t.id, t);
-          }
-        }
-
-        clearTimeout(timeoutId);
-        if (cancelled) return;
-
-        if (byId.size === 0) {
-          // New user — send to Onboarding (which is in NO_LAYOUT_PAGES, skips AuthGate)
-          _bootCache = { status: 'redirecting' };
-          window.location.replace('/?page=Onboarding');
-          return;
-        }
-
-        // Existing user — boot complete
-        const data = { user, teams: [...byId.values()], memberTeams: memberRecords };
-        _bootCache = { status: 'ready', data };
-        console.log('[AuthGate] ready in', Date.now() - t0, 'ms');
-        setBootData(data);
+    getBootPromise().then(result => {
+      clearTimeout(timeoutId);
+      if (!alive) return;
+      if (result.status === 'ready') {
+        setBootData(result.data);
         setPhase('ready');
-
-      } catch (e) {
-        clearTimeout(timeoutId);
-        if (cancelled) return;
-        _bootCache = null;
-        console.error('[AuthGate] unexpected error:', e?.message);
-        setErrorMsg('Noe gikk galt – prøv igjen.');
+      } else if (result.status === 'error') {
+        setErrorMsg(result.message || 'Noe gikk galt – prøv igjen.');
         setPhase('error');
       }
-    })();
+      // 'redirecting' → navigation is already in progress, stay on loader
+    });
 
-    return () => { cancelled = true; };
+    return () => { alive = false; clearTimeout(timeoutId); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (phase === 'loading') return <BootLoader />;
@@ -431,8 +441,8 @@ function AuthGate({ children, currentPageName }) {
     <BootError
       message={errorMsg}
       onRetry={() => {
-        _bootCache = null;
-        didRunRef.current = false;
+        _bootPromise = null;
+        _bootResult = null;
         setBootData(null);
         setErrorMsg('');
         setPhase('loading');
