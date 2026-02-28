@@ -506,6 +506,7 @@ function InnerLayout({ children, currentPageName }) {
       }
 
       export default function Layout({ children, currentPageName }) {
+        // These pages render without auth/team context
         if (NO_LAYOUT_PAGES.includes(currentPageName)) {
           return (
             <ErrorBoundary>
@@ -513,6 +514,18 @@ function InnerLayout({ children, currentPageName }) {
             </ErrorBoundary>
           );
         }
+
+        // Also handle case where URL has ?page=Onboarding but currentPageName hasn't resolved yet
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlPage = urlParams.get('page');
+        if (NO_LAYOUT_PAGES.includes(urlPage)) {
+          return (
+            <ErrorBoundary>
+              <ThemeProvider>{children}</ThemeProvider>
+            </ErrorBoundary>
+          );
+        }
+
         return (
           <ErrorBoundary>
             <ThemeProvider>
