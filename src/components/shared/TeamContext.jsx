@@ -238,6 +238,7 @@ export function TeamProvider({ children, bootData }) {
     <TeamContext.Provider value={{
       currentTeam,
       teams,
+      status,
       loading,
       user,
       playerProfile,
