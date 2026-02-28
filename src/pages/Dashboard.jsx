@@ -87,14 +87,9 @@ export default function Dashboard() {
     [claims]
   );
 
-  if (teamLoading) {
+  // Show loader while team data is being resolved (AuthGate handles the actual redirect for new users)
+  if (teamLoading || (!currentTeam && teams.length === 0)) {
     return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-8 h-8 animate-spin text-emerald-500" /></div>;
-  }
-
-  if (!currentTeam && teams.length === 0) {
-    // Redirect immediately – use replace so back button doesn't loop
-    navigate(createPageUrl('Onboarding'), { replace: true });
-    return null;
   }
 
   const handleRefresh = async () => {

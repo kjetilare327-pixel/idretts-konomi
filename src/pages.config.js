@@ -47,13 +47,44 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import AccountingIntegration from './pages/AccountingIntegration';
+import AuditLog from './pages/AuditLog';
+import BankReconciliation from './pages/BankReconciliation';
+import Budget from './pages/Budget';
+import Communications from './pages/Communications';
+import Dashboard from './pages/Dashboard';
+import EventManagement from './pages/EventManagement';
+import InvoiceAutomation from './pages/InvoiceAutomation';
+import MemberManagement from './pages/MemberManagement';
+import Onboarding from './pages/Onboarding';
+import PaymentPortal from './pages/PaymentPortal';
+import Players from './pages/Players';
+import Reports from './pages/Reports';
+import SettingsPage from './pages/SettingsPage';
+import Transactions from './pages/Transactions';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "AccountingIntegration": AccountingIntegration,
+    "AuditLog": AuditLog,
+    "BankReconciliation": BankReconciliation,
+    "Budget": Budget,
+    "Communications": Communications,
+    "Dashboard": Dashboard,
+    "EventManagement": EventManagement,
+    "InvoiceAutomation": InvoiceAutomation,
+    "MemberManagement": MemberManagement,
+    "Onboarding": Onboarding,
+    "PaymentPortal": PaymentPortal,
+    "Players": Players,
+    "Reports": Reports,
+    "SettingsPage": SettingsPage,
+    "Transactions": Transactions,
 }
 
 export const pagesConfig = {
+    mainPage: "AccountingIntegration",
     Pages: PAGES,
     Layout: __Layout,
 };
