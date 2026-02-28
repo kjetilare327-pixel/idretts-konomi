@@ -319,7 +319,7 @@ function InnerLayout({ children, currentPageName }) {
       );
       }
 
-      const NO_LAYOUT_PAGES = ['Onboarding', 'GdprConsent'];
+      const NO_LAYOUT_PAGES = ['Onboarding', 'GdprConsent', 'TermsOfService'];
 
       function BootLoader() {
         return (
