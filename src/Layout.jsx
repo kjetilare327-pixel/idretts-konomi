@@ -433,6 +433,7 @@ function AuthGate({ children, currentPageName }) {
       onRetry={() => {
         _bootCache = null;
         didRunRef.current = false;
+        setBootData(null);
         setErrorMsg('');
         setPhase('loading');
       }}
