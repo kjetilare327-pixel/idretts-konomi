@@ -1,9 +1,9 @@
-// iOS Safari/WebView polyfill: prevent ReferenceError on bare `Notification` identifier
+// iOS Safari/WebView polyfill
 if (typeof window !== 'undefined' && typeof window.Notification === 'undefined') {
   try { window.Notification = undefined; } catch(e) {}
 }
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from './utils';
@@ -27,11 +27,13 @@ import {
   DropdownMenuTrigger, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
-// ─── Pages that render WITHOUT AuthGate or sidebar ───────────────────────────
-// These pages handle their own auth/redirects internally.
-const NO_LAYOUT_PAGES = ['Onboarding', 'GdprConsent', 'TermsOfService'];
+// Pages that bypass the auth gate + app layout entirely (they handle their own UI)
+const NO_LAYOUT_PAGES = new Set(['Onboarding', 'GdprConsent', 'TermsOfService']);
 
-// ─── Navigation ──────────────────────────────────────────────────────────────
+// Pages considered "root" for mobile back-button logic
+const ROOT_PAGES = ['Dashboard','PaymentPortal','Players','Reports','SettingsPage'];
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
 const CORE_NAV = [
   { name: 'Dashboard',       page: 'Dashboard',           icon: LayoutDashboard, roles: ['admin','kasserer','styreleder','revisor','player','forelder'] },
   { name: 'Mine betalinger', page: 'PaymentPortal',       icon: Receipt,         roles: ['player','forelder'] },
@@ -50,9 +52,56 @@ const ADVANCED_NAV = [
   { name: 'Regnskap', page: 'AccountingIntegration', icon: FileBarChart, roles: ['admin','kasserer'] },
 ];
 
-const ROOT_PAGES = ['Dashboard','PaymentPortal','Players','Reports','SettingsPage','Onboarding'];
+// ─── Full-screen loader ───────────────────────────────────────────────────────
+function FullScreenLoader({ onRetry, timedOut }) {
+  return (
+    <div style={{
+      minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      background: '#f8fafc', fontFamily: 'system-ui, sans-serif',
+    }}>
+      <style>{`@keyframes _spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ width: 52, height: 52, borderRadius: 14, background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+        <Shield style={{ width: 28, height: 28, color: '#fff' }} />
+      </div>
+      {timedOut ? (
+        <>
+          <p style={{ color: '#ef4444', fontSize: '0.875rem', marginBottom: 16 }}>Tilkoblingen tok for lang tid.</p>
+          <button onClick={onRetry} style={{ background: '#059669', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, cursor: 'pointer' }}>
+            Prøv igjen
+          </button>
+        </>
+      ) : (
+        <>
+          <div style={{ width: 32, height: 32, border: '3px solid #d1fae5', borderTopColor: '#059669', borderRadius: '50%', animation: '_spin 0.8s linear infinite', marginBottom: 16 }} />
+          <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Laster inn…</p>
+        </>
+      )}
+    </div>
+  );
+}
 
-// ─── NavLink ─────────────────────────────────────────────────────────────────
+function BootError({ message, onRetry }) {
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', padding: 24, fontFamily: 'system-ui, sans-serif' }}>
+      <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.1)', padding: 32, maxWidth: 400, width: '100%', textAlign: 'center' }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>🔌</div>
+        <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: 8, color: '#1e293b' }}>Innlasting mislyktes</h2>
+        <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: 24 }}>{message || 'Sjekk internettilkoblingen og prøv igjen.'}</p>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button onClick={onRetry} style={{ background: '#059669', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer' }}>
+            Prøv igjen
+          </button>
+          <button onClick={() => base44.auth.logout()} style={{ background: 'transparent', color: '#059669', border: '1px solid #059669', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer' }}>
+            Logg inn på nytt
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── NavLink ──────────────────────────────────────────────────────────────────
 function NavLink({ item, active, darkMode, onClick }) {
   return (
     <Link
@@ -72,8 +121,8 @@ function NavLink({ item, active, darkMode, onClick }) {
   );
 }
 
-// ─── InnerLayout (requires TeamProvider context) ──────────────────────────────
-function InnerLayout({ children, currentPageName }) {
+// ─── AppLayout (sidebar + shell — always inside TeamProvider) ─────────────────
+function AppLayout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const { currentTeam, teams, selectTeam, user, currentTeamRole } = useTeam();
@@ -262,230 +311,156 @@ function InnerLayout({ children, currentPageName }) {
   );
 }
 
-// ─── Boot UI ──────────────────────────────────────────────────────────────────
-function BootLoader({ onTimeout }) {
-  const [timedOut, setTimedOut] = React.useState(false);
+// ─── AppGate — single source of truth for all routing decisions ───────────────
+//
+// State machine:
+//   authStatus: 'loading' | 'guest' | 'authed'
+//   teamStatus: 'loading' | 'ready'
+//   teams: Team[]
+//
+// Routing rules (only in useEffect, never in render):
+//   guest                        → redirectToLogin('/')          [clean URL, no params]
+//   authed + teams loading       → show FullScreenLoader
+//   authed + teams ready + 0     → replace to /?page=Onboarding
+//   authed + teams ready + ≥1    → replace to /?page=Dashboard (only if on root/Login)
+//   otherwise                    → render children inside TeamProvider + AppLayout
+//
+function AppGate({ children, currentPageName }) {
+  const [authStatus, setAuthStatus] = useState('loading'); // 'loading'|'guest'|'authed'
+  const [teamStatus, setTeamStatus] = useState('loading'); // 'loading'|'ready'
+  const [bootData, setBootData]     = useState(null);      // { user, teams, memberTeams }
+  const [errorMsg, setErrorMsg]     = useState(null);
+  const [timedOut, setTimedOut]     = useState(false);
+  const bootedRef = useRef(false);                         // prevent double-boot (StrictMode)
 
-  React.useEffect(() => {
-    const id = setTimeout(() => setTimedOut(true), 10000);
-    return () => clearTimeout(id);
+  const boot = useCallback(async () => {
+    setAuthStatus('loading');
+    setTeamStatus('loading');
+    setBootData(null);
+    setErrorMsg(null);
+    setTimedOut(false);
+
+    try {
+      // ① Auth check
+      const authenticated = await base44.auth.isAuthenticated().catch(() => false);
+      if (!authenticated) {
+        setAuthStatus('guest');
+        return;
+      }
+
+      const user = await base44.auth.me().catch(() => null);
+      if (!user) {
+        setAuthStatus('guest');
+        return;
+      }
+
+      setAuthStatus('authed');
+
+      // ② Teams fetch
+      const userEmail = user.email.toLowerCase();
+      const [createdTeams, memberRecords] = await Promise.all([
+        base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
+        base44.entities.TeamMember.filter({ user_email: userEmail }).catch(() => []),
+      ]);
+
+      const byId = new Map();
+      for (const t of createdTeams) byId.set(t.id, t);
+
+      const missingIds = memberRecords.map(m => m.team_id).filter(id => id && !byId.has(id));
+      if (missingIds.length > 0) {
+        const allTeams = await base44.entities.Team.list().catch(() => []);
+        for (const t of allTeams) {
+          if (missingIds.includes(t.id)) byId.set(t.id, t);
+        }
+      }
+
+      setBootData({ user, teams: [...byId.values()], memberTeams: memberRecords });
+      setTeamStatus('ready');
+    } catch (err) {
+      console.error('[AppGate] boot error:', err?.message);
+      setErrorMsg(err?.message || 'Ukjent feil');
+    }
   }, []);
 
-  return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      background: '#f8fafc', fontFamily: 'system-ui, sans-serif',
-    }}>
-      <div style={{ width: 48, height: 48, borderRadius: 12, background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-        <Shield style={{ width: 26, height: 26, color: '#fff' }} />
-      </div>
-      {timedOut ? (
-        <>
-          <p style={{ color: '#ef4444', fontSize: '0.875rem', marginBottom: 16 }}>Tilkoblingen tok for lang tid.</p>
-          <button
-            onClick={onTimeout}
-            style={{ background: '#059669', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}
-          >
-            Prøv igjen
-          </button>
-        </>
-      ) : (
-        <>
-          <div style={{ width: 32, height: 32, border: '3px solid #d1fae5', borderTopColor: '#059669', borderRadius: '50%', animation: 'spin 0.8s linear infinite', marginBottom: 16 }} />
-          <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Laster inn…</p>
-        </>
-      )}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
-  );
-}
+  // Single boot on mount (ref guards against StrictMode double-invoke)
+  useEffect(() => {
+    if (bootedRef.current) return;
+    bootedRef.current = true;
+    boot();
+  }, [boot]);
 
-function BootError({ message, onRetry }) {
-  return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', padding: 24, fontFamily: 'system-ui, sans-serif' }}>
-      <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.1)', padding: 32, maxWidth: 400, width: '100%', textAlign: 'center' }}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>🔌</div>
-        <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: 8, color: '#1e293b' }}>Innlasting mislyktes</h2>
-        <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: 24 }}>{message || 'Sjekk internettilkoblingen og prøv igjen.'}</p>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button onClick={onRetry} style={{ background: '#059669', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}>
-            Prøv igjen
-          </button>
-          <button onClick={() => base44.auth.logout()} style={{ background: 'transparent', color: '#059669', border: '1px solid #059669', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem' }}>
-            Logg inn på nytt
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+  // Timeout guard — 12 seconds
+  useEffect(() => {
+    if (authStatus !== 'loading' && teamStatus !== 'loading') return;
+    const id = setTimeout(() => setTimedOut(true), 12000);
+    return () => clearTimeout(id);
+  }, [authStatus, teamStatus]);
 
-// ─── AuthGate boot logic (promise singleton — safe across StrictMode) ─────────
-// Only ONE boot sequence runs per page load, no matter how many times
-// AuthGate mounts/unmounts (StrictMode, HMR, etc.)
-let _bootPromise = null;  // Promise<result> | null
-let _bootResult  = null;  // cached resolved result | null
+  // ── Routing logic (edge-triggered, only in useEffect) ─────────────────────
+  useEffect(() => {
+    // Hard stop: never route while any loading is in progress
+    if (authStatus === 'loading' || (authStatus === 'authed' && teamStatus === 'loading')) return;
 
-async function runBoot() {
-  const t0 = Date.now();
-  const page = new URLSearchParams(window.location.search).get('page') || '(root)';
-  console.log('[AuthGate] boot start — page=', page);
-
-  // ① Authentication check
-  let authenticated = false;
-  try { authenticated = await base44.auth.isAuthenticated(); } catch (_) {}
-  console.log('[AuthGate] authenticated=', authenticated, `+${Date.now()-t0}ms`);
-
-  if (!authenticated) {
-    console.log('[AuthGate] not authenticated → redirecting to login');
-    // nextUrl = '/' so after login the platform sends user back to root,
-    // AuthGate runs again, fetches teams, and routes to Onboarding or Dashboard
-    base44.auth.redirectToLogin(window.location.origin + '/');
-    return { status: 'redirecting' };
-  }
-
-  // ② User profile
-  let user = null;
-  try { user = await base44.auth.me(); } catch (_) {}
-  console.log('[AuthGate] user=', user?.email, `+${Date.now()-t0}ms`);
-
-  if (!user) {
-    console.log('[AuthGate] no user object → redirecting to login');
-    base44.auth.redirectToLogin(window.location.origin + '/');
-    return { status: 'redirecting' };
-  }
-
-  // ③ Teams — parallel fetch, graceful RLS degradation
-  const userEmail = user.email.toLowerCase();
-  console.log('[AuthGate] fetching teams for', userEmail, '...');
-
-  const [createdTeams, memberRecords] = await Promise.all([
-    base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
-    base44.entities.TeamMember.filter({ user_email: userEmail }).catch(() => []),
-  ]);
-  console.log('[AuthGate] createdTeams=', createdTeams.length, 'memberRecords=', memberRecords.length, `+${Date.now()-t0}ms`);
-
-  // Deduplicate by id
-  const byId = new Map();
-  for (const t of createdTeams) byId.set(t.id, t);
-
-  // Load team objects for any membership records not yet in byId
-  const missingIds = memberRecords.map(m => m.team_id).filter(id => id && !byId.has(id));
-  if (missingIds.length > 0) {
-    console.log('[AuthGate] fetching', missingIds.length, 'extra team objects...');
-    const allTeams = await base44.entities.Team.list().catch(() => []);
-    for (const t of allTeams) {
-      if (missingIds.includes(t.id)) byId.set(t.id, t);
-    }
-  }
-
-  const hasTeam = byId.size > 0;
-  console.log('[AuthGate] hasTeam=', hasTeam, 'total=', byId.size, `+${Date.now()-t0}ms`);
-
-  if (!hasTeam) {
-    // Brand-new user — redirect to Onboarding (NO_LAYOUT_PAGES bypasses AuthGate entirely)
-    console.log('[AuthGate] no teams → Onboarding');
-    window.location.replace('/?page=Onboarding');
-    return { status: 'redirecting' };
-  }
-
-  const data = { user, teams: [...byId.values()], memberTeams: memberRecords };
-  console.log('[AuthGate] ready', `+${Date.now()-t0}ms`);
-
-  // If user landed on bare root (no page param), send them to Dashboard
-  const currentPage = new URLSearchParams(window.location.search).get('page');
-  if (!currentPage) {
-    console.log('[AuthGate] root URL → redirecting to Dashboard');
-    window.location.replace('/?page=Dashboard');
-    return { status: 'redirecting' };
-  }
-
-  return { status: 'ready', data };
-}
-
-function getBootPromise() {
-  if (!_bootPromise) {
-    _bootPromise = runBoot().then(result => {
-      _bootResult = result;
-      return result;
-    }).catch(err => {
-      console.error('[AuthGate] boot error:', err?.message);
-      _bootPromise = null; // allow retry
-      _bootResult = null;
-      return { status: 'error', message: err?.message || 'Ukjent feil' };
-    });
-  }
-  return _bootPromise;
-}
-
-// ─── AuthGate component ───────────────────────────────────────────────────────
-function AuthGate({ children, currentPageName }) {
-  // Synchronously initialise from cache if already resolved — avoids any loading flash
-  const [phase, setPhase] = React.useState(() =>
-    _bootResult?.status === 'ready' ? 'ready' : 'loading'
-  );
-  const [bootData, setBootData] = React.useState(() =>
-    _bootResult?.status === 'ready' ? _bootResult.data : null
-  );
-  const [errorMsg, setErrorMsg] = React.useState('');
-
-  React.useEffect(() => {
-    // Nothing to do if already resolved
-    if (phase === 'ready') return;
-
-    // Sync check in case result arrived between render and effect
-    if (_bootResult?.status === 'ready') {
-      setBootData(_bootResult.data);
-      setPhase('ready');
+    if (authStatus === 'guest') {
+      // Redirect to login with clean root URL as nextUrl — no ?page= params
+      base44.auth.redirectToLogin(window.location.origin + '/');
       return;
     }
 
-    let alive = true;
+    // authed + teams ready
+    const hasTeams = (bootData?.teams?.length ?? 0) > 0;
 
-    getBootPromise().then(result => {
-      if (!alive) return;
-      if (result.status === 'ready') {
-        setBootData(result.data);
-        setPhase('ready');
-      } else if (result.status === 'error') {
-        setErrorMsg(result.message || 'Noe gikk galt – prøv igjen.');
-        setPhase('error');
-      }
-      // 'redirecting' → navigation already in progress; keep showing loader
-    });
+    if (!hasTeams) {
+      // New user → Onboarding
+      window.location.replace('/?page=Onboarding');
+      return;
+    }
 
-    return () => { alive = false; };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // Has teams: if user is on root (no page param) or a login/onboarding page → send to Dashboard
+    const pageParam = new URLSearchParams(window.location.search).get('page');
+    const isRootOrLoginPage = !pageParam || pageParam === 'Login';
+    if (isRootOrLoginPage) {
+      window.location.replace('/?page=Dashboard');
+      return;
+    }
 
-  const handleRetry = () => {
-    _bootPromise = null;
-    _bootResult  = null;
-    setBootData(null);
-    setErrorMsg('');
-    setPhase('loading');
-  };
+    // Otherwise: the page param is a real app page — render it (fall through to render)
+  }, [authStatus, teamStatus, bootData]);
 
-  if (phase === 'loading') return <BootLoader onTimeout={handleRetry} />;
-  if (phase === 'error')   return <BootError message={errorMsg} onRetry={handleRetry} />;
+  // ── Render ─────────────────────────────────────────────────────────────────
+  const isLoading = authStatus === 'loading' || (authStatus === 'authed' && teamStatus === 'loading');
 
+  if (errorMsg) return <BootError message={errorMsg} onRetry={() => { bootedRef.current = false; boot(); }} />;
+  if (isLoading) return <FullScreenLoader timedOut={timedOut} onRetry={() => { bootedRef.current = false; boot(); }} />;
+
+  // Still loading (redirecting to guest/onboarding/dashboard) — keep loader visible
+  if (authStatus === 'guest') return <FullScreenLoader timedOut={timedOut} onRetry={() => { bootedRef.current = false; boot(); }} />;
+
+  const hasTeams = (bootData?.teams?.length ?? 0) > 0;
+  const pageParam = new URLSearchParams(window.location.search).get('page');
+  const isRootOrLoginPage = !pageParam || pageParam === 'Login';
+  if (!hasTeams || isRootOrLoginPage) {
+    // Redirect in progress — keep showing loader
+    return <FullScreenLoader timedOut={timedOut} onRetry={() => { bootedRef.current = false; boot(); }} />;
+  }
+
+  // ✅ Authenticated + has teams + on a valid app page → render
   return (
     <TeamProvider bootData={bootData}>
-      <InnerLayout currentPageName={currentPageName}>{children}</InnerLayout>
+      <AppLayout currentPageName={currentPageName}>{children}</AppLayout>
     </TeamProvider>
   );
 }
 
 // ─── Root Layout export ───────────────────────────────────────────────────────
 export default function Layout({ children, currentPageName }) {
-  // Read page name from URL param — more reliable than prop during navigations
   const urlPage = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('page')
     : null;
   const effectivePage = urlPage || currentPageName || '';
 
-  // NO_LAYOUT_PAGES: render bare (no AuthGate, no sidebar)
-  if (NO_LAYOUT_PAGES.includes(effectivePage)) {
+  // NO_LAYOUT_PAGES render bare — no gate, no sidebar, no TeamProvider
+  if (NO_LAYOUT_PAGES.has(effectivePage)) {
     return (
       <ErrorBoundary>
         <ThemeProvider>{children}</ThemeProvider>
@@ -496,7 +471,7 @@ export default function Layout({ children, currentPageName }) {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <AuthGate currentPageName={effectivePage}>{children}</AuthGate>
+        <AppGate currentPageName={effectivePage}>{children}</AppGate>
       </ThemeProvider>
     </ErrorBoundary>
   );
