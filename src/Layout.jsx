@@ -339,8 +339,9 @@ async function runBoot() {
 
   if (!authenticated) {
     console.log('[AuthGate] not authenticated → redirecting to login');
-    // After login, platform sends back to /?page=Dashboard; AuthGate runs fresh there
-    base44.auth.redirectToLogin(window.location.origin + '/?page=Dashboard');
+    // nextUrl = '/' so after login the platform sends user back to root,
+    // AuthGate runs again, fetches teams, and routes to Onboarding or Dashboard
+    base44.auth.redirectToLogin(window.location.origin + '/');
     return { status: 'redirecting' };
   }
 
@@ -351,7 +352,7 @@ async function runBoot() {
 
   if (!user) {
     console.log('[AuthGate] no user object → redirecting to login');
-    base44.auth.redirectToLogin(window.location.origin + '/?page=Dashboard');
+    base44.auth.redirectToLogin(window.location.origin + '/');
     return { status: 'redirecting' };
   }
 
