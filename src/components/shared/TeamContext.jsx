@@ -143,13 +143,7 @@ export function TeamProvider({ children, bootData }) {
       } else {
         setCurrentTeam(null);
         setCurrentTeamRole('player');
-        // No teams found – redirect to Onboarding
-        if (!window.location.pathname.includes('Onboarding') && !window.location.search.includes('Onboarding')) {
-          const params = new URLSearchParams(window.location.search);
-          if (!['Onboarding', 'GdprConsent'].includes(params.get('page'))) {
-            window.location.replace(window.location.origin + '?page=Onboarding');
-          }
-        }
+        // AuthGate already handles the no-team redirect — don't do it again here.
       }
     } catch (e) {
       if (!e?.message?.includes('Authentication')) {
