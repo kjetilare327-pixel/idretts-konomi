@@ -392,6 +392,15 @@ async function runBoot() {
 
   const data = { user, teams: [...byId.values()], memberTeams: memberRecords };
   console.log('[AuthGate] ready', `+${Date.now()-t0}ms`);
+
+  // If user landed on bare root (no page param), send them to Dashboard
+  const currentPage = new URLSearchParams(window.location.search).get('page');
+  if (!currentPage) {
+    console.log('[AuthGate] root URL → redirecting to Dashboard');
+    window.location.replace('/?page=Dashboard');
+    return { status: 'redirecting' };
+  }
+
   return { status: 'ready', data };
 }
 
