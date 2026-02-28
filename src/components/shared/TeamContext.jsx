@@ -163,18 +163,23 @@ export function TeamProvider({ children, bootData }) {
 
   useEffect(() => {
     if (bootData) {
-      // State already initialized synchronously in useState — just kick off player profile fetch
-      const selected = init.currentTeam;
+      // State already initialized synchronously from bootData — just fetch player profile
+      const sel = bootData.teams?.length > 0
+        ? (bootData.teams.find(t => t.id === (typeof localStorage !== 'undefined' ? localStorage.getItem('idrettsøkonomi_team_id') : null)) || bootData.teams[0])
+        : null;
       const userEmail = bootData.user?.email;
-      if (selected && userEmail) {
-        base44.entities.Player.filter({ team_id: selected.id, user_email: userEmail })
+      if (sel && userEmail) {
+        console.log('[TeamProvider] fetching player profile for', sel.name);
+        base44.entities.Player.filter({ team_id: sel.id, user_email: userEmail })
           .then(players => { if (players.length > 0) setPlayerProfile(players[0]); })
           .catch(() => {});
       }
     } else {
+      console.log('[TeamProvider] no bootData, running loadData()');
       loadData();
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once on mount only
 
   const selectTeam = async (team) => {
     setCurrentTeam(team);
