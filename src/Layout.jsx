@@ -367,12 +367,12 @@ function InnerLayout({ children, currentPageName }) {
       }
 
       function AuthGate({ children, currentPageName }) {
-        const [bootStatus, setBootStatus] = React.useState('loading'); // 'loading'|'ready'|'error'
+        const [bootStatus, setBootStatus] = React.useState('loading');
         const [bootData, setBootData] = React.useState(null);
         const [errorMsg, setErrorMsg] = React.useState('');
         const bootedRef = React.useRef(false);
 
-        const runBoot = React.useCallback(async () => {
+        React.useEffect(() => {
           if (bootedRef.current) return;
           bootedRef.current = true;
 
@@ -383,109 +383,95 @@ function InnerLayout({ children, currentPageName }) {
           let timedOut = false;
           const timeoutId = setTimeout(() => {
             timedOut = true;
-            console.error(`[AuthGate:${id}] TIMEOUT after 10s — setting error`);
+            console.error(`[AuthGate:${id}] TIMEOUT after 10s`);
             setErrorMsg('Noe gikk galt – prøv igjen. (timeout)');
             setBootStatus('error');
           }, 10000);
 
-          try {
-            // 1. Auth check
-            let authenticated = false;
-            try { authenticated = await base44.auth.isAuthenticated(); } catch(e) {
-              console.warn(`[AuthGate:${id}] isAuthenticated threw:`, e?.message);
-            }
-            console.log(`[AuthGate:${id}] authenticated=${authenticated} +${Date.now()-t0}ms`);
-            if (timedOut) return;
-
-            if (!authenticated) {
-              clearTimeout(timeoutId);
-              console.log(`[AuthGate:${id}] not authenticated → login`);
-              base44.auth.redirectToLogin(window.location.href);
-              return;
-            }
-
-            // 2. Get user
-            let user = null;
-            try { user = await base44.auth.me(); } catch(e) {
-              console.warn(`[AuthGate:${id}] auth.me threw:`, e?.message);
-            }
-            console.log(`[AuthGate:${id}] user=${user?.email} +${Date.now()-t0}ms`);
-            if (timedOut) return;
-
-            if (!user) {
-              clearTimeout(timeoutId);
-              console.log(`[AuthGate:${id}] no user → login`);
-              base44.auth.redirectToLogin(window.location.href);
-              return;
-            }
-
-            // 3. If already on Onboarding, skip team check
-            if (currentPageName === 'Onboarding') {
-              clearTimeout(timeoutId);
-              console.log(`[AuthGate:${id}] on Onboarding, ready immediately`);
-              setBootData({ user, teams: [], memberTeams: [] });
-              setBootStatus('ready');
-              return;
-            }
-
-            // 4. Fetch teams + memberships in parallel
-            console.log(`[AuthGate:${id}] fetching teams...`);
-            const [createdTeams, memberRecords] = await Promise.all([
-              base44.entities.Team.filter({ created_by: user.email }).catch(e => {
-                console.warn(`[AuthGate:${id}] createdTeams fetch error:`, e?.message); return [];
-              }),
-              base44.entities.TeamMember.filter({ user_email: user.email.toLowerCase() }).catch(e => {
-                console.warn(`[AuthGate:${id}] memberRecords fetch error:`, e?.message); return [];
-              }),
-            ]);
-            console.log(`[AuthGate:${id}] createdTeams=${createdTeams.length} memberRecords=${memberRecords.length} +${Date.now()-t0}ms`);
-            if (timedOut) return;
-
-            const byId = new Map();
-            for (const t of createdTeams) byId.set(t.id, t);
-
-            // Fetch team objects for member-only teams
-            const missingIds = memberRecords.map(m => m.team_id).filter(id => id && !byId.has(id));
-            if (missingIds.length > 0) {
-              console.log(`[AuthGate:${id}] fetching ${missingIds.length} extra team objects...`);
-              const allTeams = await base44.entities.Team.list().catch(e => {
-                console.warn(`[AuthGate:${id}] allTeams fetch error:`, e?.message); return [];
-              });
-              for (const t of allTeams) {
-                if (missingIds.includes(t.id)) byId.set(t.id, t);
+          (async () => {
+            try {
+              // 1. Auth check
+              let authenticated = false;
+              try { authenticated = await base44.auth.isAuthenticated(); } catch(e) {
+                console.warn(`[AuthGate:${id}] isAuthenticated error:`, e?.message);
               }
+              console.log(`[AuthGate:${id}] authenticated=${authenticated} +${Date.now()-t0}ms`);
               if (timedOut) return;
+
+              if (!authenticated) {
+                clearTimeout(timeoutId);
+                console.log(`[AuthGate:${id}] → redirecting to login`);
+                // After login, come back to Dashboard (AuthGate will then handle routing)
+                base44.auth.redirectToLogin(window.location.origin + '/?page=Dashboard');
+                return;
+              }
+
+              // 2. Get user
+              let user = null;
+              try { user = await base44.auth.me(); } catch(e) {
+                console.warn(`[AuthGate:${id}] auth.me error:`, e?.message);
+              }
+              console.log(`[AuthGate:${id}] user=${user?.email} +${Date.now()-t0}ms`);
+              if (timedOut) return;
+
+              if (!user) {
+                clearTimeout(timeoutId);
+                base44.auth.redirectToLogin(window.location.origin + '/?page=Dashboard');
+                return;
+              }
+
+              // 3. Fetch teams in parallel
+              console.log(`[AuthGate:${id}] fetching teams...`);
+              const [createdTeams, memberRecords] = await Promise.all([
+                base44.entities.Team.filter({ created_by: user.email }).catch(e => {
+                  console.warn(`[AuthGate:${id}] createdTeams error:`, e?.message); return [];
+                }),
+                base44.entities.TeamMember.filter({ user_email: user.email.toLowerCase() }).catch(e => {
+                  console.warn(`[AuthGate:${id}] memberRecords error:`, e?.message); return [];
+                }),
+              ]);
+              console.log(`[AuthGate:${id}] createdTeams=${createdTeams.length} memberRecords=${memberRecords.length} +${Date.now()-t0}ms`);
+              if (timedOut) return;
+
+              const byId = new Map();
+              for (const t of createdTeams) byId.set(t.id, t);
+
+              const missingIds = memberRecords.map(m => m.team_id).filter(id => id && !byId.has(id));
+              if (missingIds.length > 0) {
+                console.log(`[AuthGate:${id}] fetching ${missingIds.length} extra team objects...`);
+                const allTeams = await base44.entities.Team.list().catch(() => []);
+                for (const t of allTeams) {
+                  if (missingIds.includes(t.id)) byId.set(t.id, t);
+                }
+                if (timedOut) return;
+              }
+
+              const hasTeam = byId.size > 0;
+              console.log(`[AuthGate:${id}] hasTeam=${hasTeam} total=${byId.size} +${Date.now()-t0}ms`);
+              clearTimeout(timeoutId);
+
+              if (!hasTeam) {
+                // New user: no teams → Onboarding (bypass AuthGate by going to NO_LAYOUT_PAGES)
+                console.log(`[AuthGate:${id}] no teams → Onboarding`);
+                window.location.replace(window.location.origin + '/?page=Onboarding');
+                return;
+              }
+
+              // 4. Existing user: if they landed on a non-Dashboard page without a team context reason, 
+              // just render whatever page they asked for (AuthGate is satisfied)
+              console.log(`[AuthGate:${id}] ready +${Date.now()-t0}ms`);
+              setBootData({ user, teams: [...byId.values()], memberTeams: memberRecords });
+              setBootStatus('ready');
+
+            } catch (e) {
+              clearTimeout(timeoutId);
+              if (timedOut) return;
+              console.error(`[AuthGate:${id}] unexpected error:`, e?.message, e);
+              setErrorMsg('Noe gikk galt – prøv igjen.');
+              setBootStatus('error');
             }
-
-            const hasTeam = byId.size > 0;
-            console.log(`[AuthGate:${id}] hasTeam=${hasTeam} total=${byId.size} +${Date.now()-t0}ms`);
-
-            clearTimeout(timeoutId);
-
-            if (!hasTeam) {
-              // New user: no teams → go to Onboarding
-              console.log(`[AuthGate:${id}] no teams → replacing to Onboarding`);
-              window.location.replace(window.location.origin + '/?page=Onboarding');
-              return;
-            }
-
-            // 5. Ready
-            console.log(`[AuthGate:${id}] boot complete, ready +${Date.now()-t0}ms`);
-            setBootData({ user, teams: [...byId.values()], memberTeams: memberRecords });
-            setBootStatus('ready');
-
-          } catch (e) {
-            clearTimeout(timeoutId);
-            if (timedOut) return;
-            console.error(`[AuthGate:${id}] unexpected error:`, e?.message, e);
-            setErrorMsg('Noe gikk galt – prøv igjen.');
-            setBootStatus('error');
-          }
-        }, [currentPageName]);
-
-        React.useEffect(() => {
-          runBoot();
-        }, []); // intentionally empty — run once on mount
+          })();
+        }, []); // run once on mount only
 
         if (bootStatus === 'loading') return <BootLoader />;
         if (bootStatus === 'error') return (
@@ -493,7 +479,6 @@ function InnerLayout({ children, currentPageName }) {
             bootedRef.current = false;
             setErrorMsg('');
             setBootStatus('loading');
-            runBoot();
           }} />
         );
 
@@ -505,19 +490,12 @@ function InnerLayout({ children, currentPageName }) {
       }
 
       export default function Layout({ children, currentPageName }) {
-        // These pages render without auth/team context
-        if (NO_LAYOUT_PAGES.includes(currentPageName)) {
-          return (
-            <ErrorBoundary>
-              <ThemeProvider>{children}</ThemeProvider>
-            </ErrorBoundary>
-          );
-        }
+        // Derive effective page from URL in case currentPageName lags behind navigation
+        const urlPage = new URLSearchParams(window.location.search).get('page');
+        const effectivePage = currentPageName || urlPage || '';
 
-        // Also handle case where URL has ?page=Onboarding but currentPageName hasn't resolved yet
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlPage = urlParams.get('page');
-        if (NO_LAYOUT_PAGES.includes(urlPage)) {
+        // No-auth pages render immediately without AuthGate
+        if (NO_LAYOUT_PAGES.includes(effectivePage) || NO_LAYOUT_PAGES.includes(urlPage)) {
           return (
             <ErrorBoundary>
               <ThemeProvider>{children}</ThemeProvider>
@@ -528,7 +506,7 @@ function InnerLayout({ children, currentPageName }) {
         return (
           <ErrorBoundary>
             <ThemeProvider>
-              <AuthGate currentPageName={currentPageName}>{children}</AuthGate>
+              <AuthGate currentPageName={effectivePage}>{children}</AuthGate>
             </ThemeProvider>
           </ErrorBoundary>
         );
