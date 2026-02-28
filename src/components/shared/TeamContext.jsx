@@ -151,9 +151,11 @@ export function TeamProvider({ children, bootData }) {
       if (!e?.message?.includes('Authentication')) {
         console.error('[TeamContext] loadData error:', e);
       }
+      setStatus('error');
     } finally {
       console.log('[TeamContext] loadData done');
       setLoading(false);
+      setStatus(prev => prev === 'error' ? 'error' : 'ready');
     }
   }, [loadMemberships, resolveRole]);
 
