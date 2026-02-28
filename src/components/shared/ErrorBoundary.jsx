@@ -17,6 +17,15 @@ export default class ErrorBoundary extends React.Component {
   render() {
     if (!this.state.hasError) return this.props.children;
 
+    const msg = this.state.error?.message || '';
+    // Silently redirect if the error is just "useTeam outside TeamProvider"
+    if (msg.includes('useTeam must be used within TeamProvider') || msg.includes('TeamProvider')) {
+      if (typeof window !== 'undefined') {
+        window.location.replace(window.location.origin + '/?page=Dashboard');
+      }
+      return null;
+    }
+
     return (
       <div style={{
         minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
