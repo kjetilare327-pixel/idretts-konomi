@@ -366,145 +366,136 @@ function InnerLayout({ children, currentPageName }) {
         );
       }
 
-      // Module-level boot state — survives React remounts/StrictMode double-invocations
-      // This is the ONLY reliable way to prevent re-running boot on remount
-      let _bootState = null; // null | { status, bootData, errorMsg }
-      let _bootPromise = null; // in-flight boot promise
-
       function AuthGate({ children, currentPageName }) {
-        const [tick, setTick] = React.useState(0); // used only to force re-render
+        const [bootStatus, setBootStatus] = React.useState('loading'); // 'loading'|'ready'|'error'
+        const [bootData, setBootData] = React.useState(null);
+        const [errorMsg, setErrorMsg] = React.useState('');
+        const bootedRef = React.useRef(false);
 
-        // Sync local view from module-level state
-        const state = _bootState;
-        const status = state?.status ?? 'loading';
-        const bootData = state?.bootData ?? null;
-        const errorMsg = state?.errorMsg ?? '';
-
-        React.useEffect(() => {
-          // If boot already completed (e.g. remount), just re-render with cached result
-          if (_bootState && _bootState.status !== 'loading') {
-            console.log('[AuthGate] reusing cached boot state:', _bootState.status);
-            setTick(t => t + 1);
-            return;
-          }
-
-          // If already in-flight, attach to existing promise
-          if (_bootPromise) {
-            console.log('[AuthGate] boot already in-flight, waiting...');
-            _bootPromise.then(() => setTick(t => t + 1));
-            return;
-          }
+        const runBoot = React.useCallback(async () => {
+          if (bootedRef.current) return;
+          bootedRef.current = true;
 
           const t0 = Date.now();
-          const attempt = Math.random().toString(36).slice(2, 6);
-          console.log(`[AuthGate:${attempt}] boot start — page=${currentPageName} url=${window.location.href}`);
+          const id = Math.random().toString(36).slice(2, 6);
+          console.log(`[AuthGate:${id}] boot start — page=${currentPageName}`);
 
-          let timeoutId;
-          let done = false;
-          const finish = () => { done = true; clearTimeout(timeoutId); };
-
-          // Safety timeout: 10s max
-          timeoutId = setTimeout(() => {
-            if (!done) {
-              console.error(`[AuthGate:${attempt}] TIMEOUT after 10s`);
-              _bootState = { status: 'error', bootData: null, errorMsg: 'Lasting tok for lang tid. Sjekk internettforbindelsen din.' };
-              _bootPromise = null;
-              setTick(t => t + 1);
-            }
+          let timedOut = false;
+          const timeoutId = setTimeout(() => {
+            timedOut = true;
+            console.error(`[AuthGate:${id}] TIMEOUT after 10s — setting error`);
+            setErrorMsg('Noe gikk galt – prøv igjen. (timeout)');
+            setBootStatus('error');
           }, 10000);
 
-          _bootPromise = (async () => {
-            try {
-              // ── 1. Auth ────────────────────────────────────────────────
-              let authenticated = false;
-              try { authenticated = await base44.auth.isAuthenticated(); } catch (_) {}
-              console.log(`[AuthGate:${attempt}] authenticated=${authenticated} +${Date.now()-t0}ms`);
-
-              if (!authenticated) {
-                finish();
-                console.log(`[AuthGate:${attempt}] → redirecting to login`);
-                _bootState = { status: 'redirecting', bootData: null, errorMsg: '' };
-                setTick(t => t + 1);
-                base44.auth.redirectToLogin(window.location.origin + '/?page=Onboarding');
-                return;
-              }
-
-              // ── 2. User ────────────────────────────────────────────────
-              const user = await base44.auth.me();
-              console.log(`[AuthGate:${attempt}] user=${user?.email} +${Date.now()-t0}ms`);
-
-              if (!user) {
-                finish();
-                _bootState = { status: 'redirecting', bootData: null, errorMsg: '' };
-                setTick(t => t + 1);
-                base44.auth.redirectToLogin(window.location.origin + '/?page=Onboarding');
-                return;
-              }
-
-              // ── 3. Onboarding page — no team check needed ──────────────
-              if (currentPageName === 'Onboarding') {
-                finish();
-                _bootState = { status: 'ready', bootData: { user, teams: [], memberTeams: [] }, errorMsg: '' };
-                setTick(t => t + 1);
-                return;
-              }
-
-              // ── 4. Fetch teams ─────────────────────────────────────────
-              const [createdTeams, memberTeams] = await Promise.all([
-                base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
-                base44.entities.TeamMember.filter({ user_email: user.email }).catch(() => []),
-              ]);
-              console.log(`[AuthGate:${attempt}] createdTeams=${createdTeams.length} memberRecords=${memberTeams.length} +${Date.now()-t0}ms`);
-
-              const byId = new Map();
-              for (const t of createdTeams) byId.set(t.id, t);
-
-              // Fetch team objects for member-only teams
-              const memberTeamIds = memberTeams.map(m => m.team_id).filter(id => id && !byId.has(id));
-              if (memberTeamIds.length > 0) {
-                const extraTeams = await base44.entities.Team.list().catch(() => []);
-                for (const t of extraTeams) {
-                  if (memberTeamIds.includes(t.id)) byId.set(t.id, t);
-                }
-              }
-
-              const hasTeam = byId.size > 0;
-              console.log(`[AuthGate:${attempt}] hasTeam=${hasTeam} teamCount=${byId.size} +${Date.now()-t0}ms`);
-
-              if (!hasTeam) {
-                finish();
-                console.log(`[AuthGate:${attempt}] no teams → Onboarding`);
-                _bootState = { status: 'redirecting', bootData: null, errorMsg: '' };
-                setTick(t => t + 1);
-                window.location.replace(window.location.origin + '/?page=Onboarding');
-                return;
-              }
-
-              // ── 5. Ready ───────────────────────────────────────────────
-              finish();
-              console.log(`[AuthGate:${attempt}] ready +${Date.now()-t0}ms`);
-              _bootState = { status: 'ready', bootData: { user, teams: [...byId.values()], memberTeams }, errorMsg: '' };
-              setTick(t => t + 1);
-
-            } catch (e) {
-              finish();
-              console.error(`[AuthGate:${attempt}] error:`, e?.message);
-              _bootState = { status: 'error', bootData: null, errorMsg: e?.message || 'Oppstart feilet.' };
-              setTick(t => t + 1);
-            } finally {
-              _bootPromise = null;
+          try {
+            // 1. Auth check
+            let authenticated = false;
+            try { authenticated = await base44.auth.isAuthenticated(); } catch(e) {
+              console.warn(`[AuthGate:${id}] isAuthenticated threw:`, e?.message);
             }
-          })();
+            console.log(`[AuthGate:${id}] authenticated=${authenticated} +${Date.now()-t0}ms`);
+            if (timedOut) return;
 
-          _bootPromise.then(() => setTick(t => t + 1));
-        }, []); // run once per mount
+            if (!authenticated) {
+              clearTimeout(timeoutId);
+              console.log(`[AuthGate:${id}] not authenticated → login`);
+              base44.auth.redirectToLogin(window.location.href);
+              return;
+            }
 
-        if (status === 'loading' || status === 'redirecting') return <BootLoader />;
-        if (status === 'error') return <BootError message={errorMsg} onRetry={() => {
-          _bootState = null;
-          _bootPromise = null;
-          setTick(t => t + 1);
-        }} />;
+            // 2. Get user
+            let user = null;
+            try { user = await base44.auth.me(); } catch(e) {
+              console.warn(`[AuthGate:${id}] auth.me threw:`, e?.message);
+            }
+            console.log(`[AuthGate:${id}] user=${user?.email} +${Date.now()-t0}ms`);
+            if (timedOut) return;
+
+            if (!user) {
+              clearTimeout(timeoutId);
+              console.log(`[AuthGate:${id}] no user → login`);
+              base44.auth.redirectToLogin(window.location.href);
+              return;
+            }
+
+            // 3. If already on Onboarding, skip team check
+            if (currentPageName === 'Onboarding') {
+              clearTimeout(timeoutId);
+              console.log(`[AuthGate:${id}] on Onboarding, ready immediately`);
+              setBootData({ user, teams: [], memberTeams: [] });
+              setBootStatus('ready');
+              return;
+            }
+
+            // 4. Fetch teams + memberships in parallel
+            console.log(`[AuthGate:${id}] fetching teams...`);
+            const [createdTeams, memberRecords] = await Promise.all([
+              base44.entities.Team.filter({ created_by: user.email }).catch(e => {
+                console.warn(`[AuthGate:${id}] createdTeams fetch error:`, e?.message); return [];
+              }),
+              base44.entities.TeamMember.filter({ user_email: user.email.toLowerCase() }).catch(e => {
+                console.warn(`[AuthGate:${id}] memberRecords fetch error:`, e?.message); return [];
+              }),
+            ]);
+            console.log(`[AuthGate:${id}] createdTeams=${createdTeams.length} memberRecords=${memberRecords.length} +${Date.now()-t0}ms`);
+            if (timedOut) return;
+
+            const byId = new Map();
+            for (const t of createdTeams) byId.set(t.id, t);
+
+            // Fetch team objects for member-only teams
+            const missingIds = memberRecords.map(m => m.team_id).filter(id => id && !byId.has(id));
+            if (missingIds.length > 0) {
+              console.log(`[AuthGate:${id}] fetching ${missingIds.length} extra team objects...`);
+              const allTeams = await base44.entities.Team.list().catch(e => {
+                console.warn(`[AuthGate:${id}] allTeams fetch error:`, e?.message); return [];
+              });
+              for (const t of allTeams) {
+                if (missingIds.includes(t.id)) byId.set(t.id, t);
+              }
+              if (timedOut) return;
+            }
+
+            const hasTeam = byId.size > 0;
+            console.log(`[AuthGate:${id}] hasTeam=${hasTeam} total=${byId.size} +${Date.now()-t0}ms`);
+
+            clearTimeout(timeoutId);
+
+            if (!hasTeam) {
+              // New user: no teams → go to Onboarding
+              console.log(`[AuthGate:${id}] no teams → replacing to Onboarding`);
+              window.location.replace(window.location.origin + '/?page=Onboarding');
+              return;
+            }
+
+            // 5. Ready
+            console.log(`[AuthGate:${id}] boot complete, ready +${Date.now()-t0}ms`);
+            setBootData({ user, teams: [...byId.values()], memberTeams: memberRecords });
+            setBootStatus('ready');
+
+          } catch (e) {
+            clearTimeout(timeoutId);
+            if (timedOut) return;
+            console.error(`[AuthGate:${id}] unexpected error:`, e?.message, e);
+            setErrorMsg('Noe gikk galt – prøv igjen.');
+            setBootStatus('error');
+          }
+        }, [currentPageName]);
+
+        React.useEffect(() => {
+          runBoot();
+        }, []); // intentionally empty — run once on mount
+
+        if (bootStatus === 'loading') return <BootLoader />;
+        if (bootStatus === 'error') return (
+          <BootError message={errorMsg} onRetry={() => {
+            bootedRef.current = false;
+            setErrorMsg('');
+            setBootStatus('loading');
+            runBoot();
+          }} />
+        );
 
         return (
           <TeamProvider bootData={bootData}>
