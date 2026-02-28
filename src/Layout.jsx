@@ -371,7 +371,12 @@ function InnerLayout({ children, currentPageName }) {
         const [bootStatus, setBootStatus] = React.useState('loading');
         const [bootData, setBootData] = React.useState(null);
         const [errorMsg, setErrorMsg] = React.useState('');
+        const [retryKey, setRetryKey] = React.useState(0);
         const bootedRef = React.useRef(false);
+
+        React.useEffect(() => {
+          bootedRef.current = false; // reset on retry
+        }, [retryKey]);
 
         React.useEffect(() => {
           if (bootedRef.current) return;
