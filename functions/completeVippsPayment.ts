@@ -21,6 +21,15 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Payment not found' }, { status: 404 });
     }
 
+    // Verify role for this team (admin or kasserer required)
+    if (user.role !== 'admin') {
+      const membership = await base44.asServiceRole.entities.TeamMember.filter({ team_id: payment.team_id, user_email: user.email });
+      const allowedRoles = ['admin', 'kasserer'];
+      if (!membership.length || !allowedRoles.includes(membership[0].role)) {
+        return Response.json({ error: 'Forbidden: kasserer or admin required' }, { status: 403 });
+      }
+    }
+
     // Update payment status
     await base44.asServiceRole.entities.Payment.update(payment_id, {
       status: 'completed',
