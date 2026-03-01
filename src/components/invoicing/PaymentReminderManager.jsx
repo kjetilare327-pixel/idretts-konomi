@@ -11,7 +11,7 @@ import { Bell, Loader2, CheckCircle2, AlertTriangle, Send } from 'lucide-react';
 import { formatNOK, formatDate } from '@/components/shared/FormatUtils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-export default function PaymentReminderManager({ teamId }) {
+export default function PaymentReminderManager({ teamId, autoRemindersEnabled, onToggleAutoReminders }) {
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
   const queryClient = useQueryClient();

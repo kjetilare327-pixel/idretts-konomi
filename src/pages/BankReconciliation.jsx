@@ -77,7 +77,7 @@ export default function BankReconciliation() {
     URL.revokeObjectURL(url);
   };
 
-  const hasError = bankError || txError || claimsError;
+  const hasError = bankError || claimsError;
 
   if (!currentTeam) {
     return <div className="p-6">Laster...</div>;
