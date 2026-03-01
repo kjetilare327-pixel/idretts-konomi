@@ -251,6 +251,29 @@ function AppLayout({ children, currentPageName }) {
             {!sidebarCollapsed && (darkMode ? 'Lyst tema' : 'Mørkt tema')}
           </button>
         </div>
+        {/* Drag resize handle */}
+        <div
+          className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-emerald-400/40 transition-colors z-50"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            const startX = e.clientX;
+            const startWidth = sidebarCollapsed ? 64 : 256;
+            const onMove = (ev) => {
+              const newW = Math.max(64, Math.min(320, startWidth + ev.clientX - startX));
+              if (newW < 100) {
+                setSidebarCollapsed(true);
+                try { localStorage.setItem('sidebar_collapsed', 'true'); } catch {}
+              } else {
+                setSidebarCollapsed(false);
+                try { localStorage.setItem('sidebar_collapsed', 'false'); } catch {}
+              }
+            };
+            const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+          }}
+        />
+
       </aside>
 
       {/* Mobile header */}
