@@ -27,10 +27,16 @@ import {
   DropdownMenuTrigger, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
-// Pages that render completely standalone (no sidebar, no auth gate)
-const NO_LAYOUT_PAGES = new Set(['Onboarding', 'GdprConsent', 'TermsOfService']);
+// ─── Module-level session cache ───────────────────────────────────────────────
+// Survives component remounts (page navigation), so boot only runs ONCE per session.
+let _sessionCache = null; // { bootData, status: 'authed'|'guest' }
 
-// Root pages (for mobile back-button logic)
+export function invalidateSessionCache() {
+  _sessionCache = null;
+}
+
+// Pages that render standalone — no auth gate, no sidebar
+const NO_LAYOUT_PAGES = new Set(['Onboarding', 'GdprConsent', 'TermsOfService']);
 const ROOT_PAGES = ['Dashboard', 'PaymentPortal', 'Players', 'Reports', 'SettingsPage'];
 
 // ─── Navigation config ────────────────────────────────────────────────────────
@@ -96,7 +102,7 @@ function NavLink({ item, active, darkMode, onClick }) {
   );
 }
 
-// ─── AppLayout — rendered once user is authenticated, inside TeamProvider ─────
+// ─── AppLayout ────────────────────────────────────────────────────────────────
 function AppLayout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -193,7 +199,10 @@ function AppLayout({ children, currentPageName }) {
             {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             {darkMode ? 'Lyst tema' : 'Mørkt tema'}
           </button>
-          <button onClick={() => base44.auth.logout()} className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm ${darkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}>
+          <button
+            onClick={() => { invalidateSessionCache(); base44.auth.logout(); }}
+            className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm ${darkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}
+          >
             <LogOut className="w-4 h-4" /> Logg ut
           </button>
         </div>
@@ -252,7 +261,10 @@ function AppLayout({ children, currentPageName }) {
               <button onClick={toggleDark} className="text-sm flex items-center gap-2 px-3 py-2">
                 {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />} {darkMode ? 'Lyst' : 'Mørkt'}
               </button>
-              <button onClick={() => base44.auth.logout()} className="text-sm flex items-center gap-2 px-3 py-2 text-red-500">
+              <button
+                onClick={() => { invalidateSessionCache(); base44.auth.logout(); }}
+                className="text-sm flex items-center gap-2 px-3 py-2 text-red-500"
+              >
                 <LogOut className="w-4 h-4" /> Logg ut
               </button>
             </div>
@@ -265,10 +277,10 @@ function AppLayout({ children, currentPageName }) {
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={currentPageName}
-            initial={{ x: 20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -20, opacity: 0 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.12 }}
             className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full"
             style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 4.5rem)' }}
           >
@@ -283,44 +295,38 @@ function AppLayout({ children, currentPageName }) {
   );
 }
 
-// ─── AuthGate — single gatekeeper, no routing complexity ──────────────────────
-//
-// Simple state machine:
-//   loading → show spinner
-//   guest   → redirectToLogin (once, via ref guard)
-//   authed  → render TeamProvider + AppLayout
-//
-// NO redirect logic for teams / onboarding here. Dashboard handles its own
-// empty-team state gracefully.
-//
+// ─── AuthGate ─────────────────────────────────────────────────────────────────
+// Uses module-level _sessionCache so the expensive boot fetch only runs ONCE
+// per browser session, not on every page navigation.
 function AuthGate({ children, currentPageName }) {
-  const [status, setStatus]   = useState('loading'); // 'loading' | 'guest' | 'authed'
-  const [bootData, setBootData] = useState(null);
+  // If cache already populated, start in 'authed' immediately — no flicker
+  const [status, setStatus]     = useState(() => _sessionCache?.status || 'loading');
+  const [bootData, setBootData] = useState(() => _sessionCache?.bootData || null);
   const [timedOut, setTimedOut] = useState(false);
-  const bootedRef = useRef(false);
-  const redirectedRef = useRef(false);
+  const bootingRef  = useRef(false);
+  const redirectRef = useRef(false);
 
   const boot = useCallback(async () => {
-    setStatus('loading');
-    setBootData(null);
-    setTimedOut(false);
-    redirectedRef.current = false;
+    // Never run two boots concurrently
+    if (bootingRef.current) return;
+    bootingRef.current = true;
 
     try {
       const authenticated = await base44.auth.isAuthenticated().catch(() => false);
 
       if (!authenticated) {
+        _sessionCache = { status: 'guest', bootData: null };
         setStatus('guest');
         return;
       }
 
       const user = await base44.auth.me().catch(() => null);
       if (!user) {
+        _sessionCache = { status: 'guest', bootData: null };
         setStatus('guest');
         return;
       }
 
-      // Pre-fetch teams for synchronous TeamProvider init
       const userEmail = user.email.toLowerCase();
       const [createdTeams, memberRecords] = await Promise.all([
         base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
@@ -336,44 +342,54 @@ function AuthGate({ children, currentPageName }) {
         for (const t of allTeams) { if (missingIds.includes(t.id)) byId.set(t.id, t); }
       }
 
-      setBootData({ user, teams: [...byId.values()], memberTeams: memberRecords });
+      const data = { user, teams: [...byId.values()], memberTeams: memberRecords };
+      _sessionCache = { status: 'authed', bootData: data };
+      setBootData(data);
       setStatus('authed');
     } catch (err) {
       console.error('[AuthGate] boot error:', err?.message);
-      // On error, treat as guest so user can re-authenticate
+      // Don't cache errors — allow retry
+      _sessionCache = null;
       setStatus('guest');
+    } finally {
+      bootingRef.current = false;
     }
   }, []);
 
-  // Boot once on mount (ref prevents StrictMode double-fire)
   useEffect(() => {
-    if (bootedRef.current) return;
-    bootedRef.current = true;
+    // Cache hit — already rendered in correct state, nothing to do
+    if (_sessionCache) return;
     boot();
-  }, [boot]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Timeout guard
+  // Timeout only when actually loading
   useEffect(() => {
     if (status !== 'loading') return;
     const id = setTimeout(() => setTimedOut(true), 12000);
     return () => clearTimeout(id);
   }, [status]);
 
-  // Guest → redirect to login, one-shot
+  // Guest → redirect, one-shot
   useEffect(() => {
     if (status !== 'guest') return;
-    if (redirectedRef.current) return;
-    redirectedRef.current = true;
+    if (redirectRef.current) return;
+    redirectRef.current = true;
     base44.auth.redirectToLogin(window.location.origin + '/');
   }, [status]);
 
-  const retry = () => { bootedRef.current = false; boot(); };
+  const retry = () => {
+    _sessionCache = null;
+    bootingRef.current = false;
+    redirectRef.current = false;
+    setStatus('loading');
+    setTimedOut(false);
+    boot();
+  };
 
   if (status === 'loading' || status === 'guest') {
     return <FullScreenLoader timedOut={timedOut} onRetry={retry} />;
   }
 
-  // Authenticated — render the full app
   return (
     <TeamProvider bootData={bootData}>
       <AppLayout currentPageName={currentPageName}>{children}</AppLayout>
@@ -388,7 +404,6 @@ export default function Layout({ children, currentPageName }) {
     : null;
   const effectivePage = urlPage || currentPageName || '';
 
-  // NO_LAYOUT_PAGES: bare render — no auth, no sidebar, no TeamProvider
   if (NO_LAYOUT_PAGES.has(effectivePage)) {
     return (
       <ErrorBoundary>
