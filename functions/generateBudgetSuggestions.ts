@@ -77,9 +77,40 @@ Returner som JSON med format:
       response_json_schema: {
         type: 'object',
         properties: {
-          adjustments: { type: 'array' },
-          new_categories: { type: 'array' },
-          savings_opportunities: { type: 'array' }
+          adjustments: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                category: { type: 'string' },
+                recommendation: { type: 'string' },
+                suggested_amount: { type: 'number' }
+              }
+            }
+          },
+          new_categories: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                category: { type: 'string' },
+                type: { type: 'string' },
+                suggested_amount: { type: 'number' },
+                reason: { type: 'string' }
+              }
+            }
+          },
+          savings_opportunities: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                area: { type: 'string' },
+                potential_savings: { type: 'number' },
+                action: { type: 'string' }
+              }
+            }
+          }
         }
       }
     });
