@@ -10,6 +10,15 @@ Deno.serve(async (req) => {
     }
 
     const { team_id } = await req.json();
+
+    // Verify user is admin or kasserer for this team
+    if (user.role !== 'admin') {
+      const membership = await base44.asServiceRole.entities.TeamMember.filter({ team_id, user_email: user.email });
+      const allowedRoles = ['admin', 'kasserer', 'styreleder'];
+      if (!membership.length || !allowedRoles.includes(membership[0].role)) {
+        return Response.json({ error: 'Forbidden: Insufficient permissions' }, { status: 403 });
+      }
+    }
     
     if (!team_id) {
       return Response.json({ error: 'team_id is required' }, { status: 400 });
