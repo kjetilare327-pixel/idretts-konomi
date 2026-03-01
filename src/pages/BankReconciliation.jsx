@@ -127,9 +127,6 @@ export default function BankReconciliation() {
       {/* Reconciliation status */}
       <ReconciliationStatus teamId={currentTeam?.id} />
 
-      {/* AI-powered bank importer */}
-      <BankImporter teamId={currentTeam?.id} />
-
       {/* Upload Section */}
       <Card>
         <CardHeader>
