@@ -11,12 +11,7 @@ import { Sparkles, Send, Loader2, CheckCircle2, AlertCircle, ChevronDown, Chevro
 import { formatNOK } from '@/components/shared/FormatUtils';
 import PlayerPickerModal from './PlayerPickerModal';
 
-const EXAMPLE_PROMPTS = [
-  'Trener brukte 2000 kr på mat for laget – del likt på alle 20 spillere',
-  'Dugnad med 15 av 22 spillere tjente 15000 kr – del likt på deltakerne',
-  'Kiosk-inntekt 3500 kr deles likt på alle aktive spillere',
-  'Reiseutgifter 4800 kr inkl. moms 25% – fordel på 12 spillere',
-];
+
 
 export default function AiTransactionAssistant({ teamId, onDone }) {
   const [prompt, setPrompt] = useState('');
