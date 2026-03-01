@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useTeam } from '../components/shared/TeamContext';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import BankImporter from '@/components/bank/BankImporter';
 import ReconciliationStatus from '@/components/bank/ReconciliationStatus';
 import ManualMatchPanel from '@/components/bank/ManualMatchPanel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
