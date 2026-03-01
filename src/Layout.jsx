@@ -374,7 +374,9 @@ function AuthGate({ children, currentPageName }) {
     if (status !== 'guest') return;
     if (redirectRef.current) return;
     redirectRef.current = true;
-    base44.auth.redirectToLogin(window.location.origin + '/');
+    // Redirect to login; after login, come back to root so AuthGate
+    // can decide where to send the user (Dashboard or Onboarding)
+    base44.auth.redirectToLogin(window.location.origin + '/Dashboard');
   }, [status]);
 
   const retry = () => {
