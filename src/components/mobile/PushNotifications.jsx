@@ -3,7 +3,7 @@ import { useTeam } from '../shared/TeamContext';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Bell, BellOff } from 'lucide-react';
+import { Bell, BellOff, X } from 'lucide-react';
 
 // iOS Safari/WebView: 'Notification' in window can be true but window.Notification is undefined
 const isNotificationSupported = () => {
