@@ -151,20 +151,31 @@ function AppLayout({ children, currentPageName }) {
       <OfflineManager />
 
       {/* Desktop Sidebar */}
-      <aside className={`hidden lg:flex flex-col w-64 border-r ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} fixed h-screen z-30`}>
-        <div className="p-6 border-b border-inherit flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-white" />
+      <aside className={`hidden lg:flex flex-col border-r ${sidebarCollapsed ? 'w-16' : 'w-64'} transition-all duration-200 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} fixed h-screen z-30`}>
+        <div className={`border-b border-inherit flex-shrink-0 ${sidebarCollapsed ? 'p-3' : 'p-6'}`}>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0">
+                <Shield className="w-5 h-5 text-white" />
+              </div>
+              {!sidebarCollapsed && (
+                <div className="min-w-0">
+                  <h1 className="font-bold text-lg leading-tight tracking-tight">IdrettsØkonomi</h1>
+                  <p className="text-xs text-slate-500">Økonomistyring</p>
+                </div>
+              )}
             </div>
-            <div>
-              <h1 className="font-bold text-lg leading-tight tracking-tight">IdrettsØkonomi</h1>
-              <p className="text-xs text-slate-500">Økonomistyring</p>
-            </div>
+            <button
+              onClick={toggleSidebar}
+              className={`shrink-0 p-1 rounded-lg ${darkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-400 hover:bg-slate-100'}`}
+              title={sidebarCollapsed ? 'Utvid meny' : 'Minimer meny'}
+            >
+              <ChevronRight className={`w-4 h-4 transition-transform ${sidebarCollapsed ? '' : 'rotate-180'}`} />
+            </button>
           </div>
         </div>
 
-        {teams.length > 0 && (
+        {!sidebarCollapsed && teams.length > 0 && (
           <div className="px-4 py-3 border-b border-inherit flex-shrink-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -186,11 +197,26 @@ function AppLayout({ children, currentPageName }) {
           </div>
         )}
 
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto min-h-0">
+        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto min-h-0">
           {CORE_NAV.filter(item => item.roles.includes(userRole)).map(item => (
-            <NavLink key={item.page} item={item} active={currentPageName === item.page} darkMode={darkMode} />
+            sidebarCollapsed ? (
+              <Link
+                key={item.page}
+                to={createPageUrl(item.page)}
+                title={item.name}
+                className={`flex items-center justify-center p-2.5 rounded-lg transition-all ${
+                  currentPageName === item.page
+                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                    : darkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+              </Link>
+            ) : (
+              <NavLink key={item.page} item={item} active={currentPageName === item.page} darkMode={darkMode} />
+            )
           ))}
-          {ADVANCED_NAV.some(i => i.roles.includes(userRole)) && (
+          {!sidebarCollapsed && ADVANCED_NAV.some(i => i.roles.includes(userRole)) && (
             <div className="pt-2">
               <button
                 onClick={() => setAdvancedOpen(o => !o)}
@@ -213,15 +239,16 @@ function AppLayout({ children, currentPageName }) {
           )}
         </nav>
 
-        <div className="p-4 border-t border-inherit space-y-2 flex-shrink-0">
-          <div className="px-3 py-2"><PushNotifications /></div>
-          <div className="px-3 py-2"><NotificationCenter userEmail={user?.email} teamId={currentTeam?.id} /></div>
-          <button onClick={toggleDark} className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm ${darkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}>
-            {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            {darkMode ? 'Lyst tema' : 'Mørkt tema'}
-          </button>
-          <button onClick={handleLogout} className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm ${darkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}>
-            <LogOut className="w-4 h-4" /> Logg ut
+        <div className={`border-t border-inherit space-y-2 flex-shrink-0 ${sidebarCollapsed ? 'p-2' : 'p-4'}`}>
+          {!sidebarCollapsed && (
+            <>
+              <div className="px-3 py-2"><PushNotifications /></div>
+              <div className="px-3 py-2"><NotificationCenter userEmail={user?.email} teamId={currentTeam?.id} /></div>
+            </>
+          )}
+          <button onClick={toggleDark} className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm ${darkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`} title={darkMode ? 'Lyst tema' : 'Mørkt tema'}>
+            {darkMode ? <Sun className="w-4 h-4 shrink-0" /> : <Moon className="w-4 h-4 shrink-0" />}
+            {!sidebarCollapsed && (darkMode ? 'Lyst tema' : 'Mørkt tema')}
           </button>
         </div>
       </aside>
