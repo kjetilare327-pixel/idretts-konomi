@@ -10,12 +10,11 @@ Deno.serve(async (req) => {
     const { team_id } = await req.json();
     if (!team_id) return Response.json({ error: 'team_id required' }, { status: 400 });
 
-    // Require admin role for this sensitive analysis
+    // Admin-only: member analytics contains sensitive PII/financial data
     if (user.role !== 'admin') {
       const membership = await base44.asServiceRole.entities.TeamMember.filter({ team_id, user_email: user.email.toLowerCase() });
-      const allowedRoles = ['admin', 'kasserer', 'styreleder'];
-      if (!membership.length || !allowedRoles.includes(membership[0].role)) {
-        return Response.json({ error: 'Forbidden: Insufficient permissions' }, { status: 403 });
+      if (!membership.length || membership[0].role !== 'admin') {
+        return Response.json({ error: 'Forbidden: Krever admin-rolle' }, { status: 403 });
       }
     }
 
@@ -25,7 +24,7 @@ Deno.serve(async (req) => {
       base44.asServiceRole.entities.EventAttendance.filter({ team_id }),
       base44.asServiceRole.entities.Claim.filter({ team_id }),
       base44.asServiceRole.entities.Payment.filter({ team_id }),
-      base44.asServiceRole.entities.VolunteerAssignment.filter({ team_id })
+      Promise.resolve([])
     ]);
 
     const playerMetrics = players.map(player => {
