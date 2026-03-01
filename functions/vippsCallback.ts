@@ -10,6 +10,32 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+
+    // Validate webhook secret OR require authenticated admin/kasserer user
+    const vippsSecret = Deno.env.get('VIPPS_CALLBACK_SECRET');
+    const authHeader = req.headers.get('Authorization') || '';
+    const isValidWebhook = vippsSecret && authHeader === `Bearer ${vippsSecret}`;
+
+    if (!isValidWebhook) {
+      // Fall back to user auth for manual invocation from admin UI
+      const user = await base44.auth.me().catch(() => null);
+      if (!user) {
+        console.warn('vippsCallback: rejected unauthenticated request');
+        return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      if (user.role !== 'admin') {
+        const body2 = await req.clone().json().catch(() => ({}));
+        const tid = body2?.team_id;
+        if (tid) {
+          const membership = await base44.asServiceRole.entities.TeamMember.filter({ team_id: tid, user_email: user.email });
+          const allowed = ['admin', 'kasserer'];
+          if (!membership.length || !allowed.includes(membership[0].role)) {
+            return Response.json({ error: 'Forbidden' }, { status: 403 });
+          }
+        }
+      }
+    }
+
     const body = await req.json();
 
     const { order_id, payment_id, status } = body;
