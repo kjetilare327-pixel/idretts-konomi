@@ -242,7 +242,11 @@ export default function InvoiceAutomation() {
       <ReceivablesReport claims={claims} players={players} />
 
       {/* Payment reminders */}
-      <PaymentReminderManager teamId={currentTeam?.id} />
+      <PaymentReminderManager
+        teamId={currentTeam?.id}
+        autoRemindersEnabled={currentTeam?.auto_reminders_enabled}
+        onToggleAutoReminders={handleToggleAutoReminders}
+      />
 
       {/* How it works */}
       <Card className="border-2 border-blue-200 dark:border-blue-900">
