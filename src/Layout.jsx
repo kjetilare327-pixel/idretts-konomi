@@ -404,19 +404,32 @@ function AuthGate({ children, currentPageName }) {
       const byId = new Map();
       for (const t of createdTeams) byId.set(t.id, t);
 
+      // For each TeamMember record where we don't have the team yet, fetch it individually
       const missingIds = memberRecords.map(m => m.team_id).filter(id => id && !byId.has(id));
       if (missingIds.length > 0) {
-        const allTeams = await base44.entities.Team.list().catch(() => []);
-        for (const t of allTeams) { if (missingIds.includes(t.id)) byId.set(t.id, t); }
+        const fetched = await Promise.all(
+          missingIds.map(id => base44.entities.Team.filter({ id }).catch(() => []))
+        );
+        for (const arr of fetched) {
+          for (const t of arr) byId.set(t.id, t);
+        }
+        // Fallback: try listing all (works if user is in members array)
+        if ([...byId.values()].length < memberRecords.length) {
+          const allTeams = await base44.entities.Team.list().catch(() => []);
+          for (const t of allTeams) { if (missingIds.includes(t.id)) byId.set(t.id, t); }
+        }
       }
 
       const data = { user, teams: [...byId.values()], memberTeams: memberRecords };
 
       // New user with no teams → send to Onboarding
-      if (data.teams.length === 0) {
+      if (data.teams.length === 0 && memberRecords.length === 0) {
         window.location.replace('/Onboarding');
         return;
       }
+
+      // Has memberships but couldn't load teams (RLS) → still let them in, they'll see an empty state
+      // rather than loop to Onboarding
 
       _sessionCache = { bootData: data, lastFetch: Date.now() };
       setBootData(data);
