@@ -247,7 +247,7 @@ export default function Players() {
           <p className="text-sm text-slate-500">{players.length} spillere registrert</p>
         </div>
         <Button onClick={openNew} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
-          <Plus className="w-4 h-4" /> Legg til spiller
+          <Plus className="w-4 h-4" /> Legg til spiller/forelder
         </Button>
       </div>
 
