@@ -148,12 +148,18 @@ export default function PushNotifications() {
     );
   }
 
+  const [dismissed, setDismissed] = useState(() =>
+    localStorage.getItem('push_prompt_dismissed') === 'true'
+  );
+
+  if (dismissed) return null;
+
   if (!enabled || permission !== 'granted') {
     return (
       <Card className="border-blue-200 dark:border-blue-900">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
-            <Bell className="w-5 h-5 text-blue-600 mt-0.5" />
+            <Bell className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
             <div className="flex-1">
               <p className="font-medium mb-1 text-sm">Aktiver push-varsler</p>
               <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">
@@ -164,6 +170,12 @@ export default function PushNotifications() {
                 Aktiver varsler
               </Button>
             </div>
+            <button
+              onClick={() => { setDismissed(true); localStorage.setItem('push_prompt_dismissed', 'true'); }}
+              className="text-slate-400 hover:text-slate-600 shrink-0 -mt-1 -mr-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </CardContent>
       </Card>
