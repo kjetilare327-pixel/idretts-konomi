@@ -14,7 +14,7 @@ import NativeSelect from '@/components/mobile/NativeSelect';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { Save, Trash2, UserPlus, Shield, AlertTriangle, Loader2, CheckCircle, Users, Eye, EyeOff, Tag, Plus as PlusIcon, Pencil, UserX, Copy, RefreshCw } from 'lucide-react';
+import { Save, Trash2, Shield, AlertTriangle, Loader2, CheckCircle, Users, Eye, EyeOff, Tag, Plus as PlusIcon, Pencil, UserX, Copy, RefreshCw, Bell, BellOff, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -72,6 +72,8 @@ export default function SettingsPage() {
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [deleteAccountConfirm, setDeleteAccountConfirm] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(() => localStorage.getItem('push_notifications_enabled') === 'true');
+  const [pushDismissed, setPushDismissed] = useState(() => localStorage.getItem('push_prompt_dismissed') === 'true');
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [editCategory, setEditCategory] = useState(null);
   const [categoryForm, setCategoryForm] = useState({ name: '', type: 'expense' });
