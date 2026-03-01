@@ -3,23 +3,31 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { team_id } = await req.json();
 
-    if (!team_id) {
-      return Response.json({ error: 'team_id required' }, { status: 400 });
+    const user = await base44.auth.me().catch(() => null);
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { team_id } = await req.json();
+    if (!team_id) return Response.json({ error: 'team_id required' }, { status: 400 });
+
+    // Require admin role for this sensitive analysis
+    if (user.role !== 'admin') {
+      const membership = await base44.asServiceRole.entities.TeamMember.filter({ team_id, user_email: user.email.toLowerCase() });
+      const allowedRoles = ['admin', 'kasserer', 'styreleder'];
+      if (!membership.length || !allowedRoles.includes(membership[0].role)) {
+        return Response.json({ error: 'Forbidden: Insufficient permissions' }, { status: 403 });
+      }
     }
 
-    // Fetch all data
     const [players, events, attendance, claims, payments, volunteers] = await Promise.all([
-      base44.entities.Player.filter({ team_id, status: 'active' }),
-      base44.entities.Event.filter({ team_id }),
-      base44.entities.EventAttendance.filter({ team_id }),
-      base44.entities.Claim.filter({ team_id }),
-      base44.entities.Payment.filter({ team_id }),
-      base44.entities.VolunteerAssignment.filter({ team_id })
+      base44.asServiceRole.entities.Player.filter({ team_id, status: 'active' }),
+      base44.asServiceRole.entities.Event.filter({ team_id }),
+      base44.asServiceRole.entities.EventAttendance.filter({ team_id }),
+      base44.asServiceRole.entities.Claim.filter({ team_id }),
+      base44.asServiceRole.entities.Payment.filter({ team_id }),
+      base44.asServiceRole.entities.VolunteerAssignment.filter({ team_id })
     ]);
 
-    // AI analysis prompt
     const playerMetrics = players.map(player => {
       const playerAttendance = attendance.filter(a => a.player_id === player.id);
       const playerClaims = claims.filter(c => c.player_id === player.id);
@@ -48,7 +56,6 @@ Deno.serve(async (req) => {
       };
     });
 
-    // Prepare analysis for AI
     const analysisPrompt = `
 Analyser disse medlemsdata fra et idrettslag og:
 1. Identifiser dynamiske segmenter basert på mønstre
@@ -85,7 +92,7 @@ Svar i JSON-format med denne strukturen:
   }
 }`;
 
-    const response = await base44.integrations.Core.InvokeLLM({
+    const response = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: analysisPrompt,
       add_context_from_internet: false,
       response_json_schema: {
@@ -131,6 +138,7 @@ Svar i JSON-format med denne strukturen:
 
     return Response.json(response);
   } catch (error) {
+    console.error('analyzeMembers error:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

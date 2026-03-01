@@ -1,11 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
-// Creates a Vipps payment link for a claim and stores pending payment record.
-// Also sends the link by email to the player.
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+
+    const user = await base44.auth.me().catch(() => null);
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { claim_id } = await req.json();
@@ -15,23 +14,32 @@ Deno.serve(async (req) => {
     if (!claim) return Response.json({ error: 'Krav ikke funnet' }, { status: 404 });
     if (claim.status === 'paid') return Response.json({ error: 'Kravet er allerede betalt' }, { status: 400 });
 
+    // Require admin/kasserer OR the player themselves
+    if (user.role !== 'admin') {
+      const membership = await base44.asServiceRole.entities.TeamMember.filter({ team_id: claim.team_id, user_email: user.email.toLowerCase() });
+      const isFinanceRole = membership.length && ['admin', 'kasserer'].includes(membership[0].role);
+      
+      // Allow player themselves to generate their own payment link
+      const playerRecord = await base44.asServiceRole.entities.Player.filter({ team_id: claim.team_id, user_email: user.email.toLowerCase() }).catch(() => []);
+      const isOwnClaim = playerRecord.length > 0 && claim.player_id === playerRecord[0].id;
+
+      if (!isFinanceRole && !isOwnClaim) {
+        return Response.json({ error: 'Forbidden: Insufficient permissions' }, { status: 403 });
+      }
+    }
+
     const player = await base44.asServiceRole.entities.Player.get(claim.player_id);
     if (!player) return Response.json({ error: 'Spiller ikke funnet' }, { status: 404 });
 
-    // Generate unique order reference
     const orderId = `VIORD-${Date.now()}-${claim_id.substring(0, 8)}`;
-
-    // In production: replace this URL with real Vipps ePay API call
-    // POST https://apitest.vipps.no/epayment/v1/payments
     const paymentLink = `https://vipps.no/pay?orderId=${orderId}&amount=${Math.round(claim.amount * 100)}&merchant=IDRETTSOEKONOMI`;
 
-    // Cancel any previous pending payment for this claim to avoid duplicates
+    // Cancel any previous pending payment for this claim
     const existing = await base44.asServiceRole.entities.Payment.filter({ claim_id, status: 'pending' }).catch(() => []);
     for (const p of existing) {
       await base44.asServiceRole.entities.Payment.update(p.id, { status: 'failed' }).catch(() => {});
     }
 
-    // Create new pending payment record
     const payment = await base44.asServiceRole.entities.Payment.create({
       team_id: claim.team_id,
       player_id: claim.player_id,
@@ -43,13 +51,11 @@ Deno.serve(async (req) => {
       vipps_payment_link: paymentLink,
     });
 
-    // Store link on the claim itself for easy access
     await base44.asServiceRole.entities.Claim.update(claim_id, {
       vipps_payment_link: paymentLink,
       kid_reference: orderId,
     });
 
-    // Send email with payment link
     try {
       await base44.asServiceRole.integrations.Core.SendEmail({
         to: player.user_email,
@@ -60,12 +66,7 @@ Deno.serve(async (req) => {
       console.warn('E-post sending feilet:', emailErr.message);
     }
 
-    return Response.json({
-      success: true,
-      payment_id: payment.id,
-      payment_link: paymentLink,
-      order_id: orderId,
-    });
+    return Response.json({ success: true, payment_id: payment.id, payment_link: paymentLink, order_id: orderId });
 
   } catch (error) {
     console.error('createVippsPayment feil:', error);
