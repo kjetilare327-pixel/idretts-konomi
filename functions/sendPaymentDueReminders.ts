@@ -3,7 +3,23 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    
+
+    // Allow scheduled (no auth header) or admin/kasserer users
+    const isAuthenticated = await base44.auth.isAuthenticated().catch(() => false);
+    if (isAuthenticated) {
+      const user = await base44.auth.me().catch(() => null);
+      if (user && user.role !== 'admin') {
+        const { team_id } = await req.json().catch(() => ({}));
+        if (team_id) {
+          const membership = await base44.asServiceRole.entities.TeamMember.filter({ team_id, user_email: user.email });
+          const allowedRoles = ['admin', 'kasserer'];
+          if (!membership.length || !allowedRoles.includes(membership[0].role)) {
+            return Response.json({ error: 'Forbidden' }, { status: 403 });
+          }
+        }
+      }
+    }
+
     // Get all active teams
     const teams = await base44.asServiceRole.entities.Team.list();
     
