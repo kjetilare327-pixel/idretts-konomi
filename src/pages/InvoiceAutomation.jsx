@@ -69,6 +69,17 @@ export default function InvoiceAutomation() {
     queryClient.invalidateQueries({ queryKey: ['invoice-schedules'] });
   };
 
+  const handleToggleAutoReminders = async (enabled) => {
+    if (!currentTeam) return;
+    setTogglingReminders(true);
+    try {
+      await base44.entities.Team.update(currentTeam.id, { auto_reminders_enabled: enabled });
+      await refreshTeams();
+    } finally {
+      setTogglingReminders(false);
+    }
+  };
+
   const handleToggle = async (scheduleId, currentStatus) => {
     await base44.entities.InvoiceSchedule.update(scheduleId, {
       is_active: !currentStatus
