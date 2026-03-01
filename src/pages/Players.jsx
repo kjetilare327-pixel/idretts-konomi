@@ -223,7 +223,7 @@ export default function Players() {
                           <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badgeClass}`}>{cfg.label}</span>
                         </TableCell>
                         <TableCell className={`text-right font-medium ${l.balance > 0 ? 'text-red-600' : l.balance < 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                          {l.balance > 0 ? `+${formatNOK(l.balance)}` : l.balance < 0 ? formatNOK(l.balance) : '–'}
+                          {l.balance > 0 ? `-${formatNOK(l.balance)}` : l.balance < 0 ? `+${formatNOK(Math.abs(l.balance))}` : '–'}
                         </TableCell>
                       </TableRow>
                     );
