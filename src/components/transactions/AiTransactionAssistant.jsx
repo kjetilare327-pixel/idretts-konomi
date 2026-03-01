@@ -247,20 +247,7 @@ Regler:
         </div>
       </div>
 
-      {/* Example prompts */}
-      {!result && (
-        <div className="flex flex-wrap gap-2">
-          {EXAMPLE_PROMPTS.map((ex, i) => (
-            <button
-              key={i}
-              onClick={() => setPrompt(ex)}
-              className="text-xs px-2.5 py-1 rounded-full border border-violet-200 dark:border-violet-500/30 text-violet-700 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-colors text-left"
-            >
-              {ex}
-            </button>
-          ))}
-        </div>
-      )}
+
 
       {/* Input */}
       {!result && (
