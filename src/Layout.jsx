@@ -390,6 +390,12 @@ function AuthGate({ children, currentPageName }) {
     return <FullScreenLoader timedOut={timedOut} onRetry={retry} />;
   }
 
+  // New user with no teams → send to Onboarding (unless already there)
+  if ((bootData?.teams?.length ?? 0) === 0 && currentPageName !== 'Onboarding') {
+    window.location.replace('/?page=Onboarding');
+    return <FullScreenLoader />;
+  }
+
   return (
     <TeamProvider bootData={bootData}>
       <AppLayout currentPageName={currentPageName}>{children}</AppLayout>
