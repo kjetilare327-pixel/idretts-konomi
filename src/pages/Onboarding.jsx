@@ -25,10 +25,24 @@ export default function Onboarding() {
   const [checkingUser, setCheckingUser] = useState(true);
 
   useEffect(() => {
-    base44.auth.me().then(u => {
-      if (u?.tos_accepted) setTosAccepted(true);
+    (async () => {
+      try {
+        const u = await base44.auth.me();
+        if (!u) { window.location.replace('/login'); return; }
+        if (u?.tos_accepted) setTosAccepted(true);
+
+        // If user already has teams, redirect to Dashboard
+        const [created, memberships] = await Promise.all([
+          base44.entities.Team.filter({ created_by: u.email }).catch(() => []),
+          base44.entities.TeamMember.filter({ user_email: u.email.toLowerCase() }).catch(() => []),
+        ]);
+        if (created.length > 0 || memberships.length > 0) {
+          window.location.replace('/Dashboard');
+          return;
+        }
+      } catch (_) {}
       setCheckingUser(false);
-    }).catch(() => setCheckingUser(false));
+    })();
   }, []);
 
   // Create team state

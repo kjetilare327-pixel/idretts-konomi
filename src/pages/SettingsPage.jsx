@@ -280,7 +280,7 @@ export default function SettingsPage() {
                   className="gap-2"
                   onClick={() => {
                     navigator.clipboard.writeText(currentTeam.join_code || '');
-                    alert('Kode kopiert!');
+                    toast.success('Kode kopiert!');
                   }}
                   disabled={!currentTeam.join_code}
                 >
