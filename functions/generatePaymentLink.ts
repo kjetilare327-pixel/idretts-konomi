@@ -15,24 +15,34 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'claim_id is required' }, { status: 400 });
     }
 
-    const claim = await base44.entities.Claim.get(claim_id);
-    const team = await base44.entities.Team.get(claim.team_id);
-    const player = await base44.entities.Player.get(claim.player_id);
+    const claim = await base44.asServiceRole.entities.Claim.get(claim_id);
+    if (!claim) return Response.json({ error: 'Claim not found' }, { status: 404 });
+
+    // Require admin/kasserer OR the player themselves
+    if (user.role !== 'admin') {
+      const membership = await base44.asServiceRole.entities.TeamMember.filter({ team_id: claim.team_id, user_email: user.email.toLowerCase() });
+      const isFinanceRole = membership.length && ['admin', 'kasserer'].includes(membership[0].role);
+      const playerRecord = await base44.asServiceRole.entities.Player.filter({ team_id: claim.team_id, user_email: user.email.toLowerCase() }).catch(() => []);
+      const isOwnClaim = playerRecord.length > 0 && claim.player_id === playerRecord[0].id;
+      if (!isFinanceRole && !isOwnClaim) {
+        return Response.json({ error: 'Forbidden: Insufficient permissions' }, { status: 403 });
+      }
+    }
+
+    const team = await base44.asServiceRole.entities.Team.get(claim.team_id);
+    const player = await base44.asServiceRole.entities.Player.get(claim.player_id);
 
     // Generer KID-referanse hvis ikke finnes
     let kidReference = claim.kid_reference;
     if (!kidReference) {
       kidReference = `${team.id.slice(0, 6)}${claim.id.slice(0, 6)}${Date.now().toString().slice(-4)}`;
-      await base44.entities.Claim.update(claim_id, { kid_reference: kidReference });
+      await base44.asServiceRole.entities.Claim.update(claim_id, { kid_reference: kidReference });
     }
 
-    // Generer Vipps-betalingslenke
-    // Format: vipps://&amount=BELØP&message=MELDING&recipientName=NAVN
     const message = `${team.name} - ${claim.type} - ${player.full_name}`;
     const vippsLink = `https://qr.vipps.no/28/2/01/031/${team.name.replace(/\s/g, '')}?v=1&message=${encodeURIComponent(message)}&amount=${claim.amount}`;
 
-    // Oppdater claim med betalingslenke
-    await base44.entities.Claim.update(claim_id, { 
+    await base44.asServiceRole.entities.Claim.update(claim_id, { 
       vipps_payment_link: vippsLink 
     });
 

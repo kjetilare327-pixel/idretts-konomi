@@ -14,6 +14,15 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'file_url and team_id required' }, { status: 400 });
     }
 
+    // Require admin or kasserer
+    if (user.role !== 'admin') {
+      const membership = await base44.asServiceRole.entities.TeamMember.filter({ team_id, user_email: user.email.toLowerCase() });
+      const allowedRoles = ['admin', 'kasserer', 'styreleder'];
+      if (!membership.length || !allowedRoles.includes(membership[0].role)) {
+        return Response.json({ error: 'Forbidden: Insufficient permissions' }, { status: 403 });
+      }
+    }
+
     // Use AI vision to extract receipt data
     const extractionPrompt = `Analyser denne kvitteringen/fakturaen og hentstøtende informasjon.
 
