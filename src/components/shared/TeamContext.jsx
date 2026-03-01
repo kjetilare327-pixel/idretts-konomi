@@ -3,7 +3,6 @@ import { base44 } from '@/api/base44Client';
 
 const TeamContext = createContext(null);
 
-// Roles that have access to financial/admin features
 export const FINANCE_ROLES = ['admin', 'kasserer', 'styreleder', 'revisor'];
 export const ADMIN_ROLES = ['admin'];
 
@@ -22,8 +21,7 @@ async function fetchMyTeams(userEmail) {
   return [...byId.values()];
 }
 
-// Compute the initial team state synchronously from bootData so that
-// the very first render already has correct values — no useEffect gap.
+// Synchronously compute initial state from bootData so first render is correct
 function computeInitialState(bootData) {
   if (!bootData) {
     return { currentTeam: null, teams: [], myMemberships: {}, currentTeamRole: 'player', loading: true, user: null };
@@ -47,20 +45,17 @@ function computeInitialState(bootData) {
     }
     try { localStorage.setItem('idrettsøkonomi_team_id', selected.id); } catch(_) {}
   }
-  console.log('[TeamProvider] initial state from bootData — team=', selected?.name, 'role=', role);
   return { currentTeam: selected, teams: myTeams, myMemberships: map, currentTeamRole: role, loading: false, user: bootData.user };
 }
 
 export function TeamProvider({ children, bootData }) {
   const init = computeInitialState(bootData);
-  const [currentTeam, setCurrentTeam] = useState(init.currentTeam);
-  const [teams, setTeams] = useState(init.teams);
-  // status: 'loading' | 'ready' | 'error'  (consumed by TeamGate)
-  const [status, setStatus] = useState(init.loading ? 'loading' : 'ready');
-  const [loading, setLoading] = useState(init.loading);
-  const [user, setUser] = useState(init.user);
-  const [playerProfile, setPlayerProfile] = useState(null);
-  const [myMemberships, setMyMemberships] = useState(init.myMemberships);
+  const [currentTeam, setCurrentTeam]       = useState(init.currentTeam);
+  const [teams, setTeams]                   = useState(init.teams);
+  const [loading, setLoading]               = useState(init.loading);
+  const [user, setUser]                     = useState(init.user);
+  const [playerProfile, setPlayerProfile]   = useState(null);
+  const [myMemberships, setMyMemberships]   = useState(init.myMemberships);
   const [currentTeamRole, setCurrentTeamRole] = useState(init.currentTeamRole);
 
   const loadMemberships = useCallback(async (userEmail, teamList) => {
@@ -87,20 +82,17 @@ export function TeamProvider({ children, bootData }) {
   const resolveRole = useCallback((teamId, membershipsMap, userEmail, teamObj) => {
     const membership = membershipsMap[teamId];
     if (membership) return membership.role;
-    // Legacy fallback: check Team.members array
     if (teamObj?.created_by === userEmail) return 'admin';
     const legacyMember = teamObj?.members?.find(m => m.email === userEmail);
     return legacyMember?.role || 'player';
   }, []);
 
   const loadData = useCallback(async (freshTeam = null) => {
-    console.log('[TeamContext] loadData start');
     try {
       let u;
       try {
         u = await base44.auth.me();
       } catch (authErr) {
-        console.warn('loadData: auth.me 401 – redirecting to login');
         setLoading(false);
         base44.auth.redirectToLogin(window.location.href);
         return;
@@ -134,7 +126,6 @@ export function TeamProvider({ children, bootData }) {
         null;
 
       if (selected) {
-        console.log('[TeamContext] team selected:', selected.name);
         localStorage.setItem('idrettsøkonomi_team_id', selected.id);
         const role = resolveRole(selected.id, membershipsMap, u.email, selected);
         setCurrentTeamRole(role);
@@ -145,39 +136,33 @@ export function TeamProvider({ children, bootData }) {
       } else {
         setCurrentTeam(null);
         setCurrentTeamRole('player');
-        // AuthGate already handles the no-team redirect — don't do it again here.
       }
     } catch (e) {
       if (!e?.message?.includes('Authentication')) {
         console.error('[TeamContext] loadData error:', e);
       }
-      setStatus('error');
     } finally {
-      console.log('[TeamContext] loadData done');
       setLoading(false);
-      setStatus(prev => prev === 'error' ? 'error' : 'ready');
     }
   }, [loadMemberships, resolveRole]);
 
   useEffect(() => {
     if (bootData) {
-      // State already initialized synchronously from bootData — just fetch player profile
+      // State already initialized synchronously — just fetch player profile
       const sel = bootData.teams?.length > 0
         ? (bootData.teams.find(t => t.id === (typeof localStorage !== 'undefined' ? localStorage.getItem('idrettsøkonomi_team_id') : null)) || bootData.teams[0])
         : null;
       const userEmail = bootData.user?.email;
       if (sel && userEmail) {
-        console.log('[TeamProvider] fetching player profile for', sel.name);
         base44.entities.Player.filter({ team_id: sel.id, user_email: userEmail })
           .then(players => { if (players.length > 0) setPlayerProfile(players[0]); })
           .catch(() => {});
       }
     } else {
-      console.log('[TeamProvider] no bootData, running loadData()');
       loadData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // run once on mount only
+  }, []);
 
   const selectTeam = async (team) => {
     setCurrentTeam(team);
@@ -216,7 +201,6 @@ export function TeamProvider({ children, bootData }) {
       .catch(() => {});
   };
 
-  // Legacy helpers for backward compatibility
   const isTeamAdmin = (team = currentTeam) => {
     if (!team || !user) return false;
     const role = resolveRole(team.id, myMemberships, user.email, team);
@@ -238,7 +222,6 @@ export function TeamProvider({ children, bootData }) {
     <TeamContext.Provider value={{
       currentTeam,
       teams,
-      status,
       loading,
       user,
       playerProfile,
@@ -262,7 +245,16 @@ export function TeamProvider({ children, bootData }) {
 export function useTeam() {
   const ctx = useContext(TeamContext);
   if (!ctx) {
-    throw new Error('[useTeam] Called outside TeamProvider — this is a bug. Ensure all components using useTeam() are mounted inside TeamProvider.');
+    // Safe stub — prevents hard crash if a component is rendered outside the provider in an edge case
+    console.error('[useTeam] Called outside TeamProvider');
+    return {
+      currentTeam: null, teams: [], loading: true, user: null,
+      playerProfile: null, isAdmin: false, currentTeamRole: 'player',
+      myMemberships: {}, selectTeam: () => {}, refreshTeams: () => {},
+      refreshTeamMembers: () => {}, refreshPlayerProfile: () => {},
+      loadData: () => {}, isTeamAdmin: () => false,
+      getUserTeamRole: () => 'player', canViewFinance: () => false,
+    };
   }
   return ctx;
 }
