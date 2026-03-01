@@ -68,10 +68,8 @@ export default function Onboarding() {
 
       toast.success('Lag opprettet!', { id: 'ct' });
       localStorage.setItem('idrettsøkonomi_team_id', newTeam.id);
-      // Clear boot cache so AuthGate re-fetches teams (picks up the new one)
-      // These are module-level vars in Layout.js; we can't import them, so a full
-      // hard navigation is the cleanest way to force a fresh boot.
-      window.location.replace('/?page=Dashboard');
+      // Force a fresh boot so AuthGate re-fetches teams and picks up the new one
+      window.location.replace('/Dashboard');
     } catch (err) {
       console.error('[Onboarding] Team creation failed', err);
       const msg = err?.response?.data?.message || err?.message || 'Ukjent feil';
