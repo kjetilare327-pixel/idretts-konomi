@@ -188,43 +188,7 @@ export default function BankReconciliation() {
         </CardContent>
       </Card>
 
-      {/* Unreconciled Transactions */}
-      {unreconciledTx.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Uavstemt transaksjoner ({unreconciledTx.length})</CardTitle>
-            <CardDescription>Transaksjoner som ikke er avstemt mot bankkontoutskrift</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Dato</TableHead>
-                  <TableHead>Kategori</TableHead>
-                  <TableHead>Beskrivelse</TableHead>
-                  <TableHead className="text-right">Beløp</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {unreconciledTx.map(tx => (
-                  <TableRow key={tx.id}>
-                    <TableCell>{new Date(tx.date).toLocaleDateString('nb-NO')}</TableCell>
-                    <TableCell>
-                      <Badge variant={tx.type === 'income' ? 'default' : 'secondary'}>
-                        {tx.category}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate">{tx.description}</TableCell>
-                    <TableCell className={`text-right font-medium ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                      {tx.type === 'income' ? '+' : '-'}{tx.amount.toLocaleString('nb-NO')} kr
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
+
 
       {/* Bank Transactions History */}
       <Card>
