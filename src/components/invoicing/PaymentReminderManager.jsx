@@ -117,13 +117,18 @@ export default function PaymentReminderManager({ teamId, autoRemindersEnabled, o
             </p>
           </div>
           <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800">
-            <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Automatisk purring</p>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-emerald-600 border-emerald-600">
-                Aktiv
-              </Badge>
-              <span className="text-xs text-slate-500">Hver 7. dag</span>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mb-1 font-medium">Automatisk purring</p>
+            <div className="flex items-center gap-3 mt-1">
+              <Switch
+                checked={!!autoRemindersEnabled}
+                onCheckedChange={onToggleAutoReminders}
+                id="auto-reminder-toggle"
+              />
+              <Label htmlFor="auto-reminder-toggle" className="text-sm cursor-pointer">
+                {autoRemindersEnabled ? 'På' : 'Av'}
+              </Label>
             </div>
+            <p className="text-xs text-slate-500 mt-1">Sendes hver 7. dag</p>
           </div>
         </div>
 
