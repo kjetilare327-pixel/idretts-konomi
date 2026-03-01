@@ -3,8 +3,10 @@ import { differenceInDays } from 'date-fns';
 import { AlertTriangle, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default function SubscriptionBanner({ team }) {
+export default function SubscriptionBanner({ team, userRole }) {
   if (!team) return null;
+  // Only admins need to worry about subscription costs
+  if (userRole && userRole !== 'admin') return null;
 
   const status = team.subscription_status || 'trial';
   const trialEnd = team.trial_end_date ? new Date(team.trial_end_date) : null;
@@ -25,7 +27,7 @@ export default function SubscriptionBanner({ team }) {
         : 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/20',
       text: daysLeft <= 3 ? 'text-amber-800 dark:text-amber-300' : 'text-blue-800 dark:text-blue-300',
       label: `Prøveperiode – ${Math.max(daysLeft, 0)} dager igjen`,
-      desc: daysLeft <= 3 ? 'Prøveperioden din utløper snart.' : '14-dagers gratis prøveperiode aktiv.'
+      desc: daysLeft <= 3 ? 'Prøveperioden din utløper snart.' : '30-dagers gratis prøveperiode aktiv.'
     },
     expired: {
       icon: XCircle,

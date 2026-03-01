@@ -64,7 +64,7 @@ export default function Onboarding() {
     toast.loading('Oppretter lag…', { id: 'ct' });
 
     try {
-      const trialEnd = format(addDays(new Date(), 14), 'yyyy-MM-dd');
+      const trialEnd = format(addDays(new Date(), 30), 'yyyy-MM-dd');
       const user = await base44.auth.me();
 
       if (!user) {
