@@ -163,44 +163,7 @@ export default function Dashboard() {
         <SetupProgress completedSteps={completedSteps} onDismiss={() => setShowSetup(false)} />
       )}
 
-      {/* Outstanding claims – top 5 */}
-      {isAdmin && unpaidClaims.length > 0 && (
-        <Card className="border-0 shadow-md dark:bg-slate-900">
-          <CardHeader className="pb-3 flex flex-row items-center justify-between">
-            <CardTitle className="text-base font-semibold">Utestående krav</CardTitle>
-            <Link to={createPageUrl('Players')}>
-              <Button variant="ghost" size="sm" className="gap-1 text-emerald-600 hover:text-emerald-700">
-                Se alle <ArrowRight className="w-3.5 h-3.5" />
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="divide-y dark:divide-slate-800">
-              {unpaidClaims.map(claim => {
-                const isOverdue = claim.status === 'overdue' || (claim.due_date && new Date(claim.due_date) < new Date());
-                return (
-                  <div key={claim.id} className="flex items-center justify-between py-2.5">
-                    <div>
-                      <p className="text-sm font-medium">{claim.description || claim.type}</p>
-                      <p className="text-xs text-slate-400">
-                        Forfall: {claim.due_date ? new Date(claim.due_date).toLocaleDateString('nb-NO') : '–'}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className={`text-sm font-semibold ${isOverdue ? 'text-red-500' : 'text-slate-700 dark:text-slate-200'}`}>
-                        {formatNOK(claim.amount)}
-                      </p>
-                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${isOverdue ? 'bg-red-100 text-red-600 dark:bg-red-500/10' : 'bg-amber-100 text-amber-700 dark:bg-amber-500/10'}`}>
-                        {isOverdue ? 'Forfalt' : 'Ubetalt'}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
       </div>
     </PullToRefresh>
   );
