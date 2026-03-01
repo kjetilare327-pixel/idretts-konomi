@@ -516,7 +516,7 @@ export default function SettingsPage() {
           <DialogHeader>
             <DialogTitle className="text-red-600">Slett {currentTeam.name}?</DialogTitle>
             <DialogDescription>
-              Dette vil permanent slette laget, alle transaksjoner og budsjett. Denne handlingen kan ikke angres.
+              Dette vil permanent slette laget og ALL tilknyttet data (transaksjoner, spillere, krav, arrangementer, budsjett osv.). Denne handlingen kan ikke angres.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 pt-2">
