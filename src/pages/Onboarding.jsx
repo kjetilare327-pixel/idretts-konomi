@@ -104,11 +104,13 @@ export default function Onboarding() {
   };
 
   const handleJoin = async () => {
+    console.log('[Onboarding] handleJoin called', { joinCode, joining });
     if (!joinCode.trim()) { toast.error('Skriv inn lagkoden.'); return; }
-    if (joining) return;
+    if (joining) { console.log('[Onboarding] Already joining'); return; }
 
     setJoining(true);
     toast.loading('Sjekker kode…', { id: 'jt' });
+    console.log('[Onboarding] Invoking joinTeamByCode', { join_code: joinCode.trim(), role: joinRole });
 
     try {
       const res = await base44.functions.invoke('joinTeamByCode', { join_code: joinCode.trim(), role: joinRole });
