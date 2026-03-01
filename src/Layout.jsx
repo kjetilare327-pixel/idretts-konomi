@@ -111,12 +111,23 @@ function NavLink({ item, active, darkMode, onClick }) {
 function AppLayout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try { return localStorage.getItem('sidebar_collapsed') === 'true'; } catch { return false; }
+  });
   const { currentTeam, teams, selectTeam, user, currentTeamRole } = useTeam();
   const { darkMode, toggleDark } = useTheme();
   const navigate = useNavigate();
   const isChildRoute = !ROOT_PAGES.includes(currentPageName);
   const userRole = currentTeamRole || 'player';
   const activeAdvanced = ADVANCED_NAV.some(i => i.page === currentPageName);
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(v => {
+      const next = !v;
+      try { localStorage.setItem('sidebar_collapsed', String(next)); } catch {}
+      return next;
+    });
+  };
 
   const handleLogout = () => {
     invalidateSessionCache();
