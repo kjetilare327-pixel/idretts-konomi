@@ -115,8 +115,10 @@ export default function Onboarding() {
     try {
       const res = await base44.functions.invoke('joinTeamByCode', { join_code: joinCode.trim(), role: joinRole });
       const data = res.data;
+      console.log('[Onboarding] joinTeamByCode response', data);
 
       if (data.error) {
+        console.error('[Onboarding] API returned error', data.error);
         toast.error(data.error, { id: 'jt' });
         setJoining(false);
         return;
@@ -124,9 +126,11 @@ export default function Onboarding() {
 
       toast.success(data.already_member ? `Du er allerede med i ${data.team_name}!` : `Du er nå med i ${data.team_name}!`, { id: 'jt' });
       localStorage.setItem('idrettsøkonomi_team_id', data.team_id);
+      console.log('[Onboarding] Redirecting to Dashboard');
       window.location.replace('/Dashboard');
     } catch (err) {
-      console.error('[Onboarding] Join failed', err);
+      console.error('[Onboarding] Join failed', err?.message || err);
+      console.log('[Onboarding] Full error object', err);
       toast.error('Feil: ' + (err?.response?.data?.error || err?.message || 'Ugyldig kode'), { id: 'jt' });
       setJoining(false);
     }
