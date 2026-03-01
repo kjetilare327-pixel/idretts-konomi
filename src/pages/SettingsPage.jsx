@@ -258,6 +258,68 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Join code */}
+      {currentTeamRole === 'admin' && (
+        <Card className="border-0 shadow-md dark:bg-slate-900">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="w-4 h-4 text-emerald-500" /> Lagkode for selvinnmelding
+            </CardTitle>
+            <CardDescription>Del denne koden med spillere og foreldre så de kan melde seg inn selv</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+              <div className="flex-1">
+                <p className="text-xs text-slate-500 mb-1">Lagkode</p>
+                <p className="text-3xl font-mono font-bold tracking-widest text-emerald-600">{currentTeam.join_code || '—'}</p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => {
+                    navigator.clipboard.writeText(currentTeam.join_code || '');
+                    alert('Kode kopiert!');
+                  }}
+                  disabled={!currentTeam.join_code}
+                >
+                  <Copy className="w-3.5 h-3.5" /> Kopier
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-2"
+                  onClick={async () => {
+                    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                    let code = '';
+                    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+                    await base44.entities.Team.update(currentTeam.id, { join_code: code });
+                    await refreshTeams();
+                  }}
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Ny kode
+                </Button>
+              </div>
+            </div>
+            {!currentTeam.join_code && (
+              <Button
+                className="bg-emerald-600 hover:bg-emerald-700 gap-2"
+                onClick={async () => {
+                  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                  let code = '';
+                  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+                  await base44.entities.Team.update(currentTeam.id, { join_code: code });
+                  await refreshTeams();
+                }}
+              >
+                <RefreshCw className="w-4 h-4" /> Generer lagkode
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Privacy settings */}
       <Card className="border-0 shadow-md dark:bg-slate-900">
         <CardHeader>
