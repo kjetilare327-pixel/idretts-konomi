@@ -3,7 +3,16 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    
+
+    // Allow scheduled (automation) calls without user auth; reject non-admin manual calls
+    const isAuthenticated = await base44.auth.isAuthenticated().catch(() => false);
+    if (isAuthenticated) {
+      const user = await base44.auth.me().catch(() => null);
+      if (user && user.role !== 'admin') {
+        return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+      }
+    }
+
     // Hent alle aktive fakturaplaner
     const schedules = await base44.asServiceRole.entities.InvoiceSchedule.filter({ is_active: true });
     
