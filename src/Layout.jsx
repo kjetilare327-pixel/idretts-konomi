@@ -329,9 +329,6 @@ function AppLayout({ children, currentPageName }) {
               <button onClick={toggleDark} className="text-sm flex items-center gap-2 px-3 py-2">
                 {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />} {darkMode ? 'Lyst' : 'Mørkt'}
               </button>
-              <button onClick={handleLogout} className="text-sm flex items-center gap-2 px-3 py-2 text-red-500">
-                <LogOut className="w-4 h-4" /> Logg ut
-              </button>
             </div>
           </div>
         )}
