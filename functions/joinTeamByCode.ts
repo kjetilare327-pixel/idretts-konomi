@@ -20,9 +20,17 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Ugyldig rolle. Velg player eller forelder.' }, { status: 400 });
     }
 
-    // Find team by join_code (case-insensitive)
-    const allTeams = await base44.asServiceRole.entities.Team.list();
-    const team = allTeams.find(t => t.join_code && t.join_code.toUpperCase() === join_code.trim().toUpperCase());
+    // Find team by join_code - use filter with paginating through results
+    let team = null;
+    let offset = 0;
+    const pageSize = 100;
+    while (!team) {
+      const teams = await base44.asServiceRole.entities.Team.list('id', pageSize, offset).catch(() => []);
+      if (teams.length === 0) break;
+      team = teams.find(t => t.join_code && t.join_code.toUpperCase() === join_code.trim().toUpperCase());
+      if (!team && teams.length < pageSize) break;
+      offset += pageSize;
+    }
 
     if (!team) {
       return Response.json({ error: 'Ugyldig kode. Sjekk koden og prøv igjen.' }, { status: 404 });
