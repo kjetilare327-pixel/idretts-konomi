@@ -27,15 +27,17 @@ import {
   DropdownMenuTrigger, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
-// ─── Module-level session cache ───────────────────────────────────────────────
-// Survives component remounts (page navigation), so boot only runs ONCE per session.
-let _sessionCache = null; // { bootData, status: 'authed'|'guest' }
+// ─── Module-level session cache (survives page navigations) ──────────────────
+// { bootData, lastFetch: timestamp }  — cleared on logout or explicit invalidate
+let _sessionCache = null;
 
 export function invalidateSessionCache() {
   _sessionCache = null;
 }
 
-// Pages that render standalone — no auth gate, no sidebar
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+// Pages that render standalone (no auth gate, no sidebar)
 const NO_LAYOUT_PAGES = new Set(['Onboarding', 'GdprConsent', 'TermsOfService']);
 const ROOT_PAGES = ['Dashboard', 'PaymentPortal', 'Players', 'Reports', 'SettingsPage'];
 
@@ -69,7 +71,10 @@ function FullScreenLoader({ timedOut, onRetry }) {
       {timedOut ? (
         <>
           <p style={{ color: '#ef4444', fontSize: '0.875rem', marginBottom: 16 }}>Tilkoblingen tok for lang tid.</p>
-          <button onClick={onRetry} style={{ background: '#059669', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, cursor: 'pointer' }}>
+          <button
+            onClick={() => { invalidateSessionCache(); window.location.reload(); }}
+            style={{ background: '#059669', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, cursor: 'pointer' }}
+          >
             Prøv igjen
           </button>
         </>
@@ -112,6 +117,11 @@ function AppLayout({ children, currentPageName }) {
   const isChildRoute = !ROOT_PAGES.includes(currentPageName);
   const userRole = currentTeamRole || 'player';
   const activeAdvanced = ADVANCED_NAV.some(i => i.page === currentPageName);
+
+  const handleLogout = () => {
+    invalidateSessionCache();
+    base44.auth.logout();
+  };
 
   return (
     <div className={`h-screen flex overflow-hidden ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
@@ -199,10 +209,7 @@ function AppLayout({ children, currentPageName }) {
             {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             {darkMode ? 'Lyst tema' : 'Mørkt tema'}
           </button>
-          <button
-            onClick={() => { invalidateSessionCache(); base44.auth.logout(); }}
-            className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm ${darkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}
-          >
+          <button onClick={handleLogout} className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm ${darkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}>
             <LogOut className="w-4 h-4" /> Logg ut
           </button>
         </div>
@@ -261,10 +268,7 @@ function AppLayout({ children, currentPageName }) {
               <button onClick={toggleDark} className="text-sm flex items-center gap-2 px-3 py-2">
                 {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />} {darkMode ? 'Lyst' : 'Mørkt'}
               </button>
-              <button
-                onClick={() => { invalidateSessionCache(); base44.auth.logout(); }}
-                className="text-sm flex items-center gap-2 px-3 py-2 text-red-500"
-              >
+              <button onClick={handleLogout} className="text-sm flex items-center gap-2 px-3 py-2 text-red-500">
                 <LogOut className="w-4 h-4" /> Logg ut
               </button>
             </div>
@@ -296,18 +300,25 @@ function AppLayout({ children, currentPageName }) {
 }
 
 // ─── AuthGate ─────────────────────────────────────────────────────────────────
-// Uses module-level _sessionCache so the expensive boot fetch only runs ONCE
-// per browser session, not on every page navigation.
+//
+// Flow:
+//   1. Check module-level cache (fresh < 5 min) → skip boot, go straight to authed
+//   2. If not cached: check auth → if not authed, redirect to login (no next URL)
+//   3. If authed: fetch teams → if no teams, redirect to /Onboarding
+//   4. If has teams: render app
+//
+// The key insight: we NEVER pass a next URL to redirectToLogin, so Base44 will
+// land the user at the app root after login. AuthGate then decides where to go.
+//
 function AuthGate({ children, currentPageName }) {
-  // If cache already populated, start in 'authed' immediately — no flicker
-  const [status, setStatus]     = useState(() => _sessionCache?.status || 'loading');
-  const [bootData, setBootData] = useState(() => _sessionCache?.bootData || null);
+  const cacheValid = _sessionCache && (Date.now() - _sessionCache.lastFetch < CACHE_TTL_MS);
+
+  const [status, setStatus]     = useState(() => cacheValid ? 'authed' : 'loading');
+  const [bootData, setBootData] = useState(() => cacheValid ? _sessionCache.bootData : null);
   const [timedOut, setTimedOut] = useState(false);
   const bootingRef  = useRef(false);
-  const redirectRef = useRef(false);
 
   const boot = useCallback(async () => {
-    // Never run two boots concurrently
     if (bootingRef.current) return;
     bootingRef.current = true;
 
@@ -315,15 +326,14 @@ function AuthGate({ children, currentPageName }) {
       const authenticated = await base44.auth.isAuthenticated().catch(() => false);
 
       if (!authenticated) {
-        _sessionCache = { status: 'guest', bootData: null };
-        setStatus('guest');
+        // Not logged in → go to login with NO next URL to avoid from_url loops
+        window.location.replace('/login');
         return;
       }
 
       const user = await base44.auth.me().catch(() => null);
       if (!user) {
-        _sessionCache = { status: 'guest', bootData: null };
-        setStatus('guest');
+        window.location.replace('/login');
         return;
       }
 
@@ -343,59 +353,48 @@ function AuthGate({ children, currentPageName }) {
       }
 
       const data = { user, teams: [...byId.values()], memberTeams: memberRecords };
-      _sessionCache = { status: 'authed', bootData: data };
+
+      // New user with no teams → send to Onboarding
+      if (data.teams.length === 0) {
+        window.location.replace('/Onboarding');
+        return;
+      }
+
+      _sessionCache = { bootData: data, lastFetch: Date.now() };
       setBootData(data);
       setStatus('authed');
     } catch (err) {
       console.error('[AuthGate] boot error:', err?.message);
-      // Don't cache errors — allow retry
       _sessionCache = null;
-      setStatus('guest');
+      // On unknown error, show loader with retry — don't redirect blindly
+      setTimedOut(true);
     } finally {
       bootingRef.current = false;
     }
   }, []);
 
   useEffect(() => {
-    // Cache hit — already rendered in correct state, nothing to do
-    if (_sessionCache) return;
+    if (cacheValid) return; // already authed from cache
     boot();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Timeout only when actually loading
+  // Timeout guard
   useEffect(() => {
     if (status !== 'loading') return;
     const id = setTimeout(() => setTimedOut(true), 12000);
     return () => clearTimeout(id);
   }, [status]);
 
-  // Guest → redirect, one-shot
-  useEffect(() => {
-    if (status !== 'guest') return;
-    if (redirectRef.current) return;
-    redirectRef.current = true;
-    // Redirect to login; after login, come back to root so AuthGate
-    // can decide where to send the user (Dashboard or Onboarding)
-    base44.auth.redirectToLogin(window.location.origin + '/Dashboard');
-  }, [status]);
-
   const retry = () => {
-    _sessionCache = null;
+    invalidateSessionCache();
     bootingRef.current = false;
-    redirectRef.current = false;
     setStatus('loading');
     setTimedOut(false);
     boot();
   };
 
-  if (status === 'loading' || status === 'guest') {
+  if (status !== 'authed') {
     return <FullScreenLoader timedOut={timedOut} onRetry={retry} />;
-  }
-
-  // New user with no teams → send to Onboarding (unless already there)
-  if ((bootData?.teams?.length ?? 0) === 0 && currentPageName !== 'Onboarding') {
-    window.location.replace('/?page=Onboarding');
-    return <FullScreenLoader />;
   }
 
   return (
@@ -412,6 +411,7 @@ export default function Layout({ children, currentPageName }) {
     : null;
   const effectivePage = urlPage || currentPageName || '';
 
+  // Standalone pages — no auth, no sidebar
   if (NO_LAYOUT_PAGES.has(effectivePage)) {
     return (
       <ErrorBoundary>
