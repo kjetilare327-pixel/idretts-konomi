@@ -30,9 +30,7 @@ async function runAnalysisForTeam(base44, team_id) {
   const lastMonthExpense = lastMonthTx.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
 
   const budgetVariances = budgets.map(b => {
-    const actual = thisMonthTx
-      .filter(t => t.category === b.category && t.type === b.type)
-      .reduce((sum, t) => sum + t.amount, 0);
+    const actual = thisMonthTx.filter(t => t.category === b.category && t.type === b.type).reduce((sum, t) => sum + t.amount, 0);
     const variance = actual - b.monthly_amount;
     const percentUsed = b.monthly_amount > 0 ? (actual / b.monthly_amount * 100) : 0;
     return { category: b.category, type: b.type, budgeted: b.monthly_amount, actual, variance, percentUsed };
@@ -113,46 +111,49 @@ Gi 3-5 konkrete, prioriterte anbefalinger. Vær spesifikk med tall og kategorier
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    // Support both scheduled (no auth, no body) and manual invocation (with team_id)
+
+    // Parse body (may be empty for scheduled runs)
     let team_id = null;
     try {
       const body = await req.json();
       team_id = body?.team_id || null;
-    } catch (_) {
-      // No body — running as scheduled automation
-    }
+    } catch (_) {}
 
-    // If called from frontend, require auth
     const isScheduled = !team_id;
-    if (!isScheduled) {
-      const user = await base44.auth.me();
-      if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
-    // Scheduled: run for all teams inline (no re-invocation to avoid 403)
-    if (isScheduled) {
-      const allTeams = await base44.asServiceRole.entities.Team.list();
-      const results = [];
-      for (const team of allTeams) {
-        try {
-          await runAnalysisForTeam(base44, team.id);
-          results.push({ team_id: team.id, team_name: team.name, status: 'ok' });
-        } catch (err) {
-          console.error(`Failed for team ${team.id}:`, err.message);
-          results.push({ team_id: team.id, team_name: team.name, status: 'error', error: err.message });
+    if (!isScheduled) {
+      // Manual call from frontend — require auth + team role
+      const user = await base44.auth.me().catch(() => null);
+      if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+      if (user.role !== 'admin') {
+        const membership = await base44.asServiceRole.entities.TeamMember.filter({ team_id, user_email: user.email.toLowerCase() });
+        const allowedRoles = ['admin', 'kasserer', 'styreleder', 'revisor'];
+        if (!membership.length || !allowedRoles.includes(membership[0].role)) {
+          return Response.json({ error: 'Forbidden: Insufficient permissions' }, { status: 403 });
         }
       }
-      return Response.json({ success: true, scheduled_run: true, results });
+
+      const result = await runAnalysisForTeam(base44, team_id);
+      return Response.json({ success: true, ...result });
     }
 
-    // Single team analysis (called from frontend)
-    const result = await runAnalysisForTeam(base44, team_id);
-    return Response.json({ success: true, ...result });
+    // Scheduled: run for all teams
+    const allTeams = await base44.asServiceRole.entities.Team.list();
+    const results = [];
+    for (const team of allTeams) {
+      try {
+        await runAnalysisForTeam(base44, team.id);
+        results.push({ team_id: team.id, team_name: team.name, status: 'ok' });
+      } catch (err) {
+        console.error(`Failed for team ${team.id}:`, err.message);
+        results.push({ team_id: team.id, team_name: team.name, status: 'error', error: err.message });
+      }
+    }
+    return Response.json({ success: true, scheduled_run: true, results });
 
   } catch (error) {
     console.error('Error analyzing financials:', error);
-    return Response.json({ 
-      error: error.message 
-    }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500 });
   }
 });
