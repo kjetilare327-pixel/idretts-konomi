@@ -26,13 +26,6 @@ export default function BankReconciliation() {
     retry: 1,
   });
 
-  const { data: unreconciledTx = [], isError: txError } = useQuery({
-    queryKey: ['unreconciledTransactions', currentTeam?.id],
-    queryFn: () => withTimeout(base44.entities.Transaction.filter({ team_id: currentTeam.id, reconciled: 'unreconciled' }, '-date', 100)),
-    enabled: !!currentTeam,
-    retry: 1,
-  });
-
   const { data: claims = [], isError: claimsError } = useQuery({
     queryKey: ['claims', currentTeam?.id],
     queryFn: () => withTimeout(base44.entities.Claim.filter({ team_id: currentTeam.id }, '-created_date', 100)),
