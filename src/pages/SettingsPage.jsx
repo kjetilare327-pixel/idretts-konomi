@@ -378,6 +378,58 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Push notifications */}
+      <Card className="border-0 shadow-md dark:bg-slate-900">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Bell className="w-4 h-4 text-emerald-500" /> Push-varsler
+          </CardTitle>
+          <CardDescription>Styrer nettleservarsler for betalinger og arrangementer</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+            <div>
+              <p className="font-medium text-sm">Status: {pushEnabled ? <span className="text-emerald-600">På</span> : <span className="text-slate-500">Av</span>}</p>
+              <p className="text-xs text-slate-500 mt-1">{pushEnabled ? 'Du mottar push-varsler' : 'Push-varsler er deaktivert'}</p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-2"
+              onClick={() => {
+                if (pushEnabled) {
+                  localStorage.setItem('push_notifications_enabled', 'false');
+                  localStorage.setItem('push_prompt_dismissed', 'true');
+                  setPushEnabled(false);
+                  toast.success('Push-varsler deaktivert');
+                } else {
+                  localStorage.setItem('push_prompt_dismissed', 'false');
+                  setPushDismissed(false);
+                  toast.info('Gå til forsiden for å aktivere push-varsler');
+                }
+              }}
+            >
+              {pushEnabled ? <><BellOff className="w-4 h-4" /> Deaktiver</> : <><Bell className="w-4 h-4" /> Aktiver</>}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Logout */}
+      <Card className="border-0 shadow-md dark:bg-slate-900">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <LogOut className="w-4 h-4 text-slate-500" /> Logg ut
+          </CardTitle>
+          <CardDescription>Avslutt økten og logg ut av applikasjonen</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="outline" onClick={() => { localStorage.clear(); base44.auth.logout(); }} className="gap-2">
+            <LogOut className="w-4 h-4" /> Logg ut
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Delete account */}
       <Card className="border-0 shadow-md border-red-200 dark:border-red-500/20 dark:bg-slate-900">
         <CardHeader>
