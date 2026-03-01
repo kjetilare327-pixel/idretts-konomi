@@ -17,10 +17,11 @@ import { Calendar, DollarSign, Plus, Play, Pause, Settings, Send, CheckCircle2 }
 import { formatNOK } from '../components/shared/FormatUtils';
 
 export default function InvoiceAutomation() {
-  const { currentTeam, isTeamAdmin } = useTeam();
+  const { currentTeam, isTeamAdmin, refreshTeams } = useTeam();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [running, setRunning] = useState(false);
+  const [togglingReminders, setTogglingReminders] = useState(false);
   const [form, setForm] = useState({
     name: '',
     type: 'kontingent',
