@@ -152,6 +152,11 @@ export default function PushNotifications() {
     localStorage.getItem('push_prompt_dismissed') === 'true'
   );
 
+  const dismiss = () => {
+    setDismissed(true);
+    localStorage.setItem('push_prompt_dismissed', 'true');
+  };
+
   if (dismissed) return null;
 
   if (!enabled || permission !== 'granted') {
@@ -165,15 +170,17 @@ export default function PushNotifications() {
               <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">
                 Få varsler om betalinger, arrangementer og dugnader
               </p>
-              <Button size="sm" onClick={requestPermission} className="gap-2">
-                <Bell className="w-4 h-4" />
-                Aktiver varsler
-              </Button>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={async () => { await requestPermission(); dismiss(); }} className="gap-2">
+                  <Bell className="w-4 h-4" />
+                  Tillat
+                </Button>
+                <Button size="sm" variant="ghost" onClick={dismiss} className="text-slate-500">
+                  Ikke nå
+                </Button>
+              </div>
             </div>
-            <button
-              onClick={() => { setDismissed(true); localStorage.setItem('push_prompt_dismissed', 'true'); }}
-              className="text-slate-400 hover:text-slate-600 shrink-0 -mt-1 -mr-1"
-            >
+            <button onClick={dismiss} className="text-slate-400 hover:text-slate-600 shrink-0 -mt-1 -mr-1">
               <X className="w-4 h-4" />
             </button>
           </div>

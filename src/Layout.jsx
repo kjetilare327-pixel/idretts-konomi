@@ -13,7 +13,7 @@ import { base44 } from '@/api/base44Client';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import {
   LayoutDashboard, Receipt, PiggyBank, FileBarChart, Settings, Menu, X,
-  Sun, Moon, ChevronDown, ChevronRight, LogOut, Shield, Users, ScrollText,
+  Sun, Moon, ChevronDown, ChevronRight, Shield, Users, ScrollText,
   Mail, Sparkles, ArrowLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
