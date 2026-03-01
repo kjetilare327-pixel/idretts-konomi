@@ -315,7 +315,7 @@ function AppLayout({ children, currentPageName }) {
       </div>
 
       {/* Main content */}
-      <main className="flex-1 lg:ml-64 min-h-0 overflow-y-auto" style={{ paddingTop: 'calc(3.5rem + env(safe-area-inset-top))' }}>
+      <main className={`flex-1 min-h-0 overflow-y-auto transition-all duration-200 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`} style={{ paddingTop: 'calc(3.5rem + env(safe-area-inset-top))' }}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={currentPageName}
