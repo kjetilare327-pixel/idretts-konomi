@@ -154,7 +154,7 @@ export default function Dashboard() {
           <StatCard title="Total saldo" value={formatNOK(stats.balance)} icon={Wallet} variant={stats.balance >= 0 ? 'green' : 'red'} />
           <StatCard title="Inntekter denne mnd" value={formatNOK(stats.monthIncome)} icon={TrendingUp} variant="green" />
           <StatCard title="Utgifter denne mnd" value={formatNOK(stats.monthExpense)} icon={TrendingDown} variant="red" />
-          <StatCard title="Utestående krav" value={formatNOK(totalOutstanding)} subtitle={`${claims.filter(c => c.status === 'pending' || c.status === 'overdue').length} krav`} icon={AlertCircle} variant="orange" />
+
         </div>
       )}
 
