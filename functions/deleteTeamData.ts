@@ -18,8 +18,8 @@ Deno.serve(async (req) => {
     if (!team_id) return Response.json({ error: 'team_id required' }, { status: 400 });
 
     // Verify the user is an admin of this team
-    const team = await base44.entities.Team.filter({ id: team_id }).catch(() => []);
-    const teamObj = Array.isArray(team) ? team[0] : team;
+    const teams = await base44.entities.Team.filter({ id: team_id }).catch(() => []);
+    const teamObj = Array.isArray(teams) ? teams[0] : teams;
     if (!teamObj) return Response.json({ error: 'Team not found' }, { status: 404 });
 
     const isCreator = teamObj.created_by === user.email;
@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
 
     const results = {};
 
-    // Delete all related entities
+    // Delete all related entities (use service role for broad deletion)
     for (const entityName of TEAM_ENTITIES) {
       try {
         const records = await base44.asServiceRole.entities[entityName].filter({ team_id }).catch(() => []);
@@ -44,14 +44,27 @@ Deno.serve(async (req) => {
         }
         results[entityName] = deleted;
       } catch (e) {
+        console.error(`Error deleting ${entityName}:`, e.message);
         results[entityName] = `error: ${e.message}`;
       }
     }
 
-    // Finally delete the team itself
-    await base44.asServiceRole.entities.Team.delete(team_id);
+    // Finally, delete the team itself (verify ownership again before deletion)
+    if (isCreator) {
+      // Creator can always delete
+      await base44.asServiceRole.entities.Team.delete(team_id).catch(err => {
+        console.error('Error deleting Team:', err.message);
+        throw err;
+      });
+    } else if (isAdminMember || isTeamMemberAdmin) {
+      // Non-creator admin: use regular user-scoped delete (RLS-controlled)
+      await base44.entities.Team.delete(team_id).catch(err => {
+        console.error('Error deleting Team:', err.message);
+        throw err;
+      });
+    }
 
-    return Response.json({ success: true, deleted: results });
+    return Response.json({ success: true, team_deleted: true, deleted: results });
   } catch (error) {
     console.error('deleteTeamData error:', error);
     return Response.json({ error: error.message }, { status: 500 });

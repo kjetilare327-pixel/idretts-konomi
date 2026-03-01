@@ -47,17 +47,29 @@ export default function TeamMembersManager() {
       return;
     }
     setInviting(true);
-    await base44.entities.TeamMember.create({
-      team_id: currentTeam.id,
-      user_email: email,
-      role: inviteRole,
-      status: 'invited',
-      invited_by_email: user?.email,
-    });
-    toast.success(`${email} lagt til som ${roleInfo[inviteRole]?.label}`);
-    setInviteEmail('');
-    invalidate();
-    setInviting(false);
+    try {
+      await base44.entities.TeamMember.create({
+        team_id: currentTeam.id,
+        user_email: email,
+        role: inviteRole,
+        status: 'invited',
+        invited_by_email: user?.email,
+      });
+      // Send invitation email
+      await base44.functions.invoke('sendTeamInvitation', {
+        team_id: currentTeam.id,
+        recipient_email: email,
+        role: inviteRole,
+        team_name: currentTeam.name,
+      }).catch(err => {
+        console.warn('Email send failed, but invitation created:', err.message);
+      });
+      toast.success(`${email} lagt til som ${roleInfo[inviteRole]?.label}`);
+      setInviteEmail('');
+      invalidate();
+    } finally {
+      setInviting(false);
+    }
   };
 
   const handleChangeRole = async (memberId, newRole) => {
