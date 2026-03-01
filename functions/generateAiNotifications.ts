@@ -141,16 +141,29 @@ Deno.serve(async (req) => {
     const isScheduled = !team_id;
 
     if (!isScheduled) {
-      // Manual invocation — require auth
-      const user = await base44.auth.me();
-      if (!user || user.role !== 'admin') {
-        return Response.json({ error: 'Unauthorized' }, { status: 403 });
+      // Manual invocation — require auth + admin role
+      const user = await base44.auth.me().catch(() => null);
+      if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      if (user.role !== 'admin') {
+        const membership = await base44.asServiceRole.entities.TeamMember.filter({ team_id, user_email: user.email.toLowerCase() });
+        if (!membership.length || membership[0].role !== 'admin') {
+          return Response.json({ error: 'Forbidden: Admin required' }, { status: 403 });
+        }
       }
       const result = await generateNotificationsForTeam(base44, team_id);
       return Response.json({ success: true, ...result });
     }
 
-    // Scheduled run — iterate all teams
+    // Scheduled run — validate scheduler secret
+    const schedulerSecret = Deno.env.get('SCHEDULER_SECRET');
+    if (schedulerSecret) {
+      const authHeader = req.headers.get('Authorization') || '';
+      if (authHeader !== `Bearer ${schedulerSecret}`) {
+        return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
+    // Iterate all teams
     console.log('Scheduled run: generating notifications for all teams');
     const allTeams = await base44.asServiceRole.entities.Team.list();
     console.log(`Found ${allTeams.length} teams`);

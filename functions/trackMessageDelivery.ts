@@ -10,6 +10,18 @@ Deno.serve(async (req) => {
     const { message_id, status, opened_at } = await req.json();
     if (!message_id || !status) return Response.json({ error: 'message_id and status required' }, { status: 400 });
 
+    // Verify the message belongs to a team the user is admin/kasserer of
+    const message = await base44.asServiceRole.entities.SentMessage.get(message_id);
+    if (!message) return Response.json({ error: 'Message not found' }, { status: 404 });
+
+    if (user.role !== 'admin') {
+      const membership = await base44.asServiceRole.entities.TeamMember.filter({ team_id: message.team_id, user_email: user.email.toLowerCase() });
+      const allowedRoles = ['admin', 'kasserer'];
+      if (!membership.length || !allowedRoles.includes(membership[0].role)) {
+        return Response.json({ error: 'Forbidden: Insufficient permissions' }, { status: 403 });
+      }
+    }
+
     const updateData = { status };
     if (opened_at) updateData.opened_at = opened_at;
 

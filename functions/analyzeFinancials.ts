@@ -138,7 +138,15 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, ...result });
     }
 
-    // Scheduled: run for all teams
+    // Scheduled: validate scheduler secret
+    const schedulerSecret = Deno.env.get('SCHEDULER_SECRET');
+    if (schedulerSecret) {
+      const authHeader = req.headers.get('Authorization') || '';
+      if (authHeader !== `Bearer ${schedulerSecret}`) {
+        return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
     const allTeams = await base44.asServiceRole.entities.Team.list();
     const results = [];
     for (const team of allTeams) {

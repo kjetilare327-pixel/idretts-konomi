@@ -4,19 +4,16 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Allow scheduled (no auth header) or admin/kasserer users
-    const isAuthenticated = await base44.auth.isAuthenticated().catch(() => false);
-    if (isAuthenticated) {
+    // Require either valid scheduler secret (for automations) or authenticated admin/kasserer
+    const schedulerSecret = Deno.env.get('SCHEDULER_SECRET');
+    const authHeader = req.headers.get('Authorization') || '';
+    const isValidScheduler = schedulerSecret && authHeader === `Bearer ${schedulerSecret}`;
+
+    if (!isValidScheduler) {
       const user = await base44.auth.me().catch(() => null);
-      if (user && user.role !== 'admin') {
-        const { team_id } = await req.json().catch(() => ({}));
-        if (team_id) {
-          const membership = await base44.asServiceRole.entities.TeamMember.filter({ team_id, user_email: user.email });
-          const allowedRoles = ['admin', 'kasserer'];
-          if (!membership.length || !allowedRoles.includes(membership[0].role)) {
-            return Response.json({ error: 'Forbidden' }, { status: 403 });
-          }
-        }
+      if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      if (user.role !== 'admin') {
+        return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
       }
     }
 

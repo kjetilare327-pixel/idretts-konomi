@@ -4,7 +4,17 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     
-    // Get all active teams
+    // Require either valid scheduler secret (for automations) or authenticated admin
+    const schedulerSecret = Deno.env.get('SCHEDULER_SECRET');
+    const authHeader = req.headers.get('Authorization') || '';
+    const isValidScheduler = schedulerSecret && authHeader === `Bearer ${schedulerSecret}`;
+
+    if (!isValidScheduler) {
+      const user = await base44.auth.me().catch(() => null);
+      if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      if (user.role !== 'admin') return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+    }
+
     const teams = await base44.asServiceRole.entities.Team.list();
     
     for (const team of teams) {

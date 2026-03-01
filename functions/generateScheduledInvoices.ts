@@ -4,13 +4,15 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Allow scheduled (automation) calls without user auth; reject non-admin manual calls
-    const isAuthenticated = await base44.auth.isAuthenticated().catch(() => false);
-    if (isAuthenticated) {
+    // Require either valid scheduler secret (for automations) or authenticated admin user
+    const schedulerSecret = Deno.env.get('SCHEDULER_SECRET');
+    const authHeader = req.headers.get('Authorization') || '';
+    const isValidScheduler = schedulerSecret && authHeader === `Bearer ${schedulerSecret}`;
+
+    if (!isValidScheduler) {
       const user = await base44.auth.me().catch(() => null);
-      if (user && user.role !== 'admin') {
-        return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
-      }
+      if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      if (user.role !== 'admin') return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
     // Hent alle aktive fakturaplaner
