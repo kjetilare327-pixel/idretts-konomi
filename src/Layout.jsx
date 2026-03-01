@@ -27,11 +27,11 @@ import {
   DropdownMenuTrigger, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
-// Pages rendered without any gate or app chrome
+// Pages that render completely standalone (no sidebar, no auth gate)
 const NO_LAYOUT_PAGES = new Set(['Onboarding', 'GdprConsent', 'TermsOfService']);
 
 // Root pages (for mobile back-button logic)
-const ROOT_PAGES = ['Dashboard','PaymentPortal','Players','Reports','SettingsPage'];
+const ROOT_PAGES = ['Dashboard', 'PaymentPortal', 'Players', 'Reports', 'SettingsPage'];
 
 // ─── Navigation config ────────────────────────────────────────────────────────
 const CORE_NAV = [
@@ -55,38 +55,24 @@ const ADVANCED_NAV = [
 // ─── Shared UI ────────────────────────────────────────────────────────────────
 function FullScreenLoader({ timedOut, onRetry }) {
   return (
-    <div style={{ minHeight:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#f8fafc', fontFamily:'system-ui, sans-serif' }}>
-      <style>{`@keyframes _spin{to{transform:rotate(360deg)}}`}</style>
-      <div style={{ width:52, height:52, borderRadius:14, background:'#059669', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:24 }}>
-        <Shield style={{ width:28, height:28, color:'#fff' }} />
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', fontFamily: 'system-ui, sans-serif' }}>
+      <style>{`@keyframes _spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ width: 52, height: 52, borderRadius: 14, background: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+        <Shield style={{ width: 28, height: 28, color: '#fff' }} />
       </div>
       {timedOut ? (
         <>
-          <p style={{ color:'#ef4444', fontSize:'0.875rem', marginBottom:16 }}>Tilkoblingen tok for lang tid.</p>
-          <button onClick={onRetry} style={{ background:'#059669', color:'#fff', border:'none', borderRadius:8, padding:'10px 24px', fontWeight:600, cursor:'pointer' }}>Prøv igjen</button>
+          <p style={{ color: '#ef4444', fontSize: '0.875rem', marginBottom: 16 }}>Tilkoblingen tok for lang tid.</p>
+          <button onClick={onRetry} style={{ background: '#059669', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, cursor: 'pointer' }}>
+            Prøv igjen
+          </button>
         </>
       ) : (
         <>
-          <div style={{ width:32, height:32, border:'3px solid #d1fae5', borderTopColor:'#059669', borderRadius:'50%', animation:'_spin 0.8s linear infinite', marginBottom:16 }} />
-          <p style={{ color:'#64748b', fontSize:'0.875rem' }}>Laster inn…</p>
+          <div style={{ width: 32, height: 32, border: '3px solid #d1fae5', borderTopColor: '#059669', borderRadius: '50%', animation: '_spin 0.8s linear infinite', marginBottom: 16 }} />
+          <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Laster inn…</p>
         </>
       )}
-    </div>
-  );
-}
-
-function BootError({ message, onRetry }) {
-  return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f8fafc', padding:24, fontFamily:'system-ui, sans-serif' }}>
-      <div style={{ background:'#fff', borderRadius:16, boxShadow:'0 8px 32px rgba(0,0,0,0.1)', padding:32, maxWidth:400, width:'100%', textAlign:'center' }}>
-        <div style={{ fontSize:40, marginBottom:12 }}>🔌</div>
-        <h2 style={{ fontSize:'1.125rem', fontWeight:700, marginBottom:8, color:'#1e293b' }}>Innlasting mislyktes</h2>
-        <p style={{ color:'#64748b', fontSize:'0.875rem', marginBottom:24 }}>{message || 'Sjekk internettilkoblingen og prøv igjen.'}</p>
-        <div style={{ display:'flex', gap:12, justifyContent:'center', flexWrap:'wrap' }}>
-          <button onClick={onRetry} style={{ background:'#059669', color:'#fff', border:'none', borderRadius:8, padding:'10px 20px', fontWeight:600, cursor:'pointer' }}>Prøv igjen</button>
-          <button onClick={() => base44.auth.logout()} style={{ background:'transparent', color:'#059669', border:'1px solid #059669', borderRadius:8, padding:'10px 20px', fontWeight:600, cursor:'pointer' }}>Logg inn på nytt</button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -110,7 +96,7 @@ function NavLink({ item, active, darkMode, onClick }) {
   );
 }
 
-// ─── AppLayout — only mounted inside TeamProvider ────────────────────────────
+// ─── AppLayout — rendered once user is authenticated, inside TeamProvider ─────
 function AppLayout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -124,13 +110,17 @@ function AppLayout({ children, currentPageName }) {
   return (
     <div className={`h-screen flex overflow-hidden ${darkMode ? 'dark bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
       <style>{`
-        :root{--brand:#10b981;--brand-dark:#059669}
-        .dark{--bg-card:#1e293b;--bg-surface:#0f172a}
-        :not(.dark){--bg-card:#ffffff;--bg-surface:#f8fafc}
-        @media(max-width:768px){*{-webkit-tap-highlight-color:transparent}button,a{min-height:44px;min-width:44px}}
-        html{scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
-        @keyframes spin{to{transform:rotate(360deg)}}
+        :root { --brand: #10b981; --brand-dark: #059669; }
+        .dark { --bg-card: #1e293b; --bg-surface: #0f172a; }
+        :not(.dark) { --bg-card: #ffffff; --bg-surface: #f8fafc; }
+        @media (max-width: 768px) {
+          * { -webkit-tap-highlight-color: transparent; }
+          button, a { min-height: 44px; min-width: 44px; }
+        }
+        html { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
+
       <OfflineManager />
 
       {/* Desktop Sidebar */}
@@ -177,9 +167,12 @@ function AppLayout({ children, currentPageName }) {
             <div className="pt-2">
               <button
                 onClick={() => setAdvancedOpen(o => !o)}
-                className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors ${activeAdvanced ? 'text-emerald-600' : darkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors ${
+                  activeAdvanced ? 'text-emerald-600' : darkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'
+                }`}
               >
-                <Sparkles className="w-3.5 h-3.5" />Avansert
+                <Sparkles className="w-3.5 h-3.5" />
+                Avansert
                 <ChevronRight className={`w-3.5 h-3.5 ml-auto transition-transform ${advancedOpen || activeAdvanced ? 'rotate-90' : ''}`} />
               </button>
               {(advancedOpen || activeAdvanced) && (
@@ -207,7 +200,7 @@ function AppLayout({ children, currentPageName }) {
       </aside>
 
       {/* Mobile header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40" style={{ paddingTop:'env(safe-area-inset-top)' }}>
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className={`flex items-center justify-between px-4 py-3 border-b ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
           <div className="flex items-center gap-2">
             {isChildRoute ? (
@@ -216,7 +209,9 @@ function AppLayout({ children, currentPageName }) {
               </button>
             ) : (
               <>
-                <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center"><Shield className="w-4 h-4 text-white" /></div>
+                <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
+                  <Shield className="w-4 h-4 text-white" />
+                </div>
                 <span className="font-bold text-sm">IdrettsØkonomi</span>
               </>
             )}
@@ -266,16 +261,16 @@ function AppLayout({ children, currentPageName }) {
       </div>
 
       {/* Main content */}
-      <main className="flex-1 lg:ml-64 min-h-0 overflow-y-auto" style={{ paddingTop:'calc(3.5rem + env(safe-area-inset-top))' }}>
+      <main className="flex-1 lg:ml-64 min-h-0 overflow-y-auto" style={{ paddingTop: 'calc(3.5rem + env(safe-area-inset-top))' }}>
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={currentPageName}
-            initial={{ x:20, opacity:0 }}
-            animate={{ x:0, opacity:1 }}
-            exit={{ x:-20, opacity:0 }}
-            transition={{ duration:0.18, ease:'easeOut' }}
+            initial={{ x: 20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -20, opacity: 0 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
             className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full"
-            style={{ paddingBottom:'calc(env(safe-area-inset-bottom, 0px) + 4.5rem)' }}
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 4.5rem)' }}
           >
             {children}
           </motion.div>
@@ -288,89 +283,44 @@ function AppLayout({ children, currentPageName }) {
   );
 }
 
-// ─── STAGE 2: TeamGate — inside TeamProvider, uses useTeam ───────────────────
-// Rules (only in useEffect, one-shot didNavRef guard):
-//   teams ready + 0 teams + not on Onboarding → replace to Onboarding
-//   teams ready + ≥1 teams + on Login/root     → replace to Dashboard
-function TeamGate({ children, currentPageName }) {
-  const { status: teamStatus, teams } = useTeam();
-  const didNavRef = useRef(false);
-
-  // Reset one-shot on page change
-  useEffect(() => { didNavRef.current = false; }, [currentPageName]);
-
-  const teamsResolved = teamStatus === 'ready' || teamStatus === 'error';
-
-  useEffect(() => {
-    if (!teamsResolved) return;
-
-    const hasTeams = (teams?.length ?? 0) > 0;
-    console.log('[TeamGate]', new Date().toISOString(), { currentPageName, teamStatus, teamsLen: teams?.length });
-
-    if (!hasTeams && currentPageName !== 'Onboarding' && !didNavRef.current) {
-      didNavRef.current = true;
-      window.location.replace('/?page=Onboarding');
-      return;
-    }
-
-    const isAuthOrRootPage = !currentPageName || currentPageName === 'Login';
-    if (hasTeams && isAuthOrRootPage && !didNavRef.current) {
-      didNavRef.current = true;
-      window.location.replace('/?page=Dashboard');
-      return;
-    }
-  }, [teamsResolved, teams, currentPageName, teamStatus]);
-
-  if (!teamsResolved) return <FullScreenLoader />;
-
-  // Show loader while redirect is in flight
-  const hasTeams = (teams?.length ?? 0) > 0;
-  const isAuthOrRootPage = !currentPageName || currentPageName === 'Login';
-  if (!hasTeams || isAuthOrRootPage) return <FullScreenLoader />;
-
-  return children;
-}
-
-// ─── STAGE 1: AuthGate — NO TeamProvider, NO useTeam ─────────────────────────
-// Rules (only in useEffect, one-shot didNavRef guard):
-//   authStatus loading → show FullScreenLoader
-//   guest              → redirectToLogin (clean URL, no ?page=)
-//   authed             → pass through to TeamProvider + TeamGate + AppLayout
+// ─── AuthGate — single gatekeeper, no routing complexity ──────────────────────
+//
+// Simple state machine:
+//   loading → show spinner
+//   guest   → redirectToLogin (once, via ref guard)
+//   authed  → render TeamProvider + AppLayout
+//
+// NO redirect logic for teams / onboarding here. Dashboard handles its own
+// empty-team state gracefully.
+//
 function AuthGate({ children, currentPageName }) {
-  const [authStatus, setAuthStatus] = useState('loading'); // 'loading'|'guest'|'authed'
-  const [bootData, setBootData]     = useState(null);      // { user, teams, memberTeams }
-  const [errorMsg, setErrorMsg]     = useState(null);
-  const [timedOut, setTimedOut]     = useState(false);
-  const bootedRef  = useRef(false);
-  const didNavRef  = useRef(false);
-
-  // Reset nav guard on page change
-  useEffect(() => { didNavRef.current = false; }, [currentPageName]);
+  const [status, setStatus]   = useState('loading'); // 'loading' | 'guest' | 'authed'
+  const [bootData, setBootData] = useState(null);
+  const [timedOut, setTimedOut] = useState(false);
+  const bootedRef = useRef(false);
+  const redirectedRef = useRef(false);
 
   const boot = useCallback(async () => {
-    setAuthStatus('loading');
+    setStatus('loading');
     setBootData(null);
-    setErrorMsg(null);
     setTimedOut(false);
+    redirectedRef.current = false;
 
     try {
       const authenticated = await base44.auth.isAuthenticated().catch(() => false);
-      console.log('[AuthGate]', new Date().toISOString(), { currentPageName, authenticated });
 
       if (!authenticated) {
-        setAuthStatus('guest');
+        setStatus('guest');
         return;
       }
 
       const user = await base44.auth.me().catch(() => null);
       if (!user) {
-        setAuthStatus('guest');
+        setStatus('guest');
         return;
       }
 
-      setAuthStatus('authed');
-
-      // Pre-fetch teams so TeamProvider can initialise synchronously
+      // Pre-fetch teams for synchronous TeamProvider init
       const userEmail = user.email.toLowerCase();
       const [createdTeams, memberRecords] = await Promise.all([
         base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
@@ -387,13 +337,15 @@ function AuthGate({ children, currentPageName }) {
       }
 
       setBootData({ user, teams: [...byId.values()], memberTeams: memberRecords });
+      setStatus('authed');
     } catch (err) {
       console.error('[AuthGate] boot error:', err?.message);
-      setErrorMsg(err?.message || 'Ukjent feil');
+      // On error, treat as guest so user can re-authenticate
+      setStatus('guest');
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Single boot on mount — ref prevents StrictMode double-fire
+  // Boot once on mount (ref prevents StrictMode double-fire)
   useEffect(() => {
     if (bootedRef.current) return;
     bootedRef.current = true;
@@ -402,45 +354,41 @@ function AuthGate({ children, currentPageName }) {
 
   // Timeout guard
   useEffect(() => {
-    if (authStatus !== 'loading') return;
+    if (status !== 'loading') return;
     const id = setTimeout(() => setTimedOut(true), 12000);
     return () => clearTimeout(id);
-  }, [authStatus]);
+  }, [status]);
 
-  // Routing: guest → login (one-shot)
+  // Guest → redirect to login, one-shot
   useEffect(() => {
-    if (authStatus !== 'guest') return;
-    if (didNavRef.current) return;
-    didNavRef.current = true;
-    console.log('[AuthGate] guest → redirectToLogin');
+    if (status !== 'guest') return;
+    if (redirectedRef.current) return;
+    redirectedRef.current = true;
     base44.auth.redirectToLogin(window.location.origin + '/');
-  }, [authStatus]);
+  }, [status]);
 
-  const retry = () => { bootedRef.current = false; didNavRef.current = false; boot(); };
+  const retry = () => { bootedRef.current = false; boot(); };
 
-  if (errorMsg)             return <BootError message={errorMsg} onRetry={retry} />;
-  if (authStatus === 'loading' || authStatus === 'guest') {
+  if (status === 'loading' || status === 'guest') {
     return <FullScreenLoader timedOut={timedOut} onRetry={retry} />;
   }
 
-  // authed — hand off to TeamProvider → TeamGate → AppLayout
+  // Authenticated — render the full app
   return (
     <TeamProvider bootData={bootData}>
-      <TeamGate currentPageName={currentPageName}>
-        <AppLayout currentPageName={currentPageName}>{children}</AppLayout>
-      </TeamGate>
+      <AppLayout currentPageName={currentPageName}>{children}</AppLayout>
     </TeamProvider>
   );
 }
 
-// ─── Root Layout export ───────────────────────────────────────────────────────
+// ─── Root layout export ───────────────────────────────────────────────────────
 export default function Layout({ children, currentPageName }) {
   const urlPage = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('page')
     : null;
   const effectivePage = urlPage || currentPageName || '';
 
-  // NO_LAYOUT_PAGES: bare render — no gate, no sidebar, no TeamProvider
+  // NO_LAYOUT_PAGES: bare render — no auth, no sidebar, no TeamProvider
   if (NO_LAYOUT_PAGES.has(effectivePage)) {
     return (
       <ErrorBoundary>
