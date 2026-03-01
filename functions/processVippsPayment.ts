@@ -15,6 +15,18 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'claim_id, player_id, and team_id required' }, { status: 400 });
     }
 
+    // Verify user role (kasserer or admin required, or the player themselves)
+    if (user.role !== 'admin') {
+      const membership = await base44.asServiceRole.entities.TeamMember.filter({ team_id, user_email: user.email });
+      const allowedRoles = ['admin', 'kasserer'];
+      const isMember = membership.length && allowedRoles.includes(membership[0].role);
+      // Allow player to pay their own claim
+      const isPlayerSelf = await base44.asServiceRole.entities.Player.filter({ team_id, id: player_id, user_email: user.email }).then(r => r.length > 0).catch(() => false);
+      if (!isMember && !isPlayerSelf) {
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
+
     // Get claim details
     const claim = await base44.asServiceRole.entities.Claim.get(claim_id);
     if (!claim) {
