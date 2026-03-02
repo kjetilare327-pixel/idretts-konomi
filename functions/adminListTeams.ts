@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+// Debug: lists teams and shows join_codes
 
 Deno.serve(async (req) => {
   try {
