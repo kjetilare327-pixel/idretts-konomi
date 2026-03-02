@@ -18,19 +18,16 @@ Deno.serve(async (req) => {
 
     console.log(`[joinTeamByCode] User ${user.email} trying to join with code ${join_code}`);
 
-    // Find team by join_code using filter (works with RLS)
-    const teams = await base44.asServiceRole.entities.Team.filter(
-      { join_code: join_code.toUpperCase() },
-      '-created_date',
-      1
-    );
+    // Fetch all teams (service role bypasses RLS) and find by join_code
+    const allTeams = await base44.asServiceRole.entities.Team.list('-created_date', 500);
+    console.log(`[joinTeamByCode] Total teams in DB: ${allTeams.length}`);
+    
+    const team = allTeams.find(t => t.join_code && t.join_code.toUpperCase() === join_code.toUpperCase());
 
-    if (!teams || teams.length === 0) {
+    if (!team) {
       console.log(`[joinTeamByCode] No team found with code ${join_code}`);
       return Response.json({ error: 'Ugyldig lagkode' }, { status: 404 });
     }
-
-    const team = teams[0];
     console.log(`[joinTeamByCode] Found team ${team.id} - ${team.name}`);
 
     // Check if already a member
