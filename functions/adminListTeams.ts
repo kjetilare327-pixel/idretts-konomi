@@ -15,7 +15,12 @@ Deno.serve(async (req) => {
     const teamsSR = await base44.asServiceRole.entities.Team.list('-created_date', 500);
     console.log('Service role list count:', teamsSR.length);
     
-    return Response.json({ userScoped: teamsUser.length, serviceRole: teamsSR.length, teams: teamsUser });
+    return Response.json({ 
+      userScoped: teamsUser.length, 
+      serviceRole: teamsSR.length, 
+      userTeams: teamsUser.map(t => ({ id: t.id, name: t.name, join_code: t.join_code })),
+      srTeams: teamsSR.map(t => ({ id: t.id, name: t.name, join_code: t.join_code })),
+    });
   } catch (error) {
     console.error('Error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
