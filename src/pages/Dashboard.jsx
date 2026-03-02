@@ -19,7 +19,7 @@ import SetupProgress, { getCompletedSteps, isSetupComplete } from '@/components/
 import PullToRefresh from '@/components/mobile/PullToRefresh';
 
 export default function Dashboard() {
-  const { currentTeam, teams, loading: teamLoading, isTeamAdmin, playerProfile, refreshPlayerProfile } = useTeam();
+  const { currentTeam, teams, loading: teamLoading, isTeamAdmin, playerProfile, refreshPlayerProfile, currentTeamRole } = useTeam();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isAdmin = isTeamAdmin();
