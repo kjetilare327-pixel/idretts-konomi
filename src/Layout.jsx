@@ -26,6 +26,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuTrigger, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import JoinActivationScreen from './components/shared/JoinActivationScreen';
 
 // ─── Module-level session cache (survives page navigations) ──────────────────
 // { bootData, lastFetch: timestamp }  — cleared on logout or explicit invalidate
