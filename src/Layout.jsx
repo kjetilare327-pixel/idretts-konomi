@@ -439,8 +439,48 @@ function AuthGate({ children, currentPageName }) {
 
       // Only send to Onboarding if truly no memberships at all (not even invited)
       const activeMemberships = memberRecords.filter(m => m.status === 'active');
-      if (data.teams.length === 0 && activeMemberships.length === 0) {
-        // Check if there are invited records - if so, still go to Onboarding to let them join
+
+      // ── PENDING JOIN GUARD ─────────────────────────────────────────────────
+      // If a join just completed, the new TeamMember might not appear yet in the
+      // user-scoped query (RLS: new member can't read Team until added to members[]).
+      // We trust the backend result: if pending_joined_team_id is set, let the user
+      // into Dashboard rather than bouncing them back to Onboarding.
+      const pendingTeamId = (() => { try { return localStorage.getItem('pending_joined_team_id'); } catch { return null; } })();
+      const pendingTeamName = (() => { try { return localStorage.getItem('pending_joined_team_name'); } catch { return null; } })();
+
+      if (pendingTeamId) {
+        console.log(`[AuthGate] pending_joined_team_id=${pendingTeamId} — skipping Onboarding redirect`);
+        // Clear the flag now that we've consumed it
+        try { localStorage.removeItem('pending_joined_team_id'); localStorage.removeItem('pending_joined_team_name'); } catch {}
+
+        // Inject a minimal team stub so TeamProvider has something to work with
+        // while the real data loads. If we already fetched it, use that.
+        const alreadyHave = data.teams.find(t => t.id === pendingTeamId);
+        if (!alreadyHave) {
+          // Try one more fetch specifically for this team
+          try {
+            const [t1] = await Promise.all([
+              base44.entities.Team.filter({ id: pendingTeamId }).catch(() => []),
+            ]);
+            for (const t of t1) byId.set(t.id, t);
+            data.teams = [...byId.values()];
+          } catch {}
+          // If still not found, inject a stub so the cache is not empty
+          if (!byId.has(pendingTeamId)) {
+            const stub = { id: pendingTeamId, name: pendingTeamName || 'Laget ditt', join_code: '' };
+            byId.set(pendingTeamId, stub);
+            data.teams = [...byId.values()];
+          }
+        }
+        // Also add a synthetic active membership if none exist
+        if (activeMemberships.length === 0) {
+          data.memberTeams = [{ team_id: pendingTeamId, user_email: userEmail, status: 'active', role: 'player' }];
+        }
+      }
+      // ── END PENDING JOIN GUARD ─────────────────────────────────────────────
+
+      if (data.teams.length === 0 && activeMemberships.length === 0 && !pendingTeamId) {
+        console.log(`[AuthGate] No teams + no pending join → Onboarding`);
         window.location.replace('/Onboarding');
         return;
       }
