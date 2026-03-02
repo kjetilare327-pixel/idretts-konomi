@@ -45,32 +45,42 @@ Deno.serve(async (req) => {
 
     console.log(`[joinTeamByCode] Found team: ${team.id} - ${team.name}`);
 
-    // Check if already a member in Team.members array
-    const existingMembers = team.members || [];
-    const alreadyInMembers = existingMembers.some(m => m.email === user.email);
+    // Check for an existing TeamMember record (invited or active)
+    const existingTMRecords = await base44.asServiceRole.entities.TeamMember.filter({
+      team_id: team.id,
+      user_email: user.email.toLowerCase()
+    }).catch(() => []);
 
-    // Check if already a TeamMember record exists
-    const existingTMRecords = await base44.entities.TeamMember.filter({ team_id: team.id, user_email: user.email.toLowerCase() }).catch(() => []);
-    const alreadyMember = alreadyInMembers || existingTMRecords.length > 0;
-
-    if (alreadyMember) {
-      console.log(`[joinTeamByCode] User ${user.email} already member`);
+    const activeRecord = existingTMRecords.find(r => r.status === 'active');
+    if (activeRecord) {
+      console.log(`[joinTeamByCode] User ${user.email} already active member`);
       return Response.json({ team_id: team.id, team_name: team.name, already_member: true });
     }
 
-    const memberRole = role === 'forelder' ? 'forelder' : 'player';
+    const invitedRecord = existingTMRecords.find(r => r.status === 'invited');
 
-    // Create TeamMember record (use asServiceRole to bypass RLS on create)
-    await base44.asServiceRole.entities.TeamMember.create({
-      team_id: team.id,
-      user_email: user.email.toLowerCase(),
-      role: memberRole,
-      status: 'active',
-    });
+    // Determine role: prefer from invitation record, then from request body, then default
+    const memberRole = invitedRecord?.role || (role === 'forelder' ? 'forelder' : 'player');
 
-    console.log(`[joinTeamByCode] Successfully added ${user.email} to team ${team.id} as ${memberRole}`);
+    if (invitedRecord) {
+      // Activate the existing invited record
+      await base44.asServiceRole.entities.TeamMember.update(invitedRecord.id, {
+        status: 'active',
+        user_id: user.id || '',
+      });
+      console.log(`[joinTeamByCode] Activated invited record for ${user.email} in team ${team.id} as ${memberRole}`);
+    } else {
+      // No prior record — create fresh
+      await base44.asServiceRole.entities.TeamMember.create({
+        team_id: team.id,
+        user_email: user.email.toLowerCase(),
+        role: memberRole,
+        status: 'active',
+      });
+      console.log(`[joinTeamByCode] Created new member record for ${user.email} in team ${team.id} as ${memberRole}`);
+    }
 
-    return Response.json({ team_id: team.id, team_name: team.name, already_member: false });
+    return Response.json({ team_id: team.id, team_name: team.name, already_member: false, role: memberRole });
   } catch (error) {
     console.error('[joinTeamByCode] Error:', error.message);
     return Response.json({ error: 'Serverfeil: ' + error.message }, { status: 500 });
