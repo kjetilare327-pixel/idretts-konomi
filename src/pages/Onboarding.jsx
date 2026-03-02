@@ -155,7 +155,13 @@ export default function Onboarding() {
         ? `Du er allerede med i ${data.team_name}!`
         : `Du er nå med i ${data.team_name}!`;
       toast.success(msg, { id: 'jt' });
-      if (data.team_id) localStorage.setItem('idrettsøkonomi_team_id', data.team_id);
+      if (data.team_id) {
+        localStorage.setItem('idrettsøkonomi_team_id', data.team_id);
+        // Signal to AuthGate that a join just happened — prevents Onboarding loop
+        localStorage.setItem('pending_joined_team_id', data.team_id);
+        localStorage.setItem('pending_joined_team_name', data.team_name || '');
+        console.log('[Onboarding] join ok → pendingJoinedTeamId set:', data.team_id, '→ navigating to Dashboard');
+      }
       window.location.replace('/Dashboard');
     } catch (err) {
       console.error('[Onboarding] Join exception:', err);
