@@ -26,14 +26,18 @@ Deno.serve(async (req) => {
     const myMemberships = members.filter(m => m.user_email === userEmail && m.status === 'active');
     const myMembership = myMemberships.find(m => ADMIN_ROLES.includes(m.role)) || myMemberships[0] || null;
 
-    const isAdminRole = isCreator || ADMIN_ROLES.includes(myMembership?.role);
+    // Also allow team members via Team.members array (legacy)
+    const legacyMember = team?.members?.find(m => m.email === user.email);
+    const isLegacyAdmin = legacyMember && ADMIN_ROLES.includes(legacyMember.role);
+
+    const isAdminRole = isCreator || ADMIN_ROLES.includes(myMembership?.role) || isLegacyAdmin;
     if (!isAdminRole) {
       return Response.json({ error: 'Admin role required', userEmail, role: myMembership?.role }, { status: 403 });
     }
 
     // Fetch all players for the team using service role (bypasses RLS)
     const players = await base44.asServiceRole.entities.Player.filter({ team_id });
-    console.log(`[getTeamPlayers] team=${team_id} user=${userEmail} role=${myMembership?.role || 'creator'} → ${players.length} players`);
+    console.log(`[getTeamPlayers] team=${team_id} user=${userEmail} role=${myMembership?.role || (isCreator ? 'creator' : 'legacy')} → ${players.length} players`);
 
     return Response.json({ players, count: players.length });
   } catch (error) {
