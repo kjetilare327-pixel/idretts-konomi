@@ -132,6 +132,7 @@ export default function Onboarding() {
 
   const handleJoin = async () => {
     if (!joinCode.trim()) { toast.error('Skriv inn lagkoden.'); return; }
+    if (!joinFullName.trim()) { toast.error('Skriv inn ditt navn.'); return; }
     if (joining) return;
 
     setJoining(true);
@@ -141,6 +142,7 @@ export default function Onboarding() {
       const res = await base44.functions.invoke('joinTeamByCode', {
         join_code: joinCode.trim().toUpperCase(),
         role: joinRole,
+        full_name: joinFullName.trim(),
       });
       const data = res?.data;
       console.log('[Onboarding] joinTeamByCode response:', data);
