@@ -95,15 +95,20 @@ export default function Onboarding() {
       const user = await base44.auth.me();
       if (!user) { base44.auth.redirectToLogin(window.location.href); return; }
 
+      const joinCode = generateJoinCode();
+      console.log('[Onboarding] Creating team with join_code:', joinCode);
+
       const newTeam = await base44.entities.Team.create({
         ...form,
         estimated_members: Number(form.estimated_members) || 0,
         subscription_status: 'trial',
         trial_end_date: trialEnd,
         gdpr_consent: true,
-        join_code: generateJoinCode(),
+        join_code: joinCode,
         members: [{ email: user.email, role: 'admin' }],
       });
+
+      console.log('[Onboarding] Team created:', newTeam.id, 'join_code:', newTeam.join_code);
 
       await base44.entities.TeamMember.create({
         team_id: newTeam.id,
@@ -111,9 +116,10 @@ export default function Onboarding() {
         role: 'admin',
         status: 'active',
         invited_by_email: user.email,
-      }).catch(e => console.warn('TeamMember create failed:', e));
+      });
 
-      toast.success('Lag opprettet!', { id: 'ct' });
+      console.log('[Onboarding] TeamMember created for admin');
+      toast.success('Lag opprettet! Kode: ' + (newTeam.join_code || joinCode), { id: 'ct' });
       localStorage.setItem('idrettsøkonomi_team_id', newTeam.id);
       window.location.replace('/Dashboard');
     } catch (err) {
