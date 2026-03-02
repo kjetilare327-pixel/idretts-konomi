@@ -31,6 +31,7 @@ export default function Onboarding() {
   // Join team state
   const [joinCode, setJoinCode] = useState('');
   const [joinRole, setJoinRole] = useState('player');
+  const [joinFullName, setJoinFullName] = useState('');
   const [joining, setJoining] = useState(false);
 
   useEffect(() => {
