@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 // Single source of truth for app URL
-const APP_BASE_URL = 'https://app.base44.com/apps/68091f1e07f9b8d9b77d33a3';
+const APP_BASE_URL = 'https://idretts-okonomi-appen.com';
 
 Deno.serve(async (req) => {
   try {
@@ -38,9 +38,9 @@ Deno.serve(async (req) => {
       console.log(`[sendTeamInvitation] Pre-created invited TeamMember for ${recipient_email} as ${role}`);
     }
 
-    // Build invite link: goes to Onboarding with code+role pre-filled
-    const inviteLink = `${APP_BASE_URL}/Onboarding?code=${joinCode}&role=${role}`;
-    console.log(`[sendTeamInvitation] Generated invite link: ${inviteLink}`);
+    // Invite link always goes to /login — auto-accept happens at boot via pending TeamMember record
+    const inviteLink = `${APP_BASE_URL}/login`;
+    console.log(`[sendTeamInvitation] Generated invite link: ${inviteLink} (pending invite stored in DB for ${recipient_email})`);
 
     const roleLabels = {
       admin: 'Admin', kasserer: 'Kasserer', styreleder: 'Styreleder',
@@ -53,10 +53,10 @@ Deno.serve(async (req) => {
 
 ${user.full_name || user.email} har invitert deg til å bli med i "${team_name}" som ${roleLabel}.
 
-Klikk på lenken nedenfor for å bli med:
+Klikk på lenken nedenfor for å logge inn og bli automatisk lagt til i laget:
 ${inviteLink}
 
-Eller logg inn på ${APP_BASE_URL} og skriv inn lagkoden manuelt: ${joinCode}
+Etter innlogging vil du automatisk bli lagt til i "${team_name}" og sendt til dashbordet.
 
 Med vennlig hilsen,
 IdrettsØkonomi-teamet`;
