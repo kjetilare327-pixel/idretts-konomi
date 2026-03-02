@@ -34,6 +34,7 @@ import PullToRefresh from '@/components/mobile/PullToRefresh';
 export default function Players() {
   const { currentTeam, isTeamAdmin, playerProfile } = useTeam();
   const queryClient = useQueryClient();
+  const isAdmin = isTeamAdmin();
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
   const [form, setForm] = useState({ full_name: '', user_email: '', role: 'player', balance: '0', payment_status: 'paid', phone: '', notes: '' });
