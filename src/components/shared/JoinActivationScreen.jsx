@@ -142,11 +142,20 @@ export default function JoinActivationScreen({ teamId, teamName, user, onSuccess
     }}>
       <style>{`@keyframes _jaspin { to { transform: rotate(360deg); } }`}</style>
 
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        style={{ position: 'absolute', width: 1, height: 1, padding: 0, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}
+      >
+        {phase === 'retrying' ? `Aktiverer laget, forsøk ${attempt} av ${MAX_ATTEMPTS}` : 'Kunne ikke aktivere laget. Prøv igjen.'}
+      </div>
+
       <div style={{
         width: 56, height: 56, borderRadius: 16,
         background: phase === 'failed' ? '#fee2e2' : '#d1fae5',
         display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24,
-      }}>
+      }} aria-hidden="true">
         {phase === 'failed'
           ? <AlertTriangle style={{ width: 28, height: 28, color: '#dc2626' }} />
           : <Shield style={{ width: 28, height: 28, color: '#059669' }} />
@@ -155,58 +164,64 @@ export default function JoinActivationScreen({ teamId, teamName, user, onSuccess
 
       {phase === 'retrying' && (
         <>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 8, textAlign: 'center' }}>Aktiverer laget…</h2>
-          <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: 6, textAlign: 'center' }}>
+          <h1 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 8, textAlign: 'center' }}>Aktiverer laget…</h1>
+          <p style={{ color: '#475569', fontSize: '0.9rem', marginBottom: 6, textAlign: 'center' }}>
             {teamName ? `Kobler til «${teamName}»` : 'Verifiserer medlemskap'}
           </p>
-          <p style={{ color: '#94a3b8', fontSize: '0.7rem', marginBottom: 24, textAlign: 'center', fontFamily: 'monospace', maxWidth: 380 }}>
-            {diagLine || `Forsøk ${attempt}/${MAX_ATTEMPTS}…`}
+          <p style={{ color: '#94a3b8', fontSize: '0.75rem', marginBottom: 24, textAlign: 'center', maxWidth: 380 }}>
+            Forsøk {attempt} av {MAX_ATTEMPTS}…
           </p>
-          <div style={{
-            width: 32, height: 32,
-            border: '3px solid #d1fae5', borderTopColor: '#059669',
-            borderRadius: '50%', animation: '_jaspin 0.8s linear infinite',
-          }} />
+          <div
+            role="progressbar"
+            aria-label="Laster inn"
+            style={{
+              width: 32, height: 32,
+              border: '3px solid #d1fae5', borderTopColor: '#059669',
+              borderRadius: '50%', animation: '_jaspin 0.8s linear infinite',
+            }}
+          />
         </>
       )}
 
       {phase === 'failed' && (
         <>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 8, textAlign: 'center', color: '#dc2626' }}>
-            Kunne ikke aktivere laget
-          </h2>
-          <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: 8, textAlign: 'center', maxWidth: 360 }}>
-            Medlemskapet ble opprettet men kunne ikke verifiseres etter {MAX_ATTEMPTS} forsøk. Prøv igjen.
+          <h1 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 8, textAlign: 'center', color: '#dc2626' }}>
+            Aktivering mislyktes
+          </h1>
+          <p style={{ color: '#475569', fontSize: '0.9rem', marginBottom: 20, textAlign: 'center', maxWidth: 360 }}>
+            Vi kunne ikke bekrefte at du ble lagt til i laget. Prøv igjen, eller kontakt laget ditt.
           </p>
-          {diagLine && (
-            <p style={{ color: '#94a3b8', fontSize: '0.7rem', marginBottom: 8, fontFamily: 'monospace', textAlign: 'center', maxWidth: 380 }}>
-              {diagLine}
-            </p>
-          )}
-          <p style={{ color: '#cbd5e1', fontSize: '0.7rem', marginBottom: 24, fontFamily: 'monospace' }}>{errorCode}</p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 300 }}>
-            <button onClick={handleRetry} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              height: 48, background: '#059669', color: '#fff',
-              border: 'none', borderRadius: 10, fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer',
-            }}>
-              <RefreshCw style={{ width: 16, height: 16 }} /> Prøv igjen
+            <button
+              onClick={handleRetry}
+              autoFocus
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                height: 48, background: '#059669', color: '#fff',
+                border: 'none', borderRadius: 10, fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              <RefreshCw style={{ width: 16, height: 16 }} aria-hidden="true" /> Prøv igjen
             </button>
-            <button onClick={handleCopyError} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              height: 48, background: '#f1f5f9', color: '#475569',
-              border: '1px solid #e2e8f0', borderRadius: 10, fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer',
-            }}>
-              {copied ? <CheckCircle style={{ width: 16, height: 16, color: '#059669' }} /> : <Copy style={{ width: 16, height: 16 }} />}
-              {copied ? 'Kopiert!' : 'Kopier diagnostikk til support'}
+            <button
+              onClick={handleCopyError}
+              aria-label={copied ? 'Diagnostikk kopiert' : 'Kopier diagnostikk til support'}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                height: 48, background: '#f1f5f9', color: '#334155',
+                border: '1px solid #e2e8f0', borderRadius: 10, fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer',
+              }}
+            >
+              {copied ? <CheckCircle style={{ width: 16, height: 16, color: '#059669' }} aria-hidden="true" /> : <Copy style={{ width: 16, height: 16 }} aria-hidden="true" />}
+              {copied ? 'Kopiert!' : 'Kopier feilinfo til support'}
             </button>
             <button
               onClick={() => {
                 try { localStorage.removeItem('pending_joined_team_id'); localStorage.removeItem('pending_joined_team_name'); } catch (_) {}
                 onAbort();
               }}
-              style={{ height: 44, background: 'transparent', color: '#94a3b8', border: 'none', fontSize: '0.8rem', cursor: 'pointer' }}
+              style={{ height: 44, background: 'transparent', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: '0.85rem', cursor: 'pointer', fontWeight: 500 }}
             >
               Avbryt og gå tilbake
             </button>
