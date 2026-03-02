@@ -205,7 +205,7 @@ function AppLayout({ children, currentPageName }) {
                 key={item.page}
                 to={createPageUrl(item.page)}
                 title={item.name}
-                className={`flex items-center justify-center p-2.5 rounded-lg transition-all ${
+                className={`flex items-center justify-center p-2.5 rounded-lg transition-all min-h-[44px] ${
                   currentPageName === item.page
                     ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
                     : darkMode ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
