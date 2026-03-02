@@ -48,8 +48,7 @@ export default function TeamMembersManager() {
     }
     setInviting(true);
     try {
-      // sendTeamInvitation handles both the TeamMember upsert and email via service role
-      // No need to create TeamMember separately here (avoids duplicates)
+      // sendTeamInvitation handles both the TeamMember upsert (via service role) and email sending
       // Send invitation email
       try {
         const emailRes = await base44.functions.invoke('sendTeamInvitation', {
