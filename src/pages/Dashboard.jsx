@@ -128,23 +128,77 @@ export default function Dashboard() {
 
       {isAdmin && <SubscriptionBanner team={currentTeam} />}
 
+      {/* Non-admin: empty state with role info + next steps */}
+      {!isAdmin && !playerProfile && (
+        <Card className="border-0 shadow-md dark:bg-slate-900">
+          <CardContent className="p-8 flex flex-col items-center text-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center">
+              <UserCircle className="w-7 h-7 text-emerald-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-lg">{currentTeam?.name || 'Laget ditt'}</p>
+              <Badge variant="secondary" className="mt-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400">
+                {currentTeamRole === 'forelder' ? 'Forelder' : currentTeamRole === 'player' ? 'Spiller' : currentTeamRole}
+              </Badge>
+            </div>
+            <p className="text-sm text-slate-500 max-w-xs">
+              Du er registrert i laget. Administratoren din vil knytte deg til en spillerprofil og du vil se betalingsinformasjon her.
+            </p>
+            <Link to={createPageUrl('PaymentPortal')}>
+              <Button className="bg-emerald-600 hover:bg-emerald-700 gap-2 min-h-[44px]">
+                <CreditCard className="w-4 h-4" /> Mine betalinger
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Player balance card */}
       {!isAdmin && playerProfile && (
         <Card className="border-0 shadow-md dark:bg-slate-900">
-          <CardContent className="p-6 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-500">Din saldo</p>
-              <p className={`text-3xl font-bold ${playerProfile.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                {playerProfile.balance > 0
-                  ? `Skylder ${formatNOK(playerProfile.balance)}`
-                  : playerProfile.balance < 0
-                  ? `Kreditt ${formatNOK(-playerProfile.balance)}`
-                  : 'Ingen utestående'}
-              </p>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <UserCircle className="w-5 h-5 text-slate-400" />
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{currentTeam?.name}</p>
+              <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400 text-xs">
+                {currentTeamRole === 'forelder' ? 'Forelder' : currentTeamRole === 'player' ? 'Spiller' : currentTeamRole}
+              </Badge>
             </div>
-            <Button onClick={() => navigate(createPageUrl('Players'))} variant="outline" className="gap-2">
-              Se detaljer <ArrowRight className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-500">Din saldo</p>
+                <div className="flex items-center gap-2 mt-1">
+                  {playerProfile.balance === 0
+                    ? <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    : <AlertCircle className="w-5 h-5 text-red-500" />
+                  }
+                  <p className={`text-2xl font-bold ${playerProfile.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                    {playerProfile.balance > 0
+                      ? `Skylder ${formatNOK(playerProfile.balance)}`
+                      : playerProfile.balance < 0
+                      ? `Kreditt ${formatNOK(-playerProfile.balance)}`
+                      : 'Ingen utestående'}
+                  </p>
+                </div>
+              </div>
+              <Button onClick={() => navigate(createPageUrl('PaymentPortal'))} variant="outline" className="gap-2 min-h-[44px]">
+                <Receipt className="w-4 h-4" /> Mine betalinger
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Non-admin: no player profile linked yet — already shown above, just payment shortcut */}
+      {!isAdmin && playerProfile && (
+        <Card className="border-0 shadow-sm bg-slate-50 dark:bg-slate-800/50">
+          <CardContent className="p-4 flex items-center justify-between gap-4">
+            <p className="text-sm text-slate-500">Se alle dine krav og betalingshistorikk</p>
+            <Link to={createPageUrl('PaymentPortal')}>
+              <Button size="sm" variant="outline" className="gap-2 min-h-[44px] shrink-0">
+                <CreditCard className="w-4 h-4" /> Mine betalinger <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       )}
