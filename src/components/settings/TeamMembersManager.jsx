@@ -56,15 +56,23 @@ export default function TeamMembersManager() {
         invited_by_email: user?.email,
       });
       // Send invitation email
-      await base44.functions.invoke('sendTeamInvitation', {
-        team_id: currentTeam.id,
-        recipient_email: email,
-        role: inviteRole,
-        team_name: currentTeam.name,
-      }).catch(err => {
-        console.warn('Email send failed, but invitation created:', err.message);
-      });
-      toast.success(`${email} lagt til som ${roleInfo[inviteRole]?.label}`);
+      try {
+        const emailRes = await base44.functions.invoke('sendTeamInvitation', {
+          team_id: currentTeam.id,
+          recipient_email: email,
+          role: inviteRole,
+          team_name: currentTeam.name,
+        });
+        if (emailRes?.data?.error) {
+          console.warn('Email send failed:', emailRes.data.error);
+          toast.success(`${email} lagt til som ${roleInfo[inviteRole]?.label} (e-post feilet: ${emailRes.data.error})`);
+        } else {
+          toast.success(`Invitasjon sendt til ${email} som ${roleInfo[inviteRole]?.label}!`);
+        }
+      } catch (emailErr) {
+        console.warn('Email send failed:', emailErr?.message);
+        toast.success(`${email} lagt til, men e-post feilet. Send lagkoden manuelt.`);
+      }
       setInviteEmail('');
       invalidate();
     } finally {
