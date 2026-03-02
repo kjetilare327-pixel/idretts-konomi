@@ -60,11 +60,6 @@ Deno.serve(async (req) => {
 
     const memberRole = role === 'forelder' ? 'forelder' : 'player';
 
-    // Add to Team.members array
-    const updatedMembers = [...existingMembers, { email: user.email, role: memberRole }];
-
-    await base44.asServiceRole.entities.Team.update(team.id, { members: updatedMembers });
-
     // Create TeamMember record (use asServiceRole to bypass RLS on create)
     await base44.asServiceRole.entities.TeamMember.create({
       team_id: team.id,
