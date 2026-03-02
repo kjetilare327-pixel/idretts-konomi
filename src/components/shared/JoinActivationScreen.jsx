@@ -2,8 +2,8 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Shield, AlertTriangle, RefreshCw, Copy, CheckCircle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
-// Exponential backoff delays: ~13 seconds total across 10 attempts
-const BACKOFF_MS = [300, 500, 800, 1200, 1800, 2500, 1500, 1000, 800, 600];
+// Exponential backoff: ~15 seconds total across 10 attempts
+const BACKOFF_MS = [400, 600, 900, 1300, 1800, 2500, 2000, 1500, 1200, 1000];
 const MAX_ATTEMPTS = BACKOFF_MS.length;
 
 function sleep(ms) {
@@ -13,18 +13,17 @@ function sleep(ms) {
 /**
  * JoinActivationScreen
  *
- * Shown when pending_joined_team_id is set in localStorage.
- * Verifies membership in order:
- *   Step A: TeamMember(user_email, team_id) with status=active exists
- *   Step B: Team read-by-id succeeds (RLS propagated)
- *   Step C: Build bootData and call onSuccess
+ * Uses the getMyTeams backend function (service role) to verify:
+ *   Step A: TeamMember(user, team_id, active) exists
+ *   Step B: Team data can be loaded for that team_id
+ *   BOTH must be true before calling onSuccess.
  *
- * Uses exponential backoff over ~13 seconds. Never bounces to Onboarding.
+ * This avoids the Team RLS chicken-and-egg problem entirely.
  */
 export default function JoinActivationScreen({ teamId, teamName, user, onSuccess, onAbort }) {
   const [phase, setPhase] = useState('retrying'); // 'retrying' | 'failed'
   const [attempt, setAttempt] = useState(0);
-  const [lastDiag, setLastDiag] = useState(null); // { memberFound, teamFound, failedStep }
+  const [diagLog, setDiagLog] = useState('');
   const [copied, setCopied] = useState(false);
   const runningRef = useRef(false);
 
@@ -32,15 +31,16 @@ export default function JoinActivationScreen({ teamId, teamName, user, onSuccess
     `ERR-JOIN-${(teamId || '??????').slice(-6).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`
   ).current;
 
-  const runLoop = useCallback(async () => {
+  const runLoop = useCallback(async (isRetry = false) => {
     const userEmail = user?.email?.toLowerCase();
     if (!userEmail || !teamId) {
-      console.error('[JoinActivation] Missing userEmail or teamId — cannot activate');
+      console.error('[JoinActivation] Missing userEmail or teamId');
+      setDiagLog('userEmail or teamId missing');
       setPhase('failed');
       return;
     }
 
-    console.log(`[JoinActivation] Starting activation loop for teamId=${teamId} user=${userEmail} maxAttempts=${MAX_ATTEMPTS}`);
+    console.log(`[JoinActivation] ${isRetry ? 'RETRY' : 'START'} activation for teamId=${teamId} user=${userEmail}`);
 
     for (let i = 0; i < MAX_ATTEMPTS; i++) {
       if (i > 0) await sleep(BACKOFF_MS[i]);
@@ -48,69 +48,42 @@ export default function JoinActivationScreen({ teamId, teamName, user, onSuccess
 
       let memberFound = false;
       let teamFound = false;
-      let failedStep = null;
-      let memberRecord = null;
-      let teamObj = null;
+      let failedStep = 'A';
+      let activeMember = null;
+      let resolvedTeam = null;
 
       try {
-        // ── Step A: Check TeamMember ──────────────────────────────────────────
-        const members = await base44.entities.TeamMember.filter({ user_email: userEmail }).catch(e => {
-          console.warn(`[JoinActivation] #${i+1} TeamMember.filter error:`, e?.message || e);
-          return [];
-        });
+        // Use service-role-backed function to fetch memberships + teams
+        const res = await base44.functions.invoke('getMyTeams', {});
+        const data = res?.data;
 
-        memberRecord = members.find(m => m.team_id === teamId && m.status === 'active') || null;
-        memberFound = !!memberRecord;
-
-        if (!memberFound) failedStep = 'A';
-
-        // ── Step B: Check Team read ───────────────────────────────────────────
-        // Try filter by id (works once RLS currentTeamId propagates)
-        const teamsById = await base44.entities.Team.filter({ id: teamId }).catch(e => {
-          console.warn(`[JoinActivation] #${i+1} Team.filter({id}) error:`, e?.message || e);
-          return [];
-        });
-        teamObj = teamsById[0] || null;
-
-        // Fallback: list all teams the user can see
-        if (!teamObj) {
-          const allTeams = await base44.entities.Team.list().catch(() => []);
-          teamObj = allTeams.find(t => t.id === teamId) || null;
+        if (!data?.ok) {
+          const diag = `#${i+1} getMyTeams returned ok=false code=${data?.code || 'unknown'}`;
+          console.warn(`[JoinActivation] ${diag}`);
+          setDiagLog(diag);
+          continue;
         }
 
-        // Fallback: check created_by
-        if (!teamObj) {
-          const created = await base44.entities.Team.filter({ created_by: userEmail }).catch(() => []);
-          teamObj = created.find(t => t.id === teamId) || null;
-        }
+        // Step A: Active TeamMember for this team
+        activeMember = (data.memberRecords || []).find(
+          m => m.team_id === teamId && m.status === 'active'
+        ) || null;
+        memberFound = !!activeMember;
 
-        teamFound = !!teamObj;
-        if (!teamFound && failedStep === null) failedStep = 'B';
+        // Step B: Team object present for this team
+        resolvedTeam = (data.teams || []).find(t => t.id === teamId) || null;
+        teamFound = !!resolvedTeam;
 
-        const diag = { memberFound, teamFound, failedStep, attempt: i + 1 };
-        setLastDiag(diag);
+        if (teamFound) failedStep = null;
+        else if (memberFound) failedStep = 'B';
 
-        console.log(
-          `[JoinActivation] #${i+1}/${MAX_ATTEMPTS} — ` +
-          `memberFound=${memberFound} teamFound=${teamFound} failedStep=${failedStep || 'none'}`
-        );
+        const diag = `#${i+1}/${MAX_ATTEMPTS} memberFound=${memberFound} teamFound=${teamFound}${failedStep ? ` failedStep=${failedStep}` : ''}`;
+        console.log(`[JoinActivation] ${diag}`);
+        setDiagLog(diag);
 
-        // ── Step C: Success condition ─────────────────────────────────────────
-        // We need at minimum: memberFound OR teamFound (one is enough to proceed)
-        // Ideally both. But if member is confirmed, we can trust the join even if team RLS is slow.
-        if (memberFound || teamFound) {
-          const resolvedTeam = teamObj || { id: teamId, name: teamName || 'Laget ditt', join_code: '' };
-          const resolvedMember = memberRecord || {
-            team_id: teamId,
-            user_email: userEmail,
-            status: 'active',
-            role: 'player',
-          };
-
-          console.log(
-            `[JoinActivation] ✓ SUCCESS at attempt ${i+1} — ` +
-            `teamMemberFound=${memberFound} teamFound=${teamFound} → activated`
-          );
+        // Success: BOTH member AND team must be confirmed
+        if (memberFound && teamFound) {
+          console.log(`[JoinActivation] ✓ SUCCESS at attempt ${i+1} — teamMemberFound=true teamFound=true → activated`);
 
           try {
             localStorage.removeItem('pending_joined_team_id');
@@ -120,51 +93,49 @@ export default function JoinActivationScreen({ teamId, teamName, user, onSuccess
 
           onSuccess({
             user,
-            teams: [resolvedTeam],
-            memberTeams: [resolvedMember],
+            teams: data.teams,           // return ALL teams the service role found
+            memberTeams: data.memberRecords,
           });
           return;
         }
 
       } catch (e) {
-        console.warn(`[JoinActivation] #${i+1} unexpected exception:`, e?.message || e);
-        setLastDiag({ memberFound: false, teamFound: false, failedStep: 'exception', attempt: i + 1 });
+        const diag = `#${i+1} exception: ${e?.message || e}`;
+        console.warn(`[JoinActivation] ${diag}`);
+        setDiagLog(diag);
       }
     }
 
-    console.error(`[JoinActivation] ✗ All ${MAX_ATTEMPTS} attempts exhausted for teamId=${teamId} — errorCode=${errorCode}`);
+    console.error(`[JoinActivation] ✗ All ${MAX_ATTEMPTS} attempts exhausted — ${errorCode}`);
     setPhase('failed');
   }, [teamId, teamName, user, onSuccess, errorCode]);
 
   useEffect(() => {
     if (runningRef.current) return;
     runningRef.current = true;
-    runLoop();
+    runLoop(false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRetry = () => {
     setPhase('retrying');
     setAttempt(0);
-    setLastDiag(null);
+    setDiagLog('');
     runningRef.current = false;
-    // Small delay so state flushes before starting
     setTimeout(() => {
       if (!runningRef.current) {
         runningRef.current = true;
-        runLoop();
+        runLoop(true);
       }
-    }, 100);
+    }, 80);
   };
 
   const handleCopyError = () => {
-    const diagStr = lastDiag
-      ? `memberFound=${lastDiag.memberFound} teamFound=${lastDiag.teamFound} failedStep=${lastDiag.failedStep} attempts=${lastDiag.attempt}`
-      : 'no diag';
     const text = [
       `Feilkode: ${errorCode}`,
       `TeamId (siste 6): ${(teamId || '').slice(-6)}`,
       `Bruker: ${user?.email || 'ukjent'}`,
-      `Diagnostikk: ${diagStr}`,
+      `Siste diagnostikk: ${diagLog}`,
+      `Maks forsøk: ${MAX_ATTEMPTS}`,
     ].join('\n');
     navigator.clipboard.writeText(text).catch(() => {});
     setCopied(true);
@@ -198,14 +169,8 @@ export default function JoinActivationScreen({ teamId, teamName, user, onSuccess
           <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: 6, textAlign: 'center' }}>
             {teamName ? `Kobler til «${teamName}»` : 'Verifiserer medlemskap'}
           </p>
-          <p style={{ color: '#94a3b8', fontSize: '0.75rem', marginBottom: 24, textAlign: 'center' }}>
-            Forsøk {attempt} av {MAX_ATTEMPTS}
-            {lastDiag && (
-              <span style={{ display: 'block', fontFamily: 'monospace', marginTop: 4, fontSize: '0.7rem' }}>
-                member={String(lastDiag.memberFound)} team={String(lastDiag.teamFound)}
-                {lastDiag.failedStep ? ` failedStep=${lastDiag.failedStep}` : ''}
-              </span>
-            )}
+          <p style={{ color: '#94a3b8', fontSize: '0.75rem', marginBottom: 24, textAlign: 'center', fontFamily: 'monospace' }}>
+            Forsøk {attempt}/{MAX_ATTEMPTS}{diagLog ? ` — ${diagLog}` : ''}
           </p>
           <div style={{
             width: 32, height: 32,
@@ -221,11 +186,11 @@ export default function JoinActivationScreen({ teamId, teamName, user, onSuccess
             Kunne ikke aktivere laget
           </h2>
           <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: 8, textAlign: 'center', maxWidth: 360 }}>
-            Du ble lagt til i laget, men appen klarte ikke å laste det inn etter {MAX_ATTEMPTS} forsøk. Prøv igjen.
+            Medlemskapet ble opprettet, men kunne ikke verifiseres etter {MAX_ATTEMPTS} forsøk. Prøv igjen.
           </p>
-          {lastDiag && (
-            <p style={{ color: '#94a3b8', fontSize: '0.7rem', marginBottom: 8, fontFamily: 'monospace', textAlign: 'center' }}>
-              member={String(lastDiag.memberFound)} team={String(lastDiag.teamFound)} step={lastDiag.failedStep}
+          {diagLog && (
+            <p style={{ color: '#94a3b8', fontSize: '0.7rem', marginBottom: 8, fontFamily: 'monospace', textAlign: 'center', maxWidth: 380 }}>
+              {diagLog}
             </p>
           )}
           <p style={{ color: '#cbd5e1', fontSize: '0.7rem', marginBottom: 24, fontFamily: 'monospace' }}>
@@ -253,8 +218,7 @@ export default function JoinActivationScreen({ teamId, teamName, user, onSuccess
             >
               {copied
                 ? <CheckCircle style={{ width: 16, height: 16, color: '#059669' }} />
-                : <Copy style={{ width: 16, height: 16 }} />
-              }
+                : <Copy style={{ width: 16, height: 16 }} />}
               {copied ? 'Kopiert!' : 'Kopier diagnostikk til support'}
             </button>
             <button
