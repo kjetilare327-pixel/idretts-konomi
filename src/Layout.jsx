@@ -43,9 +43,13 @@ const NO_LAYOUT_PAGES = new Set(['Onboarding', 'GdprConsent', 'TermsOfService'])
 const ROOT_PAGES = ['Dashboard', 'PaymentPortal', 'Players', 'Reports', 'SettingsPage'];
 
 // ─── Navigation config ────────────────────────────────────────────────────────
+// ROLES MATRIX:
+// ADMIN tier: admin, kasserer, styreleder, revisor — full access to finance/team data
+// MEMBER tier: player, forelder — own payments, own profile, events only
 const CORE_NAV = [
   { name: 'Dashboard',       page: 'Dashboard',           icon: LayoutDashboard, roles: ['admin','kasserer','styreleder','revisor','player','forelder'] },
   { name: 'Mine betalinger', page: 'PaymentPortal',       icon: Receipt,         roles: ['player','forelder'] },
+  { name: 'Min profil',      page: 'Players',             icon: Users,           roles: ['player','forelder'] },
   { name: 'Spillere',        page: 'Players',             icon: Users,           roles: ['admin','kasserer','styreleder','revisor'] },
   { name: 'Transaksjoner',   page: 'Transactions',        icon: Receipt,         roles: ['admin','kasserer','revisor'] },
   { name: 'Bankavstemming',  page: 'BankReconciliation',  icon: Receipt,         roles: ['admin','kasserer'] },
