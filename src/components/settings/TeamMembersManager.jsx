@@ -63,15 +63,16 @@ export default function TeamMembersManager() {
           role: inviteRole,
           team_name: currentTeam.name,
         });
-        if (emailRes?.data?.error) {
-          console.warn('Email send failed:', emailRes.data.error);
-          toast.success(`${email} lagt til som ${roleInfo[inviteRole]?.label} (e-post feilet: ${emailRes.data.error})`);
+        const d = emailRes?.data;
+        if (d?.ok === false) {
+          console.error('Email send failed:', d.error);
+          toast.error(`Lagt til, men e-post feilet: ${d.error}`);
         } else {
           toast.success(`Invitasjon sendt til ${email} som ${roleInfo[inviteRole]?.label}!`);
         }
       } catch (emailErr) {
-        console.warn('Email send failed:', emailErr?.message);
-        toast.success(`${email} lagt til, men e-post feilet. Send lagkoden manuelt.`);
+        console.error('Email send exception:', emailErr?.message);
+        toast.error(`Lagt til, men e-post feilet: ${emailErr?.message}. Del lagkoden manuelt.`);
       }
       setInviteEmail('');
       invalidate();
