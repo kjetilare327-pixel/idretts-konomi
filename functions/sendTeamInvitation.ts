@@ -21,8 +21,19 @@ Deno.serve(async (req) => {
       const found = allTeams.find(t => t.id === team_id);
       if (found) joinCode = found.join_code || '';
     }
-    const appUrl = 'https://idretts-okonomi-appen.com';
-    const inviteLink = `${appUrl}/Onboarding?code=${joinCode}`;
+    // Also create a TeamMember record with 'invited' status so we can look up the role later
+    await base44.asServiceRole.entities.TeamMember.create({
+      team_id: team_id,
+      user_email: recipient_email.toLowerCase(),
+      role: role,
+      status: 'invited',
+      invited_by_email: user.email,
+    }).catch(e => console.warn('[sendTeamInvitation] TeamMember pre-create warning:', e.message));
+
+    const appUrl = 'https://app.base44.com/apps/68091f1e07f9b8d9b77d33a3';
+    const inviteLink = joinCode
+      ? `${appUrl}/Onboarding?code=${joinCode}&role=${role}`
+      : `${appUrl}/Onboarding`;
 
     const roleLabels = {
       admin: 'Admin', kasserer: 'Kasserer', styreleder: 'Styreleder',
@@ -35,10 +46,10 @@ Deno.serve(async (req) => {
 
 ${user.full_name || user.email} har invitert deg til å bli med i "${team_name}" som ${roleLabel}.
 
-Klikk her for å bli med:
+Klikk på lenken nedenfor for å opprette konto og bli med i laget automatisk:
 ${inviteLink}
 
-Eller gå til appen og skriv inn denne koden manuelt: ${joinCode}
+Eller logg inn og skriv inn denne koden manuelt: ${joinCode}
 
 Med vennlig hilsen,
 IdrettsØkonomi-teamet`;
