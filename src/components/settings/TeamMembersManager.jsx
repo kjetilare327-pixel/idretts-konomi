@@ -48,13 +48,8 @@ export default function TeamMembersManager() {
     }
     setInviting(true);
     try {
-      await base44.entities.TeamMember.create({
-        team_id: currentTeam.id,
-        user_email: email,
-        role: inviteRole,
-        status: 'invited',
-        invited_by_email: user?.email,
-      });
+      // sendTeamInvitation handles both the TeamMember upsert and email via service role
+      // No need to create TeamMember separately here (avoids duplicates)
       // Send invitation email
       try {
         const emailRes = await base44.functions.invoke('sendTeamInvitation', {
