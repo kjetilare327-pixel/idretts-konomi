@@ -247,7 +247,7 @@ function AppLayout({ children, currentPageName }) {
               <div className="px-3 py-2"><NotificationCenter userEmail={user?.email} teamId={currentTeam?.id} /></div>
             </>
           )}
-          <button onClick={toggleDark} className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm ${darkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`} title={darkMode ? 'Lyst tema' : 'Mørkt tema'}>
+          <button onClick={toggleDark} className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm min-h-[44px] ${darkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`} title={darkMode ? 'Lyst tema' : 'Mørkt tema'}>
             {darkMode ? <Sun className="w-4 h-4 shrink-0" /> : <Moon className="w-4 h-4 shrink-0" />}
             {!sidebarCollapsed && (darkMode ? 'Lyst tema' : 'Mørkt tema')}
           </button>
