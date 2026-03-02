@@ -264,6 +264,17 @@ export default function Onboarding() {
                   />
                 </div>
                 <div>
+                  <Label htmlFor="join-fullname">Ditt fulle navn *</Label>
+                  <Input
+                    id="join-fullname"
+                    placeholder="Fornavn Etternavn"
+                    value={joinFullName}
+                    onChange={e => setJoinFullName(e.target.value)}
+                    style={{ marginTop: 6 }}
+                    autoComplete="name"
+                  />
+                </div>
+                <div>
                   <Label htmlFor="join-role">Jeg er</Label>
                   <div style={{ marginTop: 6 }}>
                     <Select value={joinRole} onValueChange={setJoinRole}>
@@ -287,8 +298,8 @@ export default function Onboarding() {
                   <button
                     type="button"
                     onClick={handleJoin}
-                    disabled={joining || !joinCode.trim()}
-                    style={{ flex: 1, height: 48, fontSize: '1rem', fontWeight: 600, background: joining || !joinCode.trim() ? '#6ee7b7' : '#059669', color: '#fff', border: 'none', borderRadius: 8, cursor: joining || !joinCode.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                    disabled={joining || !joinCode.trim() || !joinFullName.trim()}
+                    style={{ flex: 1, height: 48, fontSize: '1rem', fontWeight: 600, background: (joining || !joinCode.trim() || !joinFullName.trim()) ? '#6ee7b7' : '#059669', color: '#fff', border: 'none', borderRadius: 8, cursor: (joining || !joinCode.trim() || !joinFullName.trim()) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                   >
                     {joining && <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} />}
                     Bli med
