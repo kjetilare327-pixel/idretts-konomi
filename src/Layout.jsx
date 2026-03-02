@@ -14,7 +14,7 @@ import ErrorBoundary from './components/shared/ErrorBoundary';
 import {
   LayoutDashboard, Receipt, PiggyBank, FileBarChart, Settings, Menu, X,
   Sun, Moon, ChevronDown, ChevronRight, Shield, Users, ScrollText,
-  Mail, Sparkles, ArrowLeft,
+  Mail, Sparkles, ArrowLeft, LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import NotificationCenter from './components/notifications/NotificationCenter';
