@@ -21,9 +21,12 @@ Deno.serve(async (req) => {
     const userEmail = user.email.toLowerCase();
     console.log(`[joinTeamByCode] ${ts} — user=${userEmail} code=${cleanCode} role=${role}`);
 
-    // Service role lookup — bypasses RLS entirely
-    const teams = await base44.asServiceRole.entities.Team.filter({ join_code: cleanCode });
-    console.log(`[joinTeamByCode] Teams found: ${teams.length}`);
+    // List all teams via service role and find the one with matching join_code
+    // (filter with service role doesn't work due to RLS on Team entity)
+    const allTeams = await base44.asServiceRole.entities.Team.list('created_date', 500);
+    console.log(`[joinTeamByCode] Total teams in DB: ${allTeams.length}`);
+    const teams = allTeams.filter(t => t.join_code && t.join_code.trim().toUpperCase() === cleanCode);
+    console.log(`[joinTeamByCode] Teams matching code ${cleanCode}: ${teams.length}`);
 
     if (!teams || teams.length === 0) {
       console.log(`[joinTeamByCode] INVALID_CODE: ${cleanCode}`);
