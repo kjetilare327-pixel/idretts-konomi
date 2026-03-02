@@ -361,21 +361,23 @@ function AppLayout({ children, currentPageName }) {
 // ─── AuthGate ─────────────────────────────────────────────────────────────────
 //
 // Flow:
-//   1. Check module-level cache (fresh < 5 min) → skip boot, go straight to authed
-//   2. If not cached: check auth → if not authed, redirect to login (no next URL)
-//   3. If authed: fetch teams → if no teams, redirect to /Onboarding
-//   4. If has teams: render app
-//
-// The key insight: we NEVER pass a next URL to redirectToLogin, so Base44 will
-// land the user at the app root after login. AuthGate then decides where to go.
+//   1. Check module-level cache (fresh < 5 min) → skip boot, render immediately
+//   2. If not cached: check auth → if not authed, redirect to login
+//   3. If pending_joined_team_id exists → show JoinActivationScreen (retry loop, no Onboarding bounce)
+//   4. If authed with teams → render app
+//   5. If no teams → Onboarding
 //
 function AuthGate({ children, currentPageName }) {
   const cacheValid = _sessionCache && (Date.now() - _sessionCache.lastFetch < CACHE_TTL_MS);
 
-  const [status, setStatus]     = useState(() => cacheValid ? 'authed' : 'loading');
-  const [bootData, setBootData] = useState(() => cacheValid ? _sessionCache.bootData : null);
-  const [timedOut, setTimedOut] = useState(false);
-  const bootingRef  = useRef(false);
+  // status: 'loading' | 'join_activation' | 'authed'
+  const [status, setStatus]         = useState(() => cacheValid ? 'authed' : 'loading');
+  const [bootData, setBootData]     = useState(() => cacheValid ? _sessionCache.bootData : null);
+  const [timedOut, setTimedOut]     = useState(false);
+  const [pendingUser, setPendingUser]   = useState(null);
+  const [pendingTeamId, setPendingTeamId]   = useState(null);
+  const [pendingTeamName, setPendingTeamName] = useState(null);
+  const bootingRef = useRef(false);
 
   const boot = useCallback(async () => {
     if (bootingRef.current) return;
@@ -383,9 +385,7 @@ function AuthGate({ children, currentPageName }) {
 
     try {
       const authenticated = await base44.auth.isAuthenticated().catch(() => false);
-
       if (!authenticated) {
-        // Not logged in → go to login with NO next URL to avoid from_url loops
         window.location.replace('/login');
         return;
       }
@@ -397,6 +397,22 @@ function AuthGate({ children, currentPageName }) {
       }
 
       const userEmail = user.email.toLowerCase();
+
+      // ── PENDING JOIN GUARD (check BEFORE normal fetch) ─────────────────────
+      const storedPendingId   = (() => { try { return localStorage.getItem('pending_joined_team_id'); } catch { return null; } })();
+      const storedPendingName = (() => { try { return localStorage.getItem('pending_joined_team_name'); } catch { return null; } })();
+
+      if (storedPendingId) {
+        console.log(`[AuthGate] pending_joined_team_id=${storedPendingId} — entering JoinActivationScreen`);
+        setPendingUser(user);
+        setPendingTeamId(storedPendingId);
+        setPendingTeamName(storedPendingName);
+        setStatus('join_activation');
+        bootingRef.current = false;
+        return;
+      }
+      // ── END PENDING JOIN GUARD ─────────────────────────────────────────────
+
       const [createdTeams, memberRecords] = await Promise.all([
         base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
         base44.entities.TeamMember.filter({ user_email: userEmail }).catch(() => []),
@@ -409,7 +425,6 @@ function AuthGate({ children, currentPageName }) {
         await base44.functions.invoke('acceptPendingInvites', { user_email: userEmail }).catch(e =>
           console.warn('[AuthGate] acceptPendingInvites failed (non-blocking):', e?.message)
         );
-        // Re-fetch memberRecords after activation
         const refreshed = await base44.entities.TeamMember.filter({ user_email: userEmail }).catch(() => []);
         if (refreshed.length > 0) {
           memberRecords.length = 0;
@@ -420,74 +435,26 @@ function AuthGate({ children, currentPageName }) {
       const byId = new Map();
       for (const t of createdTeams) byId.set(t.id, t);
 
-      // For each TeamMember record where we don't have the team yet, fetch it individually
       const missingIds = memberRecords.map(m => m.team_id).filter(id => id && !byId.has(id));
       if (missingIds.length > 0) {
         const fetched = await Promise.all(
           missingIds.map(id => base44.entities.Team.filter({ id }).catch(() => []))
         );
-        for (const arr of fetched) {
-          for (const t of arr) byId.set(t.id, t);
-        }
-        // Fallback: try listing all (works if user is in members array)
+        for (const arr of fetched) for (const t of arr) byId.set(t.id, t);
         if ([...byId.values()].length < memberRecords.length) {
           const allTeams = await base44.entities.Team.list().catch(() => []);
           for (const t of allTeams) { if (missingIds.includes(t.id)) byId.set(t.id, t); }
         }
       }
 
+      const activeMemberships = memberRecords.filter(m => m.status === 'active');
       const data = { user, teams: [...byId.values()], memberTeams: memberRecords };
 
-      // Only send to Onboarding if truly no memberships at all (not even invited)
-      const activeMemberships = memberRecords.filter(m => m.status === 'active');
-
-      // ── PENDING JOIN GUARD ─────────────────────────────────────────────────
-      // If a join just completed, the new TeamMember might not appear yet in the
-      // user-scoped query (RLS: new member can't read Team until added to members[]).
-      // We trust the backend result: if pending_joined_team_id is set, let the user
-      // into Dashboard rather than bouncing them back to Onboarding.
-      const pendingTeamId = (() => { try { return localStorage.getItem('pending_joined_team_id'); } catch { return null; } })();
-      const pendingTeamName = (() => { try { return localStorage.getItem('pending_joined_team_name'); } catch { return null; } })();
-
-      if (pendingTeamId) {
-        console.log(`[AuthGate] pending_joined_team_id=${pendingTeamId} — skipping Onboarding redirect`);
-        // Clear the flag now that we've consumed it
-        try { localStorage.removeItem('pending_joined_team_id'); localStorage.removeItem('pending_joined_team_name'); } catch {}
-
-        // Inject a minimal team stub so TeamProvider has something to work with
-        // while the real data loads. If we already fetched it, use that.
-        const alreadyHave = data.teams.find(t => t.id === pendingTeamId);
-        if (!alreadyHave) {
-          // Try one more fetch specifically for this team
-          try {
-            const [t1] = await Promise.all([
-              base44.entities.Team.filter({ id: pendingTeamId }).catch(() => []),
-            ]);
-            for (const t of t1) byId.set(t.id, t);
-            data.teams = [...byId.values()];
-          } catch {}
-          // If still not found, inject a stub so the cache is not empty
-          if (!byId.has(pendingTeamId)) {
-            const stub = { id: pendingTeamId, name: pendingTeamName || 'Laget ditt', join_code: '' };
-            byId.set(pendingTeamId, stub);
-            data.teams = [...byId.values()];
-          }
-        }
-        // Also add a synthetic active membership if none exist
-        if (activeMemberships.length === 0) {
-          data.memberTeams = [{ team_id: pendingTeamId, user_email: userEmail, status: 'active', role: 'player' }];
-        }
-      }
-      // ── END PENDING JOIN GUARD ─────────────────────────────────────────────
-
-      if (data.teams.length === 0 && activeMemberships.length === 0 && !pendingTeamId) {
-        console.log(`[AuthGate] No teams + no pending join → Onboarding`);
+      if (data.teams.length === 0 && activeMemberships.length === 0) {
+        console.log(`[AuthGate] No teams → Onboarding`);
         window.location.replace('/Onboarding');
         return;
       }
-
-      // Has memberships but couldn't load teams (RLS) → still let them in, they'll see an empty state
-      // rather than loop to Onboarding
 
       _sessionCache = { bootData: data, lastFetch: Date.now() };
       setBootData(data);
@@ -495,7 +462,6 @@ function AuthGate({ children, currentPageName }) {
     } catch (err) {
       console.error('[AuthGate] boot error:', err?.message);
       _sessionCache = null;
-      // On unknown error, show loader with retry — don't redirect blindly
       setTimedOut(true);
     } finally {
       bootingRef.current = false;
@@ -503,14 +469,13 @@ function AuthGate({ children, currentPageName }) {
   }, []);
 
   useEffect(() => {
-    if (cacheValid) return; // already authed from cache
+    if (cacheValid) return;
     boot();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Timeout guard
   useEffect(() => {
     if (status !== 'loading') return;
-    const id = setTimeout(() => setTimedOut(true), 12000);
+    const id = setTimeout(() => setTimedOut(true), 15000);
     return () => clearTimeout(id);
   }, [status]);
 
@@ -521,6 +486,26 @@ function AuthGate({ children, currentPageName }) {
     setTimedOut(false);
     boot();
   };
+
+  // ── Join Activation Screen (retry loop) ────────────────────────────────────
+  if (status === 'join_activation') {
+    return (
+      <JoinActivationScreen
+        teamId={pendingTeamId}
+        teamName={pendingTeamName}
+        user={pendingUser}
+        onSuccess={(resolvedBootData) => {
+          _sessionCache = { bootData: resolvedBootData, lastFetch: Date.now() };
+          setBootData(resolvedBootData);
+          setStatus('authed');
+        }}
+        onAbort={() => {
+          // User aborted — go to Onboarding so they can try again
+          window.location.replace('/Onboarding');
+        }}
+      />
+    );
+  }
 
   if (status !== 'authed') {
     return <FullScreenLoader timedOut={timedOut} onRetry={retry} />;
