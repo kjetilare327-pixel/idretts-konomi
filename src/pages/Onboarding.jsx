@@ -133,26 +133,28 @@ export default function Onboarding() {
     try {
       const res = await base44.functions.invoke('joinTeamByCode', {
         join_code: joinCode.trim().toUpperCase(),
-        role: joinRole
+        role: joinRole,
       });
-      const data = res.data;
-      console.log('[Onboarding] joinTeamByCode response', data);
+      const data = res?.data;
+      console.log('[Onboarding] joinTeamByCode response:', data);
 
-      if (data.error) {
-        toast.error(data.error, { id: 'jt' });
+      if (!data || data.ok === false) {
+        const msg = data?.message || 'Ugyldig kode eller serverfeil. Prøv igjen.';
+        toast.error(msg, { id: 'jt' });
         setJoining(false);
         return;
       }
 
-      const msg = data.already_member
+      const msg = data.code === 'ALREADY_MEMBER'
         ? `Du er allerede med i ${data.team_name}!`
         : `Du er nå med i ${data.team_name}!`;
       toast.success(msg, { id: 'jt' });
-      localStorage.setItem('idrettsøkonomi_team_id', data.team_id);
+      if (data.team_id) localStorage.setItem('idrettsøkonomi_team_id', data.team_id);
       window.location.replace('/Dashboard');
     } catch (err) {
-      console.error('[Onboarding] Join failed', err);
-      toast.error('Feil: ' + (err?.response?.data?.error || err?.message || 'Ugyldig kode'), { id: 'jt' });
+      console.error('[Onboarding] Join exception:', err);
+      const msg = err?.response?.data?.message || err?.message || 'Noe gikk galt, prøv igjen.';
+      toast.error(msg, { id: 'jt' });
       setJoining(false);
     }
   };
