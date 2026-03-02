@@ -401,21 +401,19 @@ function AuthGate({ children, currentPageName }) {
         base44.entities.TeamMember.filter({ user_email: userEmail }).catch(() => []),
       ]);
 
-      // Auto-accept pending invites: if user has 'invited' TeamMember records, activate them now
+      // Auto-accept pending invites via backend function (avoids RLS restrictions on update)
       const pendingInvites = memberRecords.filter(m => m.status === 'invited');
       if (pendingInvites.length > 0) {
         console.log(`[AuthGate] Auto-accepting ${pendingInvites.length} pending invite(s) for ${userEmail}`);
-        await Promise.all(
-          pendingInvites.map(m =>
-            base44.entities.TeamMember.update(m.id, { status: 'active' }).catch(e =>
-              console.warn('[AuthGate] Failed to activate invite:', e?.message)
-            )
-          )
+        await base44.functions.invoke('acceptPendingInvites', { user_email: userEmail }).catch(e =>
+          console.warn('[AuthGate] acceptPendingInvites failed (non-blocking):', e?.message)
         );
         // Re-fetch memberRecords after activation
-        const refreshed = await base44.entities.TeamMember.filter({ user_email: userEmail }).catch(() => memberRecords);
-        memberRecords.length = 0;
-        refreshed.forEach(r => memberRecords.push(r));
+        const refreshed = await base44.entities.TeamMember.filter({ user_email: userEmail }).catch(() => []);
+        if (refreshed.length > 0) {
+          memberRecords.length = 0;
+          refreshed.forEach(r => memberRecords.push(r));
+        }
       }
 
       const byId = new Map();
