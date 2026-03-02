@@ -12,73 +12,72 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { join_code, role } = body;
 
-    if (!join_code || !role) {
-      return Response.json({ error: 'Missing join_code or role' }, { status: 400 });
+    if (!join_code) {
+      return Response.json({ error: 'Mangler join_code' }, { status: 400 });
     }
 
-    console.log(`[joinTeamByCode] User ${user.email} trying to join with code ${join_code}`);
+    const cleanCode = join_code.trim().toUpperCase();
+    console.log(`[joinTeamByCode] User ${user.email} trying to join with code ${cleanCode}`);
 
-    // Fetch all teams (service role bypasses RLS) and find by join_code
-    const allTeams = await base44.asServiceRole.entities.Team.list('-created_date', 500);
-    console.log(`[joinTeamByCode] Total teams in DB: ${allTeams.length}`);
-    
-    const team = allTeams.find(t => t.join_code && t.join_code.toUpperCase() === join_code.toUpperCase());
+    // Use user-scoped entities to list teams (service role list() appears to return empty)
+    // The user can read teams they created or are a member of, so we search all accessible teams
+    const allTeams = await base44.entities.Team.list('-created_date', 500);
+    console.log(`[joinTeamByCode] Teams accessible to user: ${allTeams.length}`);
+
+    let team = allTeams.find(t => t.join_code && t.join_code.toUpperCase() === cleanCode);
+
+    // If not found via user-scoped (user may not have access yet), try direct filter
+    if (!team) {
+      // Try fetching by searching all teams without RLS restriction using a workaround:
+      // Use filter with the join_code field directly via user context
+      // (Team.read RLS allows any authenticated user to read if they're in members - 
+      //  but join_code lookup needs to work before they're a member)
+      // We'll try the SDK filter approach
+      const filtered = await base44.entities.Team.filter({ join_code: cleanCode }, '-created_date', 1);
+      console.log(`[joinTeamByCode] Filter result: ${filtered.length}`);
+      if (filtered.length > 0) team = filtered[0];
+    }
 
     if (!team) {
-      console.log(`[joinTeamByCode] No team found with code ${join_code}`);
-      return Response.json({ error: 'Ugyldig lagkode' }, { status: 404 });
+      console.log(`[joinTeamByCode] No team found with code ${cleanCode}`);
+      return Response.json({ error: 'Ugyldig lagkode. Sjekk at du skrev riktig.' }, { status: 404 });
     }
-    console.log(`[joinTeamByCode] Found team ${team.id} - ${team.name}`);
 
-    // Check if already a member
+    console.log(`[joinTeamByCode] Found team: ${team.id} - ${team.name}`);
+
+    // Check if already a member in Team.members array
     const existingMembers = team.members || [];
-    const alreadyMember = existingMembers.some(m => m.email === user.email);
+    const alreadyInMembers = existingMembers.some(m => m.email === user.email);
+
+    // Check if already a TeamMember record exists
+    const existingTMRecords = await base44.entities.TeamMember.filter({ team_id: team.id, user_email: user.email.toLowerCase() }).catch(() => []);
+    const alreadyMember = alreadyInMembers || existingTMRecords.length > 0;
 
     if (alreadyMember) {
-      console.log(`[joinTeamByCode] User ${user.email} already member of ${team.id}`);
-      return Response.json({
-        team_id: team.id,
-        team_name: team.name,
-        already_member: true
-      });
+      console.log(`[joinTeamByCode] User ${user.email} already member`);
+      return Response.json({ team_id: team.id, team_name: team.name, already_member: true });
     }
 
-    // Add user to team members
-    const updatedMembers = [
-      ...existingMembers,
-      {
-        email: user.email,
-        role: role === 'player' ? 'player' : 'forelder'
-      }
-    ];
+    const memberRole = role === 'forelder' ? 'forelder' : 'player';
 
-    await base44.asServiceRole.entities.Team.update(team.id, {
-      members: updatedMembers
-    });
+    // Add to Team.members array
+    const updatedMembers = [...existingMembers, { email: user.email, role: memberRole }];
 
-    // Create TeamMember record
+    await base44.asServiceRole.entities.Team.update(team.id, { members: updatedMembers });
+
+    // Create TeamMember record (use asServiceRole to bypass RLS on create)
     await base44.asServiceRole.entities.TeamMember.create({
       team_id: team.id,
-      user_email: user.email,
-      role: role === 'player' ? 'player' : 'forelder',
-      status: 'active'
+      user_email: user.email.toLowerCase(),
+      role: memberRole,
+      status: 'active',
     });
 
-    // Update user's currentTeamId
-    await base44.auth.updateMe({
-      currentTeamId: team.id,
-      in_app_role: role === 'player' ? 'player' : 'forelder'
-    });
+    console.log(`[joinTeamByCode] Successfully added ${user.email} to team ${team.id} as ${memberRole}`);
 
-    console.log(`[joinTeamByCode] Successfully added user ${user.email} to team ${team.id}`);
-
-    return Response.json({
-      team_id: team.id,
-      team_name: team.name,
-      already_member: false
-    });
+    return Response.json({ team_id: team.id, team_name: team.name, already_member: false });
   } catch (error) {
     console.error('[joinTeamByCode] Error:', error.message);
-    return Response.json({ error: 'Server error: ' + error.message }, { status: 500 });
+    return Response.json({ error: 'Serverfeil: ' + error.message }, { status: 500 });
   }
 });
