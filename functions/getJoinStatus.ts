@@ -31,18 +31,25 @@ Deno.serve(async (req) => {
 
     console.log(`[getJoinStatus] ${requestId} ${ts} — user=${userEmail} team_id=${team_id}`);
 
-    // Step A: Check TeamMember via SERVICE ROLE — use list() to bypass filter quirks
+    // Step A: Check TeamMember via SERVICE ROLE — multiple strategies
     let memberRecord = null;
     let memberFound = false;
     try {
-      // list() with large limit gets all records visible to service role
-      const allMembers = await base44.asServiceRole.entities.TeamMember.list('-created_date', 500);
-      console.log(`[getJoinStatus] ${requestId} stepA: total TeamMember rows visible=${allMembers.length}`);
-      const userMembers = allMembers.filter(m => m.user_email === userEmail);
-      console.log(`[getJoinStatus] ${requestId} stepA: rows for user=${userEmail} count=${userMembers.length} teamIds=${userMembers.map(m=>m.team_id).join(',')}`);
-      memberRecord = userMembers.find(m => m.team_id === team_id && m.status === 'active') || null;
+      // Strategy 1: filter by team_id only (single field)
+      const byTeam = await base44.asServiceRole.entities.TeamMember.filter({ team_id });
+      console.log(`[getJoinStatus] ${requestId} stepA strategy1 byTeam count=${byTeam.length} sample=${JSON.stringify(byTeam[0]?.data || byTeam[0] || 'none')}`);
+      memberRecord = byTeam.find(m => (m.user_email === userEmail || m.data?.user_email === userEmail) && (m.status === 'active' || m.data?.status === 'active')) || null;
       memberFound = !!memberRecord;
-      console.log(`[getJoinStatus] ${requestId} stepA: memberFound=${memberFound} recordId=${memberRecord?.id || 'none'}`);
+
+      if (!memberFound) {
+        // Strategy 2: filter by user_email only
+        const byEmail = await base44.asServiceRole.entities.TeamMember.filter({ user_email: userEmail });
+        console.log(`[getJoinStatus] ${requestId} stepA strategy2 byEmail count=${byEmail.length}`);
+        memberRecord = byEmail.find(m => (m.team_id === team_id || m.data?.team_id === team_id) && (m.status === 'active' || m.data?.status === 'active')) || null;
+        memberFound = !!memberRecord;
+      }
+
+      console.log(`[getJoinStatus] ${requestId} stepA FINAL: memberFound=${memberFound} recordId=${memberRecord?.id || 'none'}`);
     } catch (e) {
       console.error(`[getJoinStatus] ${requestId} stepA error: ${e.message}`);
     }
