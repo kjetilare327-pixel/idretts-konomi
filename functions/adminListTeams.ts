@@ -4,17 +4,19 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     
-    // Try list with higher limit
-    const teamsA = await base44.asServiceRole.entities.Team.list('-created_date', 500);
-    console.log('List result count:', teamsA.length);
+    // Try with user context (no service role)
+    const user = await base44.auth.me();
+    console.log('User:', user?.email, 'role:', user?.role);
     
-    // Try filter with empty object
-    const teamsB = await base44.asServiceRole.entities.Team.filter({}, '-created_date', 500);
-    console.log('Filter result count:', teamsB.length);
+    const teamsUser = await base44.entities.Team.list('-created_date', 500);
+    console.log('User-scoped list count:', teamsUser.length);
     
-    return Response.json({ listCount: teamsA.length, filterCount: teamsB.length, teams: teamsA });
+    const teamsSR = await base44.asServiceRole.entities.Team.list('-created_date', 500);
+    console.log('Service role list count:', teamsSR.length);
+    
+    return Response.json({ userScoped: teamsUser.length, serviceRole: teamsSR.length, teams: teamsUser });
   } catch (error) {
-    console.error('Error:', error.message, error.stack);
+    console.error('Error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
