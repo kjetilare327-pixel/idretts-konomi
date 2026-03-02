@@ -31,19 +31,18 @@ Deno.serve(async (req) => {
 
     console.log(`[getJoinStatus] ${requestId} ${ts} — user=${userEmail} team_id=${team_id}`);
 
-    // Step A: Check TeamMember via SERVICE ROLE (bypasses RLS completely)
-    // Filter by user_email only (single field), then JS-filter the rest
-    // (compound service role filters may return empty due to platform behaviour)
+    // Step A: Check TeamMember via SERVICE ROLE — use list() to bypass filter quirks
     let memberRecord = null;
     let memberFound = false;
     try {
-      const allUserMembers = await base44.asServiceRole.entities.TeamMember.filter({
-        user_email: userEmail,
-      });
-      console.log(`[getJoinStatus] ${requestId} stepA: total TeamMember rows for user=${allUserMembers.length}`);
-      memberRecord = allUserMembers.find(m => m.team_id === team_id && m.status === 'active') || null;
+      // list() with large limit gets all records visible to service role
+      const allMembers = await base44.asServiceRole.entities.TeamMember.list('-created_date', 500);
+      console.log(`[getJoinStatus] ${requestId} stepA: total TeamMember rows visible=${allMembers.length}`);
+      const userMembers = allMembers.filter(m => m.user_email === userEmail);
+      console.log(`[getJoinStatus] ${requestId} stepA: rows for user=${userEmail} count=${userMembers.length} teamIds=${userMembers.map(m=>m.team_id).join(',')}`);
+      memberRecord = userMembers.find(m => m.team_id === team_id && m.status === 'active') || null;
       memberFound = !!memberRecord;
-      console.log(`[getJoinStatus] ${requestId} stepA: memberFound=${memberFound} recordId=${memberRecord?.id || 'none'} teamIds=${allUserMembers.map(m=>m.team_id).join(',')}`);
+      console.log(`[getJoinStatus] ${requestId} stepA: memberFound=${memberFound} recordId=${memberRecord?.id || 'none'}`);
     } catch (e) {
       console.error(`[getJoinStatus] ${requestId} stepA error: ${e.message}`);
     }
