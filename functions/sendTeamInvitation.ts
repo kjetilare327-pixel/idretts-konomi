@@ -11,19 +11,16 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Fetch team to get join_code - try multiple approaches
-    let team = null;
-    // Try user-scoped first (works if user is team member)
+    // Fetch team to get join_code - try multiple approaches, but don't fail if not found
+    let joinCode = '';
     const userTeams = await base44.entities.Team.filter({ id: team_id }).catch(() => []);
-    if (userTeams.length > 0) team = userTeams[0];
-    // Fallback: list all and find by id
-    if (!team) {
+    if (userTeams.length > 0) {
+      joinCode = userTeams[0].join_code || '';
+    } else {
       const allTeams = await base44.entities.Team.list('-created_date', 200).catch(() => []);
-      team = allTeams.find(t => t.id === team_id);
+      const found = allTeams.find(t => t.id === team_id);
+      if (found) joinCode = found.join_code || '';
     }
-    if (!team) return Response.json({ error: 'Team not found' }, { status: 404 });
-
-    const joinCode = team.join_code || '';
     const appUrl = 'https://idretts-okonomi-appen.com';
     const inviteLink = `${appUrl}/Onboarding?code=${joinCode}`;
 
