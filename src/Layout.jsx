@@ -422,8 +422,10 @@ function AuthGate({ children, currentPageName }) {
 
       const data = { user, teams: [...byId.values()], memberTeams: memberRecords };
 
-      // New user with no teams → send to Onboarding
-      if (data.teams.length === 0 && memberRecords.length === 0) {
+      // Only send to Onboarding if truly no memberships at all (not even invited)
+      const activeMemberships = memberRecords.filter(m => m.status === 'active');
+      if (data.teams.length === 0 && activeMemberships.length === 0) {
+        // Check if there are invited records - if so, still go to Onboarding to let them join
         window.location.replace('/Onboarding');
         return;
       }
