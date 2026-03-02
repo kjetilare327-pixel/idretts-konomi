@@ -65,7 +65,6 @@ export default function Players() {
   const { ledgerMap, isLoading: loadingLedger } = useLedger(currentTeam?.id);
 
   const showNames = currentTeam?.show_player_names !== false;
-  const isAdmin = isTeamAdmin();
 
   // Derive ledger for a player (falls back to stored balance if no claims/payments yet)
   const getLedger = (p) => {
