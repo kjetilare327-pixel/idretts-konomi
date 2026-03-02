@@ -25,19 +25,45 @@ export default function Onboarding() {
   const [checkingUser, setCheckingUser] = useState(true);
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeFromUrl = urlParams.get('code');
+    const roleFromUrl = urlParams.get('role');
+    if (codeFromUrl) {
+      setJoinCode(codeFromUrl.toUpperCase());
+      if (roleFromUrl) setJoinRole(roleFromUrl);
+      setMode('join');
+    }
+
     (async () => {
       try {
         const u = await base44.auth.me();
         if (!u) { window.location.replace('/login'); return; }
         if (u?.tos_accepted) setTosAccepted(true);
 
-        // If user already has teams, redirect to Dashboard
         const [created, memberships] = await Promise.all([
           base44.entities.Team.filter({ created_by: u.email }).catch(() => []),
           base44.entities.TeamMember.filter({ user_email: u.email.toLowerCase() }).catch(() => []),
         ]);
-        if (created.length > 0 || memberships.length > 0) {
+
+        // If user has active memberships or created teams → Dashboard
+        const activeMemberships = memberships.filter(m => m.status === 'active');
+        if (created.length > 0 || activeMemberships.length > 0) {
           window.location.replace('/Dashboard');
+          return;
+        }
+
+        // If user has an 'invited' membership and a code in URL, auto-join
+        const invitedMembership = memberships.find(m => m.status === 'invited');
+        if (invitedMembership && codeFromUrl) {
+          // Auto-join using the code
+          setCheckingUser(false);
+          return; // Let the join UI handle it, code is pre-filled
+        }
+
+        // If user has invited membership but no code, show join UI with a hint
+        if (invitedMembership) {
+          setMode('join');
+          setCheckingUser(false);
           return;
         }
       } catch (_) {}
