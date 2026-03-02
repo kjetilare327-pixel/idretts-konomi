@@ -11,9 +11,16 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Fetch team to get join_code (use service role to bypass RLS)
-    const teams = await base44.asServiceRole.entities.Team.filter({ id: team_id }).catch(() => []);
-    const team = teams[0];
+    // Fetch team to get join_code - try multiple approaches
+    let team = null;
+    // Try user-scoped first (works if user is team member)
+    const userTeams = await base44.entities.Team.filter({ id: team_id }).catch(() => []);
+    if (userTeams.length > 0) team = userTeams[0];
+    // Fallback: list all and find by id
+    if (!team) {
+      const allTeams = await base44.entities.Team.list('-created_date', 200).catch(() => []);
+      team = allTeams.find(t => t.id === team_id);
+    }
     if (!team) return Response.json({ error: 'Team not found' }, { status: 404 });
 
     const joinCode = team.join_code || '';
