@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { createPageUrl } from '@/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -24,53 +23,6 @@ export default function Onboarding() {
   const [tosAccepted, setTosAccepted] = useState(false);
   const [checkingUser, setCheckingUser] = useState(true);
 
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const codeFromUrl = urlParams.get('code');
-    const roleFromUrl = urlParams.get('role');
-    if (codeFromUrl) {
-      setJoinCode(codeFromUrl.toUpperCase());
-      if (roleFromUrl) setJoinRole(roleFromUrl);
-      setMode('join');
-    }
-
-    (async () => {
-      try {
-        const u = await base44.auth.me();
-        if (!u) { window.location.replace('/login'); return; }
-        if (u?.tos_accepted) setTosAccepted(true);
-
-        const [created, memberships] = await Promise.all([
-          base44.entities.Team.filter({ created_by: u.email }).catch(() => []),
-          base44.entities.TeamMember.filter({ user_email: u.email.toLowerCase() }).catch(() => []),
-        ]);
-
-        // If user has active memberships or created teams → Dashboard
-        const activeMemberships = memberships.filter(m => m.status === 'active');
-        if (created.length > 0 || activeMemberships.length > 0) {
-          window.location.replace('/Dashboard');
-          return;
-        }
-
-        // If user has an 'invited' membership and a code in URL, auto-join
-        const invitedMembership = memberships.find(m => m.status === 'invited');
-        if (invitedMembership && codeFromUrl) {
-          // Auto-join using the code
-          setCheckingUser(false);
-          return; // Let the join UI handle it, code is pre-filled
-        }
-
-        // If user has invited membership but no code, show join UI with a hint
-        if (invitedMembership) {
-          setMode('join');
-          setCheckingUser(false);
-          return;
-        }
-      } catch (_) {}
-      setCheckingUser(false);
-    })();
-  }, []);
-
   // Create team state
   const [form, setForm] = useState({ name: '', sport_type: '', estimated_members: '', nif_number: '' });
   const [gdpr, setGdpr] = useState(false);
@@ -80,6 +32,55 @@ export default function Onboarding() {
   const [joinCode, setJoinCode] = useState('');
   const [joinRole, setJoinRole] = useState('player');
   const [joining, setJoining] = useState(false);
+
+  useEffect(() => {
+    // Read URL params first (set state before async check)
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeFromUrl = urlParams.get('code');
+    const roleFromUrl = urlParams.get('role');
+
+    if (codeFromUrl) {
+      setJoinCode(codeFromUrl.trim().toUpperCase());
+      if (roleFromUrl) setJoinRole(roleFromUrl);
+      setMode('join');
+    }
+
+    (async () => {
+      try {
+        const u = await base44.auth.me();
+        if (!u) {
+          // Not logged in — redirect to login, then come back here with same URL
+          base44.auth.redirectToLogin(window.location.href);
+          return;
+        }
+        if (u?.tos_accepted) setTosAccepted(true);
+
+        const [created, memberships] = await Promise.all([
+          base44.entities.Team.filter({ created_by: u.email }).catch(() => []),
+          base44.entities.TeamMember.filter({ user_email: u.email.toLowerCase() }).catch(() => []),
+        ]);
+
+        const activeMemberships = memberships.filter(m => m.status === 'active');
+
+        // If user already has active membership or created teams → Dashboard
+        if (created.length > 0 || activeMemberships.length > 0) {
+          window.location.replace('/Dashboard');
+          return;
+        }
+
+        // User has no active membership - show onboarding
+        // If code is in URL, mode is already set to 'join' above
+        // If there's an invited record but no code, show join mode
+        const invitedRecord = memberships.find(m => m.status === 'invited');
+        if (invitedRecord && !codeFromUrl) {
+          setMode('join');
+        }
+      } catch (e) {
+        console.error('[Onboarding] check error', e);
+      }
+      setCheckingUser(false);
+    })();
+  }, []);
 
   const handleCreate = async () => {
     if (!form.name || !form.sport_type) { toast.error('Fyll inn lagsnavn og idrettstype.'); return; }
@@ -92,13 +93,7 @@ export default function Onboarding() {
     try {
       const trialEnd = format(addDays(new Date(), 30), 'yyyy-MM-dd');
       const user = await base44.auth.me();
-
-      if (!user) {
-        toast.error('Sesjonen er utløpt – logg inn igjen.', { id: 'ct' });
-        setSaving(false);
-        base44.auth.redirectToLogin(window.location.href);
-        return;
-      }
+      if (!user) { base44.auth.redirectToLogin(window.location.href); return; }
 
       const newTeam = await base44.entities.Team.create({
         ...form,
@@ -123,40 +118,40 @@ export default function Onboarding() {
       window.location.replace('/Dashboard');
     } catch (err) {
       console.error('[Onboarding] Team creation failed', err);
-      const msg = err?.response?.data?.message || err?.message || 'Ukjent feil';
-      toast.error('Feil: ' + msg, { id: 'ct' });
+      toast.error('Feil: ' + (err?.response?.data?.message || err?.message || 'Ukjent feil'), { id: 'ct' });
       setSaving(false);
     }
   };
 
   const handleJoin = async () => {
-    console.log('[Onboarding] handleJoin called', { joinCode, joining });
     if (!joinCode.trim()) { toast.error('Skriv inn lagkoden.'); return; }
-    if (joining) { console.log('[Onboarding] Already joining'); return; }
+    if (joining) return;
 
     setJoining(true);
     toast.loading('Sjekker kode…', { id: 'jt' });
-    console.log('[Onboarding] Invoking joinTeamByCode', { join_code: joinCode.trim(), role: joinRole });
 
     try {
-      const res = await base44.functions.invoke('joinTeamByCode', { join_code: joinCode.trim(), role: joinRole });
+      const res = await base44.functions.invoke('joinTeamByCode', {
+        join_code: joinCode.trim().toUpperCase(),
+        role: joinRole
+      });
       const data = res.data;
       console.log('[Onboarding] joinTeamByCode response', data);
 
       if (data.error) {
-        console.error('[Onboarding] API returned error', data.error);
         toast.error(data.error, { id: 'jt' });
         setJoining(false);
         return;
       }
 
-      toast.success(data.already_member ? `Du er allerede med i ${data.team_name}!` : `Du er nå med i ${data.team_name}!`, { id: 'jt' });
+      const msg = data.already_member
+        ? `Du er allerede med i ${data.team_name}!`
+        : `Du er nå med i ${data.team_name}!`;
+      toast.success(msg, { id: 'jt' });
       localStorage.setItem('idrettsøkonomi_team_id', data.team_id);
-      console.log('[Onboarding] Redirecting to Dashboard');
       window.location.replace('/Dashboard');
     } catch (err) {
-      console.error('[Onboarding] Join failed', err?.message || err);
-      console.log('[Onboarding] Full error object', err);
+      console.error('[Onboarding] Join failed', err);
       toast.error('Feil: ' + (err?.response?.data?.error || err?.message || 'Ugyldig kode'), { id: 'jt' });
       setJoining(false);
     }
@@ -170,10 +165,18 @@ export default function Onboarding() {
     color: active ? '#fff' : '#6b7280',
   });
 
-  if (checkingUser) return null;
+  if (checkingUser) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+        <Loader2 style={{ width: 32, height: 32, color: '#059669', animation: 'spin 1s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#ecfdf5,#f8fafc)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       {!tosAccepted && <TermsModal onAccepted={() => setTosAccepted(true)} />}
       <div style={{ width: '100%', maxWidth: 480 }}>
         {/* Logo */}
@@ -195,7 +198,7 @@ export default function Onboarding() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <button
                   onClick={() => setMode('create')}
-                  style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '18px 20px', border: '2px solid #e2e8f0', borderRadius: 12, background: '#fff', cursor: 'pointer', textAlign: 'left', transition: 'border-color 0.15s' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '18px 20px', border: '2px solid #e2e8f0', borderRadius: 12, background: '#fff', cursor: 'pointer', textAlign: 'left' }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = '#059669'}
                   onMouseLeave={e => e.currentTarget.style.borderColor = '#e2e8f0'}
                 >
@@ -210,7 +213,7 @@ export default function Onboarding() {
 
                 <button
                   onClick={() => setMode('join')}
-                  style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '18px 20px', border: '2px solid #e2e8f0', borderRadius: 12, background: '#fff', cursor: 'pointer', textAlign: 'left', transition: 'border-color 0.15s' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '18px 20px', border: '2px solid #e2e8f0', borderRadius: 12, background: '#fff', cursor: 'pointer', textAlign: 'left' }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = '#059669'}
                   onMouseLeave={e => e.currentTarget.style.borderColor = '#e2e8f0'}
                 >
@@ -258,7 +261,7 @@ export default function Onboarding() {
                 <div style={{ display: 'flex', gap: 12 }}>
                   <button
                     type="button"
-                    onClick={() => setMode(null)}
+                    onClick={() => { setMode(null); setJoinCode(''); }}
                     disabled={joining}
                     style={{ flex: 1, height: 48, fontSize: '1rem', fontWeight: 500, background: 'transparent', border: '1px solid #e2e8f0', borderRadius: 8, cursor: 'pointer' }}
                   >
@@ -317,18 +320,12 @@ export default function Onboarding() {
                       onChange={e => setForm(f => ({ ...f, nif_number: e.target.value }))} style={{ marginTop: 6 }} />
                   </div>
                   <div style={{ display: 'flex', gap: 12 }}>
-                    <button
-                      type="button"
-                      onClick={() => setMode(null)}
-                      style={{ flex: 1, height: 48, fontSize: '1rem', fontWeight: 500, background: 'transparent', border: '1px solid #e2e8f0', borderRadius: 8, cursor: 'pointer' }}
-                    >
+                    <button type="button" onClick={() => setMode(null)}
+                      style={{ flex: 1, height: 48, fontSize: '1rem', fontWeight: 500, background: 'transparent', border: '1px solid #e2e8f0', borderRadius: 8, cursor: 'pointer' }}>
                       Tilbake
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => { if (form.name && form.sport_type) setStep(2); }}
-                      style={{ ...btnStyle(form.name && form.sport_type), flex: 1 }}
-                    >
+                    <button type="button" onClick={() => { if (form.name && form.sport_type) setStep(2); }}
+                      style={{ ...btnStyle(form.name && form.sport_type), flex: 1 }}>
                       Neste <ArrowRight style={{ width: 16, height: 16 }} />
                     </button>
                   </div>
@@ -349,20 +346,12 @@ export default function Onboarding() {
                     </label>
                   </div>
                   <div style={{ display: 'flex', gap: 12 }}>
-                    <button
-                      type="button"
-                      onClick={() => setStep(1)}
-                      disabled={saving}
-                      style={{ flex: 1, height: 48, fontSize: '1rem', fontWeight: 500, background: 'transparent', border: '1px solid #e2e8f0', borderRadius: 8, cursor: 'pointer' }}
-                    >
+                    <button type="button" onClick={() => setStep(1)} disabled={saving}
+                      style={{ flex: 1, height: 48, fontSize: '1rem', fontWeight: 500, background: 'transparent', border: '1px solid #e2e8f0', borderRadius: 8, cursor: 'pointer' }}>
                       Tilbake
                     </button>
-                    <button
-                      type="button"
-                      onClick={handleCreate}
-                      disabled={saving}
-                      style={{ flex: 1, height: 48, fontSize: '1rem', fontWeight: 600, background: saving ? '#6ee7b7' : '#059669', color: '#fff', border: 'none', borderRadius: 8, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-                    >
+                    <button type="button" onClick={handleCreate} disabled={saving}
+                      style={{ flex: 1, height: 48, fontSize: '1rem', fontWeight: 600, background: saving ? '#6ee7b7' : '#059669', color: '#fff', border: 'none', borderRadius: 8, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                       {saving && <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} />}
                       Opprett lag
                     </button>

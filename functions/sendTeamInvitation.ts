@@ -1,5 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
+// Single source of truth for app URL
+const APP_BASE_URL = 'https://app.base44.com/apps/68091f1e07f9b8d9b77d33a3';
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -11,29 +14,33 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Fetch team to get join_code - try multiple approaches, but don't fail if not found
-    let joinCode = '';
-    const userTeams = await base44.entities.Team.filter({ id: team_id }).catch(() => []);
-    if (userTeams.length > 0) {
-      joinCode = userTeams[0].join_code || '';
-    } else {
-      const allTeams = await base44.entities.Team.list('-created_date', 200).catch(() => []);
-      const found = allTeams.find(t => t.id === team_id);
-      if (found) joinCode = found.join_code || '';
-    }
-    // Also create a TeamMember record with 'invited' status so we can look up the role later
-    await base44.asServiceRole.entities.TeamMember.create({
-      team_id: team_id,
-      user_email: recipient_email.toLowerCase(),
-      role: role,
-      status: 'invited',
-      invited_by_email: user.email,
-    }).catch(e => console.warn('[sendTeamInvitation] TeamMember pre-create warning:', e.message));
+    // Use service role to fetch team (guaranteed access)
+    const teams = await base44.asServiceRole.entities.Team.filter({ id: team_id }).catch(() => []);
+    const team = teams[0];
+    const joinCode = team?.join_code || '';
 
-    const appUrl = 'https://app.base44.com/apps/68091f1e07f9b8d9b77d33a3';
-    const inviteLink = joinCode
-      ? `${appUrl}/Onboarding?code=${joinCode}&role=${role}`
-      : `${appUrl}/Onboarding`;
+    console.log(`[sendTeamInvitation] team_id=${team_id}, join_code=${joinCode}`);
+
+    // Pre-create invited TeamMember so joinTeamByCode can activate it with correct role
+    const existingMembers = await base44.asServiceRole.entities.TeamMember.filter({
+      team_id: team_id,
+      user_email: recipient_email.toLowerCase()
+    }).catch(() => []);
+
+    if (existingMembers.length === 0) {
+      await base44.asServiceRole.entities.TeamMember.create({
+        team_id: team_id,
+        user_email: recipient_email.toLowerCase(),
+        role: role,
+        status: 'invited',
+        invited_by_email: user.email,
+      });
+      console.log(`[sendTeamInvitation] Pre-created invited TeamMember for ${recipient_email} as ${role}`);
+    }
+
+    // Build invite link: goes to Onboarding with code+role pre-filled
+    const inviteLink = `${APP_BASE_URL}/Onboarding?code=${joinCode}&role=${role}`;
+    console.log(`[sendTeamInvitation] Generated invite link: ${inviteLink}`);
 
     const roleLabels = {
       admin: 'Admin', kasserer: 'Kasserer', styreleder: 'Styreleder',
@@ -42,25 +49,22 @@ Deno.serve(async (req) => {
     const roleLabel = roleLabels[role] || role;
 
     const subject = `Du er invitert til ${team_name} på IdrettsØkonomi`;
-    const body = `Hei!
+    const emailBody = `Hei!
 
 ${user.full_name || user.email} har invitert deg til å bli med i "${team_name}" som ${roleLabel}.
 
-Klikk på lenken nedenfor for å opprette konto og bli med i laget automatisk:
+Klikk på lenken nedenfor for å bli med:
 ${inviteLink}
 
-Eller logg inn og skriv inn denne koden manuelt: ${joinCode}
+Eller logg inn på ${APP_BASE_URL} og skriv inn lagkoden manuelt: ${joinCode}
 
 Med vennlig hilsen,
 IdrettsØkonomi-teamet`;
 
-    console.log(`[sendTeamInvitation] Sending invite to ${recipient_email} for team ${team_name} (${team_id})`);
-
-    // Use service role for sending email (required by Base44 integrations)
     await base44.asServiceRole.integrations.Core.SendEmail({
       to: recipient_email,
       subject: subject,
-      body: body,
+      body: emailBody,
       from_name: 'IdrettsØkonomi',
     });
 
