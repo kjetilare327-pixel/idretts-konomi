@@ -16,21 +16,19 @@ Deno.serve(async (req) => {
 
     // Verify the user is a member of this team with an admin role
     const ADMIN_ROLES = ['admin', 'kasserer', 'styreleder', 'revisor'];
-    const members = await base44.asServiceRole.entities.TeamMember.filter({ team_id });
-    const myMembership = members.find(m => m.user_email === userEmail && m.status === 'active');
-
-    // Also allow team creator
-    const teams = await base44.asServiceRole.entities.Team.filter({ id: team_id });
+    const [members, teams] = await Promise.all([
+      base44.asServiceRole.entities.TeamMember.filter({ team_id }),
+      base44.asServiceRole.entities.Team.filter({ id: team_id }),
+    ]);
     const team = teams[0];
     const isCreator = team?.created_by === user.email;
-
-    if (!myMembership && !isCreator) {
-      return Response.json({ error: 'Access denied' }, { status: 403 });
-    }
+    // Find the highest-privilege active membership for this user
+    const myMemberships = members.filter(m => m.user_email === userEmail && m.status === 'active');
+    const myMembership = myMemberships.find(m => ADMIN_ROLES.includes(m.role)) || myMemberships[0] || null;
 
     const isAdminRole = isCreator || ADMIN_ROLES.includes(myMembership?.role);
     if (!isAdminRole) {
-      return Response.json({ error: 'Admin role required' }, { status: 403 });
+      return Response.json({ error: 'Admin role required', userEmail, role: myMembership?.role }, { status: 403 });
     }
 
     // Fetch all players for the team using service role (bypasses RLS)
