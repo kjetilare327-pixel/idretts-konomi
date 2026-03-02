@@ -43,9 +43,21 @@ export default function Players() {
   const [sendingReminder, setSendingReminder] = useState(null);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
 
+  // Admins use backend function (bypasses RLS issues); players/parents use direct filter for own record
   const { data: players = [], isLoading } = useQuery({
-    queryKey: ['players', currentTeam?.id],
-    queryFn: () => base44.entities.Player.filter({ team_id: currentTeam.id }),
+    queryKey: ['players', currentTeam?.id, isAdmin ? 'admin' : 'user'],
+    queryFn: async () => {
+      if (isAdmin) {
+        const res = await base44.functions.invoke('getTeamPlayers', { team_id: currentTeam.id });
+        const list = res?.data?.players || [];
+        console.log(`[Players] team=${currentTeam.id} → ${list.length} players via getTeamPlayers`);
+        return list;
+      }
+      // Non-admin: fetch only own profile
+      const list = await base44.entities.Player.filter({ team_id: currentTeam.id });
+      console.log(`[Players] non-admin team=${currentTeam.id} → ${list.length} records`);
+      return list;
+    },
     enabled: !!currentTeam,
   });
 
