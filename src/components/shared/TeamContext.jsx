@@ -43,7 +43,7 @@ function computeInitialState(bootData) {
   }
   const userEmail = (bootData.user?.email || '').toLowerCase();
   const myTeams = bootData.teams || [];
-  const map = buildMembershipMap(bootData.memberTeams);
+  const map = buildMembershipMap(bootData.memberTeams || []);
   const savedTeamId = typeof localStorage !== 'undefined' ? localStorage.getItem('idrettsøkonomi_team_id') : null;
   const selected = (savedTeamId && myTeams.find(t => t.id === savedTeamId)) || myTeams[0] || null;
   let role = 'player';
@@ -59,6 +59,7 @@ function computeInitialState(bootData) {
     }
     try { localStorage.setItem('idrettsøkonomi_team_id', selected.id); } catch(_) {}
   }
+  console.log(`[TeamContext] computeInitialState: user=${userEmail} team=${selected?.id} role=${role} memberTeams=${(bootData.memberTeams||[]).length}`);
   return { currentTeam: selected, teams: myTeams, myMemberships: map, currentTeamRole: role, loading: false, user: bootData.user };
 }
 
