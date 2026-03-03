@@ -92,36 +92,26 @@ export default function Onboarding() {
     toast.loading('Oppretter lag…', { id: 'ct' });
 
     try {
-      const trialEnd = format(addDays(new Date(), 30), 'yyyy-MM-dd');
-      const user = await base44.auth.me();
-      if (!user) { base44.auth.redirectToLogin(window.location.href); return; }
-
-      const joinCode = generateJoinCode();
-      console.log('[Onboarding] Creating team with join_code:', joinCode);
-
-      const newTeam = await base44.entities.Team.create({
-        ...form,
+      const res = await base44.functions.invoke('createNewTeam', {
+        name: form.name,
+        sport_type: form.sport_type,
         estimated_members: Number(form.estimated_members) || 0,
-        subscription_status: 'trial',
-        trial_end_date: trialEnd,
-        gdpr_consent: true,
-        join_code: joinCode,
-        members: [{ email: user.email, role: 'admin' }],
+        nif_number: form.nif_number || '',
       });
+      const data = res?.data;
 
-      console.log('[Onboarding] Team created:', newTeam.id, 'join_code:', newTeam.join_code);
+      if (!data || data.ok === false) {
+        toast.error(data?.message || 'Feil ved opprettelse av lag.', { id: 'ct' });
+        setSaving(false);
+        return;
+      }
 
-      await base44.entities.TeamMember.create({
-        team_id: newTeam.id,
-        user_email: user.email.toLowerCase(),
-        role: 'admin',
-        status: 'active',
-        invited_by_email: user.email,
-      });
-
-      console.log('[Onboarding] TeamMember created for admin');
-      toast.success('Lag opprettet! Kode: ' + (newTeam.join_code || joinCode), { id: 'ct' });
-      localStorage.setItem('idrettsøkonomi_team_id', newTeam.id);
+      console.log('[Onboarding] Team created via backend:', data.team_id, 'join_code:', data.join_code);
+      toast.success('Lag opprettet! Kode: ' + data.join_code, { id: 'ct' });
+      // Clean up any stale pending flags
+      localStorage.removeItem('pending_joined_team_id');
+      localStorage.removeItem('pending_joined_team_name');
+      localStorage.setItem('idrettsøkonomi_team_id', data.team_id);
       window.location.replace('/Dashboard');
     } catch (err) {
       console.error('[Onboarding] Team creation failed', err);
