@@ -226,6 +226,7 @@ export default function BudgetPage() {
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="font-semibold text-sm">{formatNOK(b.monthly_amount)}</span>
+                        {isAdmin && (
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(b)}>
                             <Pencil className="w-3.5 h-3.5" />
@@ -234,6 +235,7 @@ export default function BudgetPage() {
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </div>
+                        )}
                       </div>
                     </div>
                   ))}
