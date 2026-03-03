@@ -51,23 +51,25 @@ export default function Players() {
 
   // Admins: always use getTeamPlayers backend function (service role, bypasses RLS).
   // Non-admins: fetch only own player record.
+  // We include currentTeamRole in the queryKey so the query re-runs when the role resolves.
   const { data: players = [], isLoading, error: playersError } = useQuery({
     queryKey: ['players', currentTeam?.id, currentTeamRole],
     queryFn: async () => {
       if (!currentTeam?.id) return [];
+      console.log(`[Players] queryFn: team=${currentTeam.id} role=${currentTeamRole} isAdmin=${isAdmin}`);
       if (isAdmin) {
         const res = await base44.functions.invoke('getTeamPlayers', { team_id: currentTeam.id });
         const list = res?.data?.players || [];
-        console.log(`[Players] admin team=${currentTeam.id} role=${currentTeamRole} → ${list.length} players`);
+        console.log(`[Players] admin → ${list.length} players`);
         return list;
       }
       // Non-admin: own profile only
       const u = await base44.auth.me();
       const list = await base44.entities.Player.filter({ team_id: currentTeam.id, user_email: u?.email });
-      console.log(`[Players] non-admin team=${currentTeam.id} user=${u?.email} → ${list.length} records`);
+      console.log(`[Players] non-admin user=${u?.email} → ${list.length} records`);
       return list;
     },
-    enabled: !!currentTeam,
+    enabled: !!currentTeam && !!currentTeamRole,
     staleTime: 0,
   });
 
