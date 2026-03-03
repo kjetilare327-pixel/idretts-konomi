@@ -44,7 +44,8 @@ Deno.serve(async (req) => {
 
     // Fetch all players for the team using service role (bypasses RLS)
     const players = await base44.asServiceRole.entities.Player.filter({ team_id });
-    console.log(`[getTeamPlayers] team=${team_id} user=${userEmail} role=${myMembership?.role || (isCreator ? 'creator' : 'legacy')} → ${players.length} players`);
+    const callerRole = myAdminMembership?.role || (isCreator ? 'creator' : 'legacy-admin');
+    console.log(`[getTeamPlayers] team=${team_id} user=${userEmail} role=${callerRole} → ${players.length} players`);
 
     return Response.json({ players, count: players.length });
   } catch (error) {
