@@ -193,6 +193,9 @@ export default function Players() {
 
   if (!currentTeam) return <p className="text-center py-12 text-slate-500">Velg et lag for å se spillere.</p>;
 
+  // Debug panel — only in development or when 0 players returned for admin
+  const showDebug = isAdmin && !isLoading && players.length === 0;
+
   const handleRefresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ['players', currentTeam?.id] });
   };
