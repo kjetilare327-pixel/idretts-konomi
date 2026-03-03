@@ -85,6 +85,8 @@ Deno.serve(async (req) => {
       `
     });
 
+    await base44.asServiceRole.entities.AuditLog.create({ team_id, user_email: user.email.toLowerCase(), action: 'create', entity_type: 'Payment', entity_id: payment.id, description: `Vipps betaling opprettet for krav ${claim_id} – ${vippsReference}`, timestamp: new Date().toISOString() }).catch(() => {});
+
     return Response.json({
       success: true,
       payment_id: payment.id,

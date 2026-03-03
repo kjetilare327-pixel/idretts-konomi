@@ -64,6 +64,8 @@ Deno.serve(async (req) => {
 
       await base44.asServiceRole.entities.Payment.update(payment_id, { receipt_url: file_url });
 
+      await base44.asServiceRole.entities.AuditLog.create({ team_id: payment.team_id, user_email: user.email.toLowerCase(), action: 'approve', entity_type: 'Payment', entity_id: payment_id, description: `Betaling fullført via ${payment.payment_method} – ${payment.transaction_id || payment_id}`, timestamp: new Date().toISOString() }).catch(() => {});
+
       return Response.json({ success: true, message: 'Betaling fullført', receipt_url: file_url });
     }
 

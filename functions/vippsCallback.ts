@@ -119,6 +119,8 @@ Deno.serve(async (req) => {
       }
     }
 
+    await base44.asServiceRole.entities.AuditLog.create({ team_id: payment.team_id, user_email: 'vipps-callback', action: 'approve', entity_type: 'Payment', entity_id: payment.id, description: `Vipps callback: betaling fullført – ${payment.transaction_id}`, timestamp: new Date().toISOString() }).catch(() => {});
+
     return Response.json({
       success: true,
       payment_id: payment.id,

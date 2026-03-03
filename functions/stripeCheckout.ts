@@ -58,6 +58,8 @@ Deno.serve(async (req) => {
 
     const session = await stripe.checkout.sessions.create(sessionParams);
 
+    await base44.asServiceRole.entities.AuditLog.create({ team_id, user_email: user.email.toLowerCase(), action: 'create', entity_type: 'Payment', entity_id: session.id, description: `Stripe checkout session opprettet – mode=${mode} session=${session.id}`, timestamp: new Date().toISOString() }).catch(() => {});
+
     return Response.json({ url: session.url, session_id: session.id });
   } catch (error) {
     console.error('Stripe checkout error:', error);

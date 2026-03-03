@@ -66,6 +66,8 @@ Deno.serve(async (req) => {
       console.warn('E-post sending feilet:', emailErr.message);
     }
 
+    await base44.asServiceRole.entities.AuditLog.create({ team_id: claim.team_id, user_email: user.email.toLowerCase(), action: 'create', entity_type: 'Payment', entity_id: payment.id, description: `Vipps betalingslenke opprettet for krav ${claim_id} – ${orderId}`, timestamp: new Date().toISOString() }).catch(() => {});
+
     return Response.json({ success: true, payment_id: payment.id, payment_link: paymentLink, order_id: orderId });
 
   } catch (error) {
