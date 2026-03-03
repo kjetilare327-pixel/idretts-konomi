@@ -35,7 +35,6 @@ export default function Players() {
   const { currentTeam, isTeamAdmin, playerProfile, user } = useTeam();
   const queryClient = useQueryClient();
   const isAdmin = isTeamAdmin();
-  console.log(`[Players] currentTeam=${currentTeam?.id} isAdmin=${isAdmin} user=${user?.email}`);
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
   const [form, setForm] = useState({ full_name: '', user_email: '', role: 'player', balance: '0', payment_status: 'paid', phone: '', notes: '' });
