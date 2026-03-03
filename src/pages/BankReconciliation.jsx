@@ -10,9 +10,55 @@ import { Badge } from '@/components/ui/badge';
 import { Upload, Loader2, CheckCircle2, XCircle, AlertCircle, Download } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import ReadOnlyBanner from '@/components/shared/ReadOnlyBanner';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
+import { formatNOK } from '@/components/shared/FormatUtils';
+
+const FINANCE_ROLES = ['admin', 'kasserer', 'styreleder', 'revisor'];
+
+function NonAdminBankView({ currentTeam }) {
+  const { data: summary, isLoading } = useQuery({
+    queryKey: ['teamSummary', currentTeam?.id],
+    queryFn: () => base44.functions.invoke('getTeamSummary', { team_id: currentTeam.id }).then(r => r.data),
+    enabled: !!currentTeam,
+    staleTime: 60000,
+  });
+
+  if (isLoading) return <div className="flex justify-center py-24"><Loader2 className="w-6 h-6 animate-spin text-emerald-500" /></div>;
+
+  const bank = summary?.bank || {};
+
+  return (
+    <div className="space-y-6">
+      <ReadOnlyBanner />
+      <div>
+        <h1 className="text-3xl font-bold mb-1">Bankavstemming</h1>
+        <p className="text-slate-500 text-sm">Bankstatus for {currentTeam.name}</p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[
+          { label: 'Totalt importert', value: bank.totalBankTxns || 0, unit: 'transaksjoner', color: 'text-slate-700 dark:text-slate-200' },
+          { label: 'Avstemt', value: bank.reconciledCount || 0, unit: 'transaksjoner', color: 'text-emerald-600' },
+          { label: 'Uavstemte', value: bank.unreconciledCount || 0, unit: 'transaksjoner', color: bank.unreconciledCount > 0 ? 'text-amber-600' : 'text-slate-400' },
+        ].map(s => (
+          <div key={s.label} className="rounded-xl shadow-md bg-white dark:bg-slate-900 p-5">
+            <p className="text-xs text-slate-500 mb-1">{s.label}</p>
+            <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+            <p className="text-xs text-slate-400">{s.unit}</p>
+          </div>
+        ))}
+      </div>
+      {bank.lastReconciled && (
+        <p className="text-sm text-slate-500">Sist avstemt: {new Date(bank.lastReconciled).toLocaleDateString('nb-NO')}</p>
+      )}
+    </div>
+  );
+}
 
 export default function BankReconciliation() {
-  const { currentTeam, user } = useTeam();
+  const { currentTeam, currentTeamRole, user } = useTeam();
+  const isAdmin = FINANCE_ROLES.includes(currentTeamRole);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState(null);
 
