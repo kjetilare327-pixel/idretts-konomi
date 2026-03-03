@@ -53,7 +53,7 @@ export default function Reports() {
           </h1>
           <p className="text-sm text-slate-500">{currentTeam?.name} – Finansielle rapporter</p>
         </div>
-        <ReportExport transactions={transactions} budgets={budgets} />
+        {isAdmin && <ReportExport transactions={transactions} budgets={budgets} />}
       </div>
 
       {/* Summary KPIs */}
