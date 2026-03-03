@@ -129,6 +129,8 @@ export default function BankReconciliation() {
     return <div className="p-6">Laster...</div>;
   }
 
+  if (!isAdmin) return <NonAdminBankView currentTeam={currentTeam} />;
+
   if (hasError) {
     return (
       <div className="p-6 space-y-4">
