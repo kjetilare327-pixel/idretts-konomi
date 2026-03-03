@@ -11,8 +11,6 @@ import { Upload, Loader2, CheckCircle2, XCircle, AlertCircle, Download } from 'l
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import ReadOnlyBanner from '@/components/shared/ReadOnlyBanner';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import { formatNOK } from '@/components/shared/FormatUtils';
 
 const FINANCE_ROLES = ['admin', 'kasserer', 'styreleder', 'revisor'];

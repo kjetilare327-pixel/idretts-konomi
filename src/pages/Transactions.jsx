@@ -32,7 +32,6 @@ import PullToRefresh from '@/components/mobile/PullToRefresh';
 import NativeSelect from '@/components/mobile/NativeSelect';
 import ReadOnlyBanner from '@/components/shared/ReadOnlyBanner';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { formatNOK } from '@/components/shared/FormatUtils';
 
 const FINANCE_ROLES = ['admin', 'kasserer', 'styreleder', 'revisor'];
 
