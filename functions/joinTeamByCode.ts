@@ -107,6 +107,23 @@ Deno.serve(async (req) => {
       console.log(`[joinTeamByCode] Created Player profile: ${newPlayer.id} name=${displayName}`);
     }
 
+    // Audit log
+    if (!activeRecord) {
+      try {
+        await base44.asServiceRole.entities.AuditLog.create({
+          team_id: team.id,
+          user_email: userEmail,
+          action: 'create',
+          entity_type: 'TeamMember',
+          entity_id: team.id,
+          description: `Bruker ${userEmail} ble med i lag ${team.name} via kode`,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (e) {
+        console.warn('[joinTeamByCode] AuditLog failed (non-blocking):', e.message);
+      }
+    }
+
     return Response.json({
       ok: true,
       code: activeRecord ? 'ALREADY_MEMBER' : 'JOINED',
