@@ -136,20 +136,19 @@ export default function BudgetPage() {
         )}
       </div>
 
+      {isAdmin && (
+      <>
       <AutoBudgetGenerator
         transactions={transactions}
         budgets={budgets}
         teamId={currentTeam.id}
         onApplyAll={() => queryClient.invalidateQueries({ queryKey: ['budgets', currentTeam.id] })}
       />
-
       <AiBudgetPlanner teamId={currentTeam?.id} onApplyBudget={() => queryClient.invalidateQueries({ queryKey: ['budgets'] })} />
-
-      {/* Smart budget alerts with cashflow */}
       <BudgetAlertConfig transactions={transactions} budgets={budgets} claims={[]} />
-
-      {/* Budget deviation alerts */}
       <BudgetDeviationAlerts transactions={transactions} budgets={budgets} />
+      </>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
