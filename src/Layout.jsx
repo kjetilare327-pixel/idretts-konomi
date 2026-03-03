@@ -429,10 +429,12 @@ function AuthGate({ children, currentPageName }) {
         await base44.functions.invoke('acceptPendingInvites', { user_email: userEmail }).catch(e =>
           console.warn('[AuthGate] acceptPendingInvites failed (non-blocking):', e?.message)
         );
+        // Force re-fetch after activation to get fresh roles
         const refreshed = await base44.entities.TeamMember.filter({ user_email: userEmail }).catch(() => []);
         if (refreshed.length > 0) {
           memberRecords.length = 0;
           refreshed.forEach(r => memberRecords.push(r));
+          console.log(`[AuthGate] Re-fetched ${refreshed.length} member record(s) after activation`);
         }
       }
 
