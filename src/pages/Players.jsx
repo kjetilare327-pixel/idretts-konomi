@@ -187,63 +187,33 @@ export default function Players() {
     await queryClient.invalidateQueries({ queryKey: ['players', currentTeam?.id] });
   };
 
-  // Player view (ikke admin)
+  // Non-admin (forelder/spiller): show only OWN profile, no other players' finances
   if (!isAdmin) {
+    const myProfile = playerProfile || players.find(p => p.user_email === user?.email);
     return (
       <PullToRefresh onRefresh={handleRefresh}>
-        <div className="space-y-6 max-w-4xl">
+        <div className="space-y-6 max-w-2xl">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Min profil</h1>
-            <p className="text-sm text-slate-500">Din profil og betalingsstatus for {currentTeam.name}</p>
+            <p className="text-sm text-slate-500">Din profil for {currentTeam.name}</p>
           </div>
 
-          {/* My profile */}
-          {playerProfile && (
-            <PlayerProfileCard 
-              player={playerProfile}
-              ledger={getLedger(playerProfile)}
-              onUpdate={() => queryClient.invalidateQueries({ queryKey: ['players'] })} 
+          {myProfile ? (
+            <PlayerProfileCard
+              player={myProfile}
+              ledger={getLedger(myProfile)}
+              onUpdate={() => queryClient.invalidateQueries({ queryKey: ['players'] })}
               isOwnProfile={true}
             />
+          ) : (
+            <Card className="border-0 shadow-md dark:bg-slate-900">
+              <CardContent className="p-8 text-center text-slate-400">
+                <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Ingen profil funnet for dette laget.</p>
+                <p className="text-xs mt-1">Ta kontakt med administrator.</p>
+              </CardContent>
+            </Card>
           )}
-
-          {/* Lagets betalingsoversikt */}
-          <Card className="border-0 shadow-md dark:bg-slate-900">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Users className="w-4 h-4 text-emerald-500" /> Lagets betalingsstatus
-              </CardTitle>
-              <CardDescription>Transparent oversikt over alle spillere</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{showNames ? 'Spiller' : 'ID'}</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Saldo</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {players.map((p, i) => {
-                    const l = getLedger(p);
-                    const cfg = STATUS_CONFIG[l.status] || STATUS_CONFIG.paid;
-                    return (
-                      <TableRow key={p.id}>
-                        <TableCell>{showNames ? p.full_name : `Spiller ${String.fromCharCode(65 + i)}`}</TableCell>
-                        <TableCell>
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badgeClass}`}>{cfg.label}</span>
-                        </TableCell>
-                        <TableCell className={`text-right font-medium ${l.balance > 0 ? 'text-red-600' : l.balance < 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                          {l.balance > 0 ? `-${formatNOK(l.balance)}` : l.balance < 0 ? `+${formatNOK(Math.abs(l.balance))}` : '–'}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
         </div>
       </PullToRefresh>
     );
