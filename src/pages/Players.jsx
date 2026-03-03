@@ -32,14 +32,19 @@ import VippsClaimActions from '../components/players/VippsClaimActions';
 import PullToRefresh from '@/components/mobile/PullToRefresh';
 
 export default function Players() {
-  const { currentTeam, isTeamAdmin, playerProfile, user, currentTeamRole } = useTeam();
+  const { currentTeam, playerProfile, user, currentTeamRole, loading: teamLoading, myMemberships } = useTeam();
   const queryClient = useQueryClient();
-  // Derive isAdmin from currentTeamRole directly — not from isTeamAdmin() which depends on myMemberships being loaded
   const FINANCE_ROLES = ['admin', 'kasserer', 'styreleder', 'revisor'];
   const isAdmin = FINANCE_ROLES.includes(currentTeamRole);
+  // roleReady: true once we've confirmed the role from memberships (not just the default)
+  const roleReady = !teamLoading && !!currentTeam && (
+    currentTeamRole !== 'player' ||
+    Object.keys(myMemberships).length > 0 ||
+    user?.email === currentTeam?.created_by
+  );
   React.useEffect(() => {
-    console.log(`[Players page] team=${currentTeam?.id} role=${currentTeamRole} isAdmin=${isAdmin} user=${user?.email}`);
-  }, [currentTeam?.id, currentTeamRole, isAdmin]);
+    console.log(`[Players page] team=${currentTeam?.id} role=${currentTeamRole} isAdmin=${isAdmin} roleReady=${roleReady} user=${user?.email}`);
+  }, [currentTeam?.id, currentTeamRole, isAdmin, roleReady]);
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
   const [form, setForm] = useState({ full_name: '', user_email: '', role: 'player', balance: '0', payment_status: 'paid', phone: '', notes: '' });
