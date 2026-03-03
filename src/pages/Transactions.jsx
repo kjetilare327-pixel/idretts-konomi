@@ -157,6 +157,7 @@ export default function Transactions() {
   const openNew = (mode = 'manual') => { setEditData(null); setFormMode(mode); setShowForm(true); };
 
   if (!currentTeam) return <p className="text-center py-12 text-slate-500">Velg et lag for å se transaksjoner.</p>;
+  if (!isAdmin) return <NonAdminTransactionView currentTeam={currentTeam} />;
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
