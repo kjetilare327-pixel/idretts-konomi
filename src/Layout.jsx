@@ -46,6 +46,7 @@ const ROOT_PAGES = ['Dashboard', 'PaymentPortal', 'Players', 'Reports', 'Setting
 // ROLES MATRIX:
 // ADMIN tier: admin, kasserer, styreleder, revisor — full access to finance/team data
 // MEMBER tier: player, forelder — own payments, own profile, events only
+//   Members CANNOT see: Transaksjoner, Bankavstemming, Budsjett, Rapporter, Fakturering, Kommunikasjon, Revisjonslogg
 const CORE_NAV = [
   { name: 'Dashboard',       page: 'Dashboard',           icon: LayoutDashboard, roles: ['admin','kasserer','styreleder','revisor','player','forelder'] },
   { name: 'Mine betalinger', page: 'PaymentPortal',       icon: Receipt,         roles: ['player','forelder'] },
@@ -53,7 +54,7 @@ const CORE_NAV = [
   { name: 'Spillere',        page: 'Players',             icon: Users,           roles: ['admin','kasserer','styreleder','revisor'] },
   { name: 'Transaksjoner',   page: 'Transactions',        icon: Receipt,         roles: ['admin','kasserer','revisor'] },
   { name: 'Bankavstemming',  page: 'BankReconciliation',  icon: Receipt,         roles: ['admin','kasserer'] },
-  { name: 'Budsjett',        page: 'Budget',              icon: PiggyBank,       roles: ['admin','kasserer','revisor'] },
+  { name: 'Budsjett',        page: 'Budget',              icon: PiggyBank,       roles: ['admin','kasserer','styreleder','revisor'] },
   { name: 'Fakturering',     page: 'InvoiceAutomation',   icon: Receipt,         roles: ['admin','kasserer'] },
   { name: 'Rapporter',       page: 'Reports',             icon: FileBarChart,    roles: ['admin','kasserer','styreleder','revisor'] },
   { name: 'Kommunikasjon',   page: 'Communications',      icon: Mail,            roles: ['admin','kasserer'] },
