@@ -16,23 +16,30 @@ Deno.serve(async (req) => {
 
     // Verify the user is a member of this team with an admin role
     const ADMIN_ROLES = ['admin', 'kasserer', 'styreleder', 'revisor'];
+
     const [members, teams] = await Promise.all([
       base44.asServiceRole.entities.TeamMember.filter({ team_id }),
       base44.asServiceRole.entities.Team.filter({ id: team_id }),
     ]);
     const team = teams[0];
     const isCreator = team?.created_by === user.email;
-    // Find the highest-privilege active membership for this user
-    const myMemberships = members.filter(m => m.user_email === userEmail && m.status === 'active');
-    const myMembership = myMemberships.find(m => ADMIN_ROLES.includes(m.role)) || myMemberships[0] || null;
 
-    // Also allow team members via Team.members array (legacy)
-    const legacyMember = team?.members?.find(m => m.email === user.email);
+    // Check all memberships for this user (by both email and lowercased email)
+    const myMemberships = members.filter(m =>
+      (m.user_email || '').toLowerCase() === userEmail && m.status === 'active'
+    );
+    const myAdminMembership = myMemberships.find(m => ADMIN_ROLES.includes(m.role));
+
+    // Also allow via Team.members legacy array
+    const legacyMember = team?.members?.find(m => (m.email || '').toLowerCase() === userEmail);
     const isLegacyAdmin = legacyMember && ADMIN_ROLES.includes(legacyMember.role);
 
-    const isAdminRole = isCreator || ADMIN_ROLES.includes(myMembership?.role) || isLegacyAdmin;
+    const isAdminRole = isCreator || !!myAdminMembership || isLegacyAdmin;
+
+    console.log(`[getTeamPlayers] user=${userEmail} isCreator=${isCreator} myMemberships=${myMemberships.length} isAdmin=${isAdminRole}`);
+
     if (!isAdminRole) {
-      return Response.json({ error: 'Admin role required', userEmail, role: myMembership?.role }, { status: 403 });
+      return Response.json({ error: 'Admin role required', userEmail, myMemberships: myMemberships.map(m => m.role) }, { status: 403 });
     }
 
     // Fetch all players for the team using service role (bypasses RLS)
