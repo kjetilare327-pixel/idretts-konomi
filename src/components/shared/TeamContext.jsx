@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 const TeamContext = createContext(null);
 
 export const FINANCE_ROLES = ['admin', 'kasserer', 'styreleder', 'revisor'];
+export const MEMBER_ROLES = ['player', 'forelder']; // non-finance member roles
 export const ADMIN_ROLES = ['admin'];
 
 async function fetchMyTeams(userEmail) {
