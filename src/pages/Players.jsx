@@ -58,7 +58,7 @@ export default function Players() {
   // Non-admins: fetch only own player record.
   // We include currentTeamRole in the queryKey so the query re-runs when the role resolves.
   const { data: players = [], isLoading, error: playersError } = useQuery({
-    queryKey: ['players', currentTeam?.id, currentTeamRole],
+    queryKey: ['players', currentTeam?.id, currentTeamRole, roleReady],
     queryFn: async () => {
       if (!currentTeam?.id) return [];
       console.log(`[Players] queryFn: team=${currentTeam.id} role=${currentTeamRole} isAdmin=${isAdmin}`);
@@ -74,7 +74,7 @@ export default function Players() {
       console.log(`[Players] non-admin user=${u?.email} → ${list.length} records`);
       return list;
     },
-    enabled: !!currentTeam && !!currentTeamRole,
+    enabled: !!currentTeam && roleReady,
     staleTime: 0,
   });
 
