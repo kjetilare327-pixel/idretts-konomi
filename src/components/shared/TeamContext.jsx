@@ -23,25 +23,38 @@ async function fetchMyTeams(userEmail) {
 }
 
 // Synchronously compute initial state from bootData so first render is correct
+const ROLE_PRIORITY = ['admin', 'kasserer', 'styreleder', 'revisor', 'forelder', 'player'];
+
+function buildMembershipMap(memberTeams) {
+  const map = {};
+  for (const m of (memberTeams || [])) {
+    if (m.status !== 'active') continue;
+    const existing = map[m.team_id];
+    if (!existing || ROLE_PRIORITY.indexOf(m.role) < ROLE_PRIORITY.indexOf(existing.role)) {
+      map[m.team_id] = m;
+    }
+  }
+  return map;
+}
+
 function computeInitialState(bootData) {
   if (!bootData) {
     return { currentTeam: null, teams: [], myMemberships: {}, currentTeamRole: 'player', loading: true, user: null };
   }
-  const userEmail = bootData.user?.email;
+  const userEmail = (bootData.user?.email || '').toLowerCase();
   const myTeams = bootData.teams || [];
-  const map = {};
-  if (bootData.memberTeams) {
-    for (const m of bootData.memberTeams) map[m.team_id] = m;
-  }
+  const map = buildMembershipMap(bootData.memberTeams);
   const savedTeamId = typeof localStorage !== 'undefined' ? localStorage.getItem('idrettsøkonomi_team_id') : null;
   const selected = (savedTeamId && myTeams.find(t => t.id === savedTeamId)) || myTeams[0] || null;
   let role = 'player';
   if (selected) {
     const membership = map[selected.id];
-    if (membership) role = membership.role;
-    else if (selected.created_by === userEmail) role = 'admin';
-    else {
-      const leg = selected.members?.find(m => m.email === userEmail);
+    if (membership) {
+      role = membership.role;
+    } else if ((selected.created_by || '').toLowerCase() === userEmail) {
+      role = 'admin';
+    } else {
+      const leg = selected.members?.find(m => (m.email || '').toLowerCase() === userEmail);
       role = leg?.role || 'player';
     }
     try { localStorage.setItem('idrettsøkonomi_team_id', selected.id); } catch(_) {}
