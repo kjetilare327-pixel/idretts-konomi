@@ -462,9 +462,11 @@ function AuthGate({ children, currentPageName }) {
         return;
       }
 
+      // Invalidate cache on fresh boot so TeamContext always gets fresh role data
       _sessionCache = { bootData: data, lastFetch: Date.now() };
       setBootData(data);
       setStatus('authed');
+      console.log(`[AuthGate] boot ok user=${user.email} teams=${data.teams.length} activeMemberships=${activeMemberships.length}`);
     } catch (err) {
       console.error('[AuthGate] boot error:', err?.message);
       _sessionCache = null;
