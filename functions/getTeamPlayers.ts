@@ -35,11 +35,11 @@ Deno.serve(async (req) => {
     const isLegacyAdmin = legacyMember && ADMIN_ROLES.includes(legacyMember.role);
 
     const isAdminRole = isCreator || !!myAdminMembership || isLegacyAdmin;
-
-    console.log(`[getTeamPlayers] user=${userEmail} isCreator=${isCreator} myMemberships=${myMemberships.length} isAdmin=${isAdminRole}`);
+    // For admin users calling on behalf of a team they own (creator), always allow
+    console.log(`[getTeamPlayers] user=${userEmail} isCreator=${isCreator} myMemberships=${myMemberships.map(m=>m.role)} isAdmin=${isAdminRole}`);
 
     if (!isAdminRole) {
-      return Response.json({ error: 'Admin role required', userEmail, myMemberships: myMemberships.map(m => m.role) }, { status: 403 });
+      return Response.json({ error: 'Admin role required', userEmail, roles: myMemberships.map(m => m.role), teamCreatedBy: team?.created_by }, { status: 403 });
     }
 
     // Fetch all players for the team using service role (bypasses RLS)
