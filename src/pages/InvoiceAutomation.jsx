@@ -15,9 +15,82 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Switch } from '@/components/ui/switch';
 import { Calendar, DollarSign, Plus, Play, Pause, Settings, Send, CheckCircle2 } from 'lucide-react';
 import { formatNOK } from '../components/shared/FormatUtils';
+import ReadOnlyBanner from '@/components/shared/ReadOnlyBanner';
+import { Loader2 } from 'lucide-react';
+
+const FINANCE_ROLES = ['admin', 'kasserer', 'styreleder', 'revisor'];
+
+function NonAdminInvoiceView({ currentTeam, user }) {
+  const { useQuery } = require('@tanstack/react-query');
+  const { data: summary, isLoading } = useQuery({
+    queryKey: ['teamSummary', currentTeam?.id],
+    queryFn: () => base44.functions.invoke('getTeamSummary', { team_id: currentTeam.id }).then(r => r.data),
+    enabled: !!currentTeam,
+    staleTime: 60000,
+  });
+
+  const { data: myClaims = [] } = useQuery({
+    queryKey: ['myClaims', currentTeam?.id, user?.email],
+    queryFn: async () => {
+      const players = await base44.entities.Player.filter({ team_id: currentTeam.id, user_email: user.email });
+      if (!players.length) return [];
+      return base44.entities.Claim.filter({ player_id: players[0].id });
+    },
+    enabled: !!currentTeam && !!user?.email,
+  });
+
+  if (isLoading) return <div className="flex justify-center py-24"><Loader2 className="w-6 h-6 animate-spin text-emerald-500" /></div>;
+
+  const claims = summary?.claims || {};
+  const pendingMyClaims = myClaims.filter(c => c.status !== 'paid' && c.status !== 'cancelled');
+
+  return (
+    <div className="space-y-6">
+      <ReadOnlyBanner />
+      <div>
+        <h1 className="text-3xl font-bold mb-1">Fakturering</h1>
+        <p className="text-slate-500 text-sm">Betalingsoversikt for {currentTeam.name}</p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[
+          { label: 'Totalt fakturert', value: claims.totalClaimed || 0, color: 'text-slate-700 dark:text-slate-200' },
+          { label: 'Betalt', value: claims.paidClaims || 0, color: 'text-emerald-600' },
+          { label: 'Utestående', value: claims.pendingClaims || 0, color: 'text-amber-600' },
+        ].map(s => (
+          <div key={s.label} className="rounded-xl shadow-md bg-white dark:bg-slate-900 p-5">
+            <p className="text-xs text-slate-500 mb-1">{s.label}</p>
+            <p className={`text-xl font-bold ${s.color}`}>{formatNOK(s.value)}</p>
+          </div>
+        ))}
+      </div>
+      {pendingMyClaims.length > 0 && (
+        <Card className="border-0 shadow-md dark:bg-slate-900">
+          <CardHeader>
+            <CardTitle className="text-base">Mine åpne krav</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {pendingMyClaims.map(c => (
+              <div key={c.id} className="flex justify-between text-sm py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                <div>
+                  <span className="font-medium">{c.type}</span>
+                  {c.description && <span className="text-slate-500 ml-2">{c.description}</span>}
+                </div>
+                <div className="text-right">
+                  <span className="font-semibold text-amber-600">{formatNOK(c.amount)}</span>
+                  {c.due_date && <p className="text-xs text-slate-400">Forfall: {new Date(c.due_date).toLocaleDateString('nb-NO')}</p>}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
 
 export default function InvoiceAutomation() {
-  const { currentTeam, isTeamAdmin, refreshTeams } = useTeam();
+  const { currentTeam, currentTeamRole, user, refreshTeams } = useTeam();
+  const isAdmin = FINANCE_ROLES.includes(currentTeamRole);
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [running, setRunning] = useState(false);
