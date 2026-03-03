@@ -32,11 +32,10 @@ Deno.serve(async (req) => {
 
     // Also allow via Team.members legacy array
     const legacyMember = team?.members?.find(m => (m.email || '').toLowerCase() === userEmail);
-    const isLegacyAdmin = legacyMember && ADMIN_ROLES.includes(legacyMember.role);
+    const isLegacyAdmin = !!(legacyMember && ADMIN_ROLES.includes(legacyMember.role));
 
     const isAdminRole = isCreator || !!myAdminMembership || isLegacyAdmin;
-    // For admin users calling on behalf of a team they own (creator), always allow
-    console.log(`[getTeamPlayers] user=${userEmail} isCreator=${isCreator} myMemberships=${myMemberships.map(m=>m.role)} isAdmin=${isAdminRole}`);
+    console.log(`[getTeamPlayers] user=${userEmail} isCreator=${isCreator} myMemberships=${myMemberships.map(m=>m.role).join(',')} myAdminMembership=${myAdminMembership?.role} isLegacyAdmin=${isLegacyAdmin} isAdmin=${isAdminRole}`);
 
     if (!isAdminRole) {
       return Response.json({ error: 'Admin role required', userEmail, roles: myMemberships.map(m => m.role), teamCreatedBy: team?.created_by }, { status: 403 });
