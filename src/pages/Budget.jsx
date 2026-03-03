@@ -246,8 +246,8 @@ export default function BudgetPage() {
         ))}
       </div>
 
-      {isAdmin && <Dialog open={showForm} onOpenChange={setShowForm}>
-
+      {isAdmin && (
+      <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{editData ? 'Rediger budsjettpost' : 'Ny budsjettpost'}</DialogTitle>
