@@ -297,8 +297,17 @@ export default function Players() {
             <TableBody>
               {isLoading ? (
                 <TableRow><TableCell colSpan={6} className="text-center py-12"><Loader2 className="w-6 h-6 animate-spin mx-auto text-emerald-500" /></TableCell></TableRow>
+              ) : playersError ? (
+                <TableRow><TableCell colSpan={6} className="text-center py-12 text-red-500 text-sm">Feil ved lasting: {playersError?.message}</TableCell></TableRow>
               ) : players.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-12 text-slate-400">Ingen spillere lagt til</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center py-12">
+                  <p className="text-slate-400">Ingen spillere lagt til</p>
+                  {showDebug && (
+                    <p className="text-xs text-amber-600 mt-2">
+                      Debug: teamId={currentTeam.id} role={currentTeamRole} isAdmin={String(isAdmin)} — 0 players returned fra getTeamPlayers
+                    </p>
+                  )}
+                </TableCell></TableRow>
               ) : players.filter(p => p.status !== 'archived').map(p => {
                 const l = getLedger(p);
                 const cfg = STATUS_CONFIG[l.status] || STATUS_CONFIG.paid;
