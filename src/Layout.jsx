@@ -468,8 +468,10 @@ function AuthGate({ children, currentPageName }) {
       console.log(`[AuthGate] dedupedMemberships:`, dedupedMemberships.map(m => `${m.team_id.slice(-6)}=${m.role}`));
       const data = { user, teams: [...byId.values()], memberTeams: dedupedMemberships };
 
-      if (data.teams.length === 0 && activeMemberships.length === 0) {
-        console.log(`[AuthGate] No teams → Onboarding`);
+      // Always redirect to Onboarding if user has no active memberships and no created teams
+      const hasActiveAccess = activeMemberships.length > 0 || data.teams.length > 0;
+      if (!hasActiveAccess) {
+        console.log(`[AuthGate] No teams or active memberships → Onboarding`);
         window.location.replace('/Onboarding');
         return;
       }
