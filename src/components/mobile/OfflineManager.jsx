@@ -44,12 +44,7 @@ export default function OfflineManager() {
         });
         localStorage.setItem('offline_players', JSON.stringify(players));
 
-        // Cache volunteer tasks
-        const tasks = await // base44.entities.VolunteerTask (entity not in this app).filter({
-          team_id: currentTeam.id,
-          status: 'open'
-        });
-        localStorage.setItem('offline_tasks', JSON.stringify(tasks));
+        // VolunteerTask entity not in this app — skip
 
         localStorage.setItem('offline_cache_time', new Date().toISOString());
       } catch (error) {
