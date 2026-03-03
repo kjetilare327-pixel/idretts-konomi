@@ -304,7 +304,8 @@ export default function BudgetPage() {
             </div>
           </div>
         </DialogContent>
-      </Dialog>}
+      </Dialog>
+      )}
       </div>
     </PullToRefresh>
   );
