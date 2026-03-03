@@ -453,7 +453,8 @@ function AuthGate({ children, currentPageName }) {
       }
 
       const activeMemberships = memberRecords.filter(m => m.status === 'active');
-      const data = { user, teams: [...byId.values()], memberTeams: memberRecords };
+      // Pass only active memberships in bootData so TeamContext builds correct role map
+      const data = { user, teams: [...byId.values()], memberTeams: activeMemberships };
 
       if (data.teams.length === 0 && activeMemberships.length === 0) {
         console.log(`[AuthGate] No teams → Onboarding`);
