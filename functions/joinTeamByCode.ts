@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     }
 
     const activeRecord = existing.find(r => r.status === 'active');
-    const memberRole = activeRecord?.role || existing.find(r => r.status === 'invited')?.role || (role === 'forelder' ? 'forelder' : 'player');
+    const memberRole = activeRecord?.role || existing.find(r => r.status === 'invited')?.role || (role === 'forelder' ? 'forelder' : (role === 'player' ? 'player' : 'forelder'));
 
     if (!activeRecord) {
       const invitedRecord = existing.find(r => r.status === 'invited');

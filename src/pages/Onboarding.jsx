@@ -154,16 +154,20 @@ export default function Onboarding() {
         return;
       }
 
+      // Accept any pending invites immediately to activate membership
+      await base44.functions.invoke('acceptPendingInvites', {}).catch(() => {});
+
       const msg = data.code === 'ALREADY_MEMBER'
         ? `Du er allerede med i ${data.team_name}!`
         : `Du er nå med i ${data.team_name}!`;
       toast.success(msg, { id: 'jt' });
+
       if (data.team_id) {
         localStorage.setItem('idrettsøkonomi_team_id', data.team_id);
-        // Signal to AuthGate that a join just happened — prevents Onboarding loop
-        localStorage.setItem('pending_joined_team_id', data.team_id);
-        localStorage.setItem('pending_joined_team_name', data.team_name || '');
-        console.log('[Onboarding] join ok → pendingJoinedTeamId set:', data.team_id, '→ navigating to Dashboard');
+        // Clean up any stale pending flags — membership is already active
+        localStorage.removeItem('pending_joined_team_id');
+        localStorage.removeItem('pending_joined_team_name');
+        console.log('[Onboarding] join ok → no pending flags, direct Dashboard redirect');
       }
       window.location.replace('/Dashboard');
     } catch (err) {
