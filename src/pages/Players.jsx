@@ -32,7 +32,7 @@ import VippsClaimActions from '../components/players/VippsClaimActions';
 import PullToRefresh from '@/components/mobile/PullToRefresh';
 
 export default function Players() {
-  const { currentTeam, isTeamAdmin, playerProfile, user } = useTeam();
+  const { currentTeam, isTeamAdmin, playerProfile, user, currentTeamRole } = useTeam();
   const queryClient = useQueryClient();
   const isAdmin = isTeamAdmin();
   const [showForm, setShowForm] = useState(false);
