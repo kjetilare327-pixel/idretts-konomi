@@ -61,8 +61,15 @@ export function TeamProvider({ children, bootData }) {
   const loadMemberships = useCallback(async (userEmail, teamList) => {
     if (!userEmail || !teamList.length) return {};
     const memberships = await base44.entities.TeamMember.filter({ user_email: userEmail }).catch(() => []);
+    const PRIORITY = ['admin', 'kasserer', 'styreleder', 'revisor', 'forelder', 'player'];
     const map = {};
-    for (const m of memberships) map[m.team_id] = m;
+    for (const m of memberships) {
+      // Keep highest-privilege active membership per team
+      const existing = map[m.team_id];
+      if (!existing || PRIORITY.indexOf(m.role) < PRIORITY.indexOf(existing.role)) {
+        map[m.team_id] = m;
+      }
+    }
 
     // Backfill: if user created a team but has no TeamMember entry, create one
     for (const team of teamList) {
