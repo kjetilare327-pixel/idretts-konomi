@@ -44,22 +44,39 @@ export default function Players() {
   const [sendingReminder, setSendingReminder] = useState(null);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
 
-  // Admins use backend function (bypasses RLS issues); players/parents use direct filter for own record
+  // Admins: use backend function (bypasses RLS); fallback to direct filter if function fails
+  // Non-admins: fetch only own record by user_email
   const { data: players = [], isLoading } = useQuery({
     queryKey: ['players', currentTeam?.id, isAdmin ? 'admin' : 'user'],
     queryFn: async () => {
+      if (!currentTeam?.id) return [];
       if (isAdmin) {
-        const res = await base44.functions.invoke('getTeamPlayers', { team_id: currentTeam.id });
-        const list = res?.data?.players || [];
-        console.log(`[Players] team=${currentTeam.id} → ${list.length} players via getTeamPlayers`);
-        return list;
+        try {
+          const res = await base44.functions.invoke('getTeamPlayers', { team_id: currentTeam.id });
+          const list = res?.data?.players || [];
+          console.log(`[Players] admin team=${currentTeam.id} → ${list.length} players via getTeamPlayers`);
+          if (list.length === 0) {
+            // Double-check with direct entity call in case function had an issue
+            const direct = await base44.entities.Player.filter({ team_id: currentTeam.id });
+            console.log(`[Players] admin fallback direct → ${direct.length} players`);
+            return direct;
+          }
+          return list;
+        } catch (err) {
+          console.warn('[Players] getTeamPlayers failed, falling back to direct fetch:', err?.message);
+          const direct = await base44.entities.Player.filter({ team_id: currentTeam.id });
+          console.log(`[Players] admin direct fallback → ${direct.length} players`);
+          return direct;
+        }
       }
-      // Non-admin: fetch only own profile
-      const list = await base44.entities.Player.filter({ team_id: currentTeam.id });
-      console.log(`[Players] non-admin team=${currentTeam.id} → ${list.length} records`);
+      // Non-admin: fetch only own player record for this team
+      const u = await base44.auth.me();
+      const list = await base44.entities.Player.filter({ team_id: currentTeam.id, user_email: u?.email });
+      console.log(`[Players] non-admin team=${currentTeam.id} user=${u?.email} → ${list.length} records`);
       return list;
     },
     enabled: !!currentTeam,
+    staleTime: 0, // Always refetch on mount
   });
 
   const { ledgerMap, isLoading: loadingLedger } = useLedger(currentTeam?.id);
