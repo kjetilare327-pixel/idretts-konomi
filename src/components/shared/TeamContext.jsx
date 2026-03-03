@@ -61,11 +61,13 @@ export function TeamProvider({ children, bootData }) {
 
   const loadMemberships = useCallback(async (userEmail, teamList) => {
     if (!userEmail || !teamList.length) return {};
-    const memberships = await base44.entities.TeamMember.filter({ user_email: userEmail }).catch(() => []);
+    const lowerEmail = userEmail.toLowerCase();
+    const memberships = await base44.entities.TeamMember.filter({ user_email: lowerEmail }).catch(() => []);
     const PRIORITY = ['admin', 'kasserer', 'styreleder', 'revisor', 'forelder', 'player'];
     const map = {};
     for (const m of memberships) {
-      // Keep highest-privilege active membership per team
+      // Only consider active memberships; keep highest-privilege per team
+      if (m.status !== 'active') continue;
       const existing = map[m.team_id];
       if (!existing || PRIORITY.indexOf(m.role) < PRIORITY.indexOf(existing.role)) {
         map[m.team_id] = m;
