@@ -29,7 +29,7 @@ function NonAdminInvoiceView({ currentTeam, user }) {
     staleTime: 60000,
   });
 
-  const { data: myClaims = [] } = useQuery({
+  const { data: myClaims = [] } = useReactQuery({
     queryKey: ['myClaims', currentTeam?.id, user?.email],
     queryFn: async () => {
       const players = await base44.entities.Player.filter({ team_id: currentTeam.id, user_email: user.email });
