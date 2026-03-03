@@ -453,8 +453,19 @@ function AuthGate({ children, currentPageName }) {
       }
 
       const activeMemberships = memberRecords.filter(m => m.status === 'active');
-      // Pass only active memberships in bootData so TeamContext builds correct role map
-      const data = { user, teams: [...byId.values()], memberTeams: activeMemberships };
+      // Pass only active memberships in bootData so TeamContext builds correct role map.
+      // De-duplicate by team_id — keep highest-priority role per team.
+      const ROLE_PRIORITY_BOOT = ['admin', 'kasserer', 'styreleder', 'revisor', 'forelder', 'player'];
+      const deduped = {};
+      for (const m of activeMemberships) {
+        const existing = deduped[m.team_id];
+        if (!existing || ROLE_PRIORITY_BOOT.indexOf(m.role) < ROLE_PRIORITY_BOOT.indexOf(existing.role)) {
+          deduped[m.team_id] = m;
+        }
+      }
+      const dedupedMemberships = Object.values(deduped);
+      console.log(`[AuthGate] dedupedMemberships:`, dedupedMemberships.map(m => `${m.team_id.slice(-6)}=${m.role}`));
+      const data = { user, teams: [...byId.values()], memberTeams: dedupedMemberships };
 
       if (data.teams.length === 0 && activeMemberships.length === 0) {
         console.log(`[AuthGate] No teams → Onboarding`);
