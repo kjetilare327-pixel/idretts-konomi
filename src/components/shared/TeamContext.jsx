@@ -173,23 +173,26 @@ export function TeamProvider({ children, bootData }) {
 
   useEffect(() => {
     if (bootData) {
-      // State already initialized synchronously; refresh memberships to get accurate roles
       const userEmail = bootData.user?.email;
       const myTeams = bootData.teams || [];
+      const savedId = typeof localStorage !== 'undefined' ? localStorage.getItem('idrettsøkonomi_team_id') : null;
+      const sel = (savedId && myTeams.find(t => t.id === savedId)) || myTeams[0] || null;
+      // Apply role from bootData immediately (already set synchronously via computeInitialState)
+      if (sel && userEmail) {
+        base44.entities.Player.filter({ team_id: sel.id, user_email: userEmail })
+          .then(players => { if (players.length > 0) setPlayerProfile(players[0]); })
+          .catch(() => {});
+      }
+      // Async refresh to pick up any DB changes since boot
       if (userEmail && myTeams.length) {
-        loadMemberships(userEmail, myTeams).then(membershipsMap => {
-          setMyMemberships(membershipsMap);
-          const savedId = typeof localStorage !== 'undefined' ? localStorage.getItem('idrettsøkonomi_team_id') : null;
-          const sel = (savedId && myTeams.find(t => t.id === savedId)) || myTeams[0] || null;
+        loadMemberships(userEmail, myTeams).then(freshMap => {
+          setMyMemberships(freshMap);
           if (sel) {
-            const role = resolveRole(sel.id, membershipsMap, userEmail, sel);
-            setCurrentTeamRole(role);
-            // Load player profile
-            base44.entities.Player.filter({ team_id: sel.id, user_email: userEmail })
-              .then(players => { if (players.length > 0) setPlayerProfile(players[0]); })
-              .catch(() => {});
+            const freshRole = resolveRole(sel.id, freshMap, userEmail, sel);
+            console.log(`[TeamContext] refreshed role: team=${sel.id} user=${userEmail} role=${freshRole}`);
+            setCurrentTeamRole(freshRole);
           }
-        });
+        }).catch(() => {});
       }
     } else {
       loadData();
