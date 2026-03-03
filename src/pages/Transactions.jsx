@@ -30,9 +30,81 @@ import AiTransactionAssistant from '@/components/transactions/AiTransactionAssis
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import PullToRefresh from '@/components/mobile/PullToRefresh';
 import NativeSelect from '@/components/mobile/NativeSelect';
+import ReadOnlyBanner from '@/components/shared/ReadOnlyBanner';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { formatNOK } from '@/components/shared/FormatUtils';
+
+const FINANCE_ROLES = ['admin', 'kasserer', 'styreleder', 'revisor'];
+
+function NonAdminTransactionView({ currentTeam }) {
+  const { data: summary, isLoading } = useQuery({
+    queryKey: ['teamSummary', currentTeam?.id],
+    queryFn: () => base44.functions.invoke('getTeamSummary', { team_id: currentTeam.id }).then(r => r.data),
+    enabled: !!currentTeam,
+    staleTime: 60000,
+  });
+
+  if (isLoading) return <div className="flex justify-center py-24"><Loader2 className="w-6 h-6 animate-spin text-emerald-500" /></div>;
+
+  const monthly = summary?.monthlyTotals || [];
+
+  return (
+    <div className="space-y-6">
+      <ReadOnlyBanner />
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Transaksjoner</h1>
+        <p className="text-sm text-slate-500">Lagets økonomi – oversikt</p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[
+          { label: 'Totale inntekter', value: summary?.totals?.totalIncome || 0, color: 'text-emerald-600' },
+          { label: 'Totale utgifter', value: summary?.totals?.totalExpense || 0, color: 'text-red-600' },
+          { label: 'Nettoresultat', value: summary?.totals?.net || 0, color: (summary?.totals?.net || 0) >= 0 ? 'text-blue-600' : 'text-red-600' },
+        ].map(stat => (
+          <div key={stat.label} className="rounded-xl border-0 shadow-md bg-white dark:bg-slate-900 p-5">
+            <p className="text-xs text-slate-500 mb-1">{stat.label}</p>
+            <p className={`text-xl font-bold ${stat.color}`}>{formatNOK(stat.value)}</p>
+          </div>
+        ))}
+      </div>
+      {monthly.length > 0 && (
+        <div className="rounded-xl border-0 shadow-md bg-white dark:bg-slate-900 p-5">
+          <p className="font-semibold text-sm mb-4">Månedlig oversikt</p>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={monthly}>
+              <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip formatter={(v) => formatNOK(v)} />
+              <Legend />
+              <Bar dataKey="income" name="Inntekt" fill="#10b981" radius={[3,3,0,0]} />
+              <Bar dataKey="expense" name="Utgift" fill="#ef4444" radius={[3,3,0,0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+      {(summary?.categoryTotals || []).length > 0 && (
+        <div className="rounded-xl border-0 shadow-md bg-white dark:bg-slate-900 p-5">
+          <p className="font-semibold text-sm mb-3">Per kategori</p>
+          <div className="space-y-2">
+            {(summary.categoryTotals || []).map(c => (
+              <div key={c.category} className="flex justify-between text-sm py-1 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                <span className="text-slate-600 dark:text-slate-400">{c.category}</span>
+                <div className="flex gap-4">
+                  {c.income > 0 && <span className="text-emerald-600 font-medium">+{formatNOK(c.income)}</span>}
+                  {c.expense > 0 && <span className="text-red-600 font-medium">−{formatNOK(c.expense)}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Transactions() {
-  const { currentTeam } = useTeam();
+  const { currentTeam, currentTeamRole } = useTeam();
+  const isAdmin = FINANCE_ROLES.includes(currentTeamRole);
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [formMode, setFormMode] = useState('manual'); // 'manual' | 'ai'
