@@ -24,9 +24,13 @@ import { Plus, Pencil, Trash2, PiggyBank, TrendingUp, TrendingDown, Loader2 } fr
 import BudgetDeviationBar from '@/components/dashboard/BudgetDeviationBar';
 import PullToRefresh from '@/components/mobile/PullToRefresh';
 import NativeSelect from '@/components/mobile/NativeSelect';
+import ReadOnlyBanner from '@/components/shared/ReadOnlyBanner';
+
+const FINANCE_ROLES = ['admin', 'kasserer', 'styreleder', 'revisor'];
 
 export default function BudgetPage() {
-  const { currentTeam } = useTeam();
+  const { currentTeam, currentTeamRole } = useTeam();
+  const isAdmin = FINANCE_ROLES.includes(currentTeamRole);
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
