@@ -35,6 +35,12 @@ export default function Players() {
   const { currentTeam, isTeamAdmin, playerProfile, user, currentTeamRole } = useTeam();
   const queryClient = useQueryClient();
   const isAdmin = isTeamAdmin();
+  // Debug: log role for troubleshooting
+  React.useEffect(() => {
+    if (currentTeam) {
+      console.log(`[Players page] team=${currentTeam.id} role=${currentTeamRole} isAdmin=${isAdmin} user=${user?.email}`);
+    }
+  }, [currentTeam?.id, currentTeamRole, isAdmin]);
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
   const [form, setForm] = useState({ full_name: '', user_email: '', role: 'player', balance: '0', payment_status: 'paid', phone: '', notes: '' });
