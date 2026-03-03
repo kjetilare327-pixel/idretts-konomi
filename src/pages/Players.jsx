@@ -34,12 +34,11 @@ import PullToRefresh from '@/components/mobile/PullToRefresh';
 export default function Players() {
   const { currentTeam, isTeamAdmin, playerProfile, user, currentTeamRole } = useTeam();
   const queryClient = useQueryClient();
-  const isAdmin = isTeamAdmin();
-  // Debug: log role for troubleshooting
+  // Derive isAdmin from currentTeamRole directly — not from isTeamAdmin() which depends on myMemberships being loaded
+  const FINANCE_ROLES = ['admin', 'kasserer', 'styreleder', 'revisor'];
+  const isAdmin = FINANCE_ROLES.includes(currentTeamRole);
   React.useEffect(() => {
-    if (currentTeam) {
-      console.log(`[Players page] team=${currentTeam.id} role=${currentTeamRole} isAdmin=${isAdmin} user=${user?.email}`);
-    }
+    console.log(`[Players page] team=${currentTeam?.id} role=${currentTeamRole} isAdmin=${isAdmin} user=${user?.email}`);
   }, [currentTeam?.id, currentTeamRole, isAdmin]);
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
