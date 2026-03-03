@@ -207,12 +207,16 @@ export default function Players() {
     await queryClient.invalidateQueries({ queryKey: ['players', currentTeam?.id] });
   };
 
-  // Non-admin (forelder/spiller): show only OWN profile, no other players' finances
+  // Non-admin (forelder/spiller): show own profile + team member count aggregate only
   if (!isAdmin) {
     const myProfile = playerProfile || players.find(p => p.user_email === user?.email);
     return (
       <PullToRefresh onRefresh={handleRefresh}>
         <div className="space-y-6 max-w-2xl">
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm">
+            <Users className="w-4 h-4 shrink-0" />
+            <span>Du ser kun din egen profil. Kun administrator kan se alle spillere.</span>
+          </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Min profil</h1>
             <p className="text-sm text-slate-500">Din profil for {currentTeam.name}</p>
