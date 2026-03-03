@@ -17,12 +17,12 @@ import { Calendar, DollarSign, Plus, Play, Pause, Settings, Send, CheckCircle2 }
 import { formatNOK } from '../components/shared/FormatUtils';
 import ReadOnlyBanner from '@/components/shared/ReadOnlyBanner';
 import { Loader2 } from 'lucide-react';
+import { useQuery as useReactQuery } from '@tanstack/react-query';
 
 const FINANCE_ROLES = ['admin', 'kasserer', 'styreleder', 'revisor'];
 
 function NonAdminInvoiceView({ currentTeam, user }) {
-  const { useQuery } = require('@tanstack/react-query');
-  const { data: summary, isLoading } = useQuery({
+  const { data: summary, isLoading } = useReactQuery({
     queryKey: ['teamSummary', currentTeam?.id],
     queryFn: () => base44.functions.invoke('getTeamSummary', { team_id: currentTeam.id }).then(r => r.data),
     enabled: !!currentTeam,
