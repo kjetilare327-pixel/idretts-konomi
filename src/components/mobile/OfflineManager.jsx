@@ -45,7 +45,7 @@ export default function OfflineManager() {
         localStorage.setItem('offline_players', JSON.stringify(players));
 
         // Cache volunteer tasks
-        const tasks = await base44.entities.VolunteerTask.filter({
+        const tasks = await // base44.entities.VolunteerTask (entity not in this app).filter({
           team_id: currentTeam.id,
           status: 'open'
         });
