@@ -182,9 +182,8 @@ export default function InvoiceAutomation() {
     }
   };
 
-  if (!currentTeam || !isTeamAdmin()) {
-    return <div className="p-6">Du må være administrator for å administrere fakturering</div>;
-  }
+  if (!currentTeam) return <div className="p-6">Laster...</div>;
+  if (!isAdmin) return <NonAdminInvoiceView currentTeam={currentTeam} user={user} />;
 
   const activeSchedules = schedules.filter(s => s.is_active);
   const inactiveSchedules = schedules.filter(s => !s.is_active);
