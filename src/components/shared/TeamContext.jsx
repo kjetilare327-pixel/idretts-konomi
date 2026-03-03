@@ -90,10 +90,11 @@ export function TeamProvider({ children, bootData }) {
   }, []);
 
   const resolveRole = useCallback((teamId, membershipsMap, userEmail, teamObj) => {
+    const lowerEmail = (userEmail || '').toLowerCase();
     const membership = membershipsMap[teamId];
     if (membership) return membership.role;
-    if (teamObj?.created_by === userEmail) return 'admin';
-    const legacyMember = teamObj?.members?.find(m => m.email === userEmail);
+    if (teamObj?.created_by === userEmail || teamObj?.created_by === lowerEmail) return 'admin';
+    const legacyMember = teamObj?.members?.find(m => (m.email || '').toLowerCase() === lowerEmail);
     return legacyMember?.role || 'player';
   }, []);
 
