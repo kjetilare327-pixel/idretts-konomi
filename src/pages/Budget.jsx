@@ -120,17 +120,20 @@ export default function BudgetPage() {
   return (
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="space-y-6">
+      {!isAdmin && <ReadOnlyBanner />}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Budsjett</h1>
-          <p className="text-sm text-slate-500">Sett opp og følg budsjettet for {currentTeam.name}</p>
+          <p className="text-sm text-slate-500">Budsjett for {currentTeam.name}</p>
         </div>
+        {isAdmin && (
         <div className="flex gap-3">
           <AiBudgetGenerator teamId={currentTeam.id} />
           <Button onClick={openNew} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
             <Plus className="w-4 h-4" /> Legg til budsjettpost
           </Button>
         </div>
+        )}
       </div>
 
       <AutoBudgetGenerator
