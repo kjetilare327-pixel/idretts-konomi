@@ -10,10 +10,13 @@ import { Loader2 } from 'lucide-react';
 import BudgetVsActualReport from '@/components/reports/BudgetVsActualReport';
 import IncomeStatement from '@/components/reports/IncomeStatement';
 import ReportExport from '@/components/reports/ReportExport';
+import ReadOnlyBanner from '@/components/shared/ReadOnlyBanner';
+
+const FINANCE_ROLES = ['admin', 'kasserer', 'styreleder', 'revisor'];
 
 export default function Reports() {
-  const { currentTeam, isTeamAdmin } = useTeam();
-  const isAdmin = isTeamAdmin();
+  const { currentTeam, currentTeamRole } = useTeam();
+  const isAdmin = FINANCE_ROLES.includes(currentTeamRole);
 
   const CACHE = { staleTime: 5 * 60 * 1000, gcTime: 10 * 60 * 1000 };
 
