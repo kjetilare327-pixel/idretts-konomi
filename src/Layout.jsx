@@ -472,6 +472,8 @@ function AuthGate({ children, currentPageName }) {
       const hasActiveAccess = activeMemberships.length > 0 || data.teams.length > 0;
       if (!hasActiveAccess) {
         console.log(`[AuthGate] No teams or active memberships → Onboarding`);
+        try { localStorage.removeItem('idrettsøkonomi_team_id'); } catch {}
+        _sessionCache = null;
         window.location.replace('/Onboarding');
         return;
       }
