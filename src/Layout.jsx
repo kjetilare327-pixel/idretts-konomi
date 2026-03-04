@@ -3,7 +3,7 @@ if (typeof window !== 'undefined' && typeof window.Notification === 'undefined')
   try { window.Notification = undefined; } catch(e) {}
 }
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from './utils';
@@ -495,11 +495,11 @@ function AuthGate({ children, currentPageName }) {
 
   // No team → render Onboarding inline (no redirect loop)
   if (status === 'no_team') {
-    const OnboardingPage = React.lazy(() => import('./pages/Onboarding'));
+    const OnboardingPage = lazy(() => import('./pages/Onboarding'));
     return (
-      <React.Suspense fallback={<FullScreenLoader />}>
+      <Suspense fallback={<FullScreenLoader />}>
         <OnboardingPage />
-      </React.Suspense>
+      </Suspense>
     );
   }
 
