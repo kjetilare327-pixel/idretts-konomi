@@ -372,10 +372,11 @@ function AppLayout({ children, currentPageName }) {
 //   5. If no teams → Onboarding
 //
 function AuthGate({ children, currentPageName }) {
-  const cacheValid = _sessionCache && (Date.now() - _sessionCache.lastFetch < CACHE_TTL_MS);
+  // Never use cache for auth — always re-verify on mount to catch new users with no teams
+  const cacheValid = false;
 
   // status: 'loading' | 'join_activation' | 'authed'
-  const [status, setStatus]         = useState(() => cacheValid ? 'authed' : 'loading');
+  const [status, setStatus]         = useState(() => 'loading');
   const [bootData, setBootData]     = useState(() => cacheValid ? _sessionCache.bootData : null);
   const [timedOut, setTimedOut]     = useState(false);
   const [pendingUser, setPendingUser]   = useState(null);
@@ -401,6 +402,11 @@ function AuthGate({ children, currentPageName }) {
       }
 
       const userEmail = user.email.toLowerCase();
+
+      // Always clear stale team selection at boot — will be re-set after valid membership check
+      try { localStorage.removeItem('idrettsøkonomi_team_id'); } catch {}
+      try { localStorage.removeItem('pending_joined_team_id'); } catch {}
+      try { localStorage.removeItem('pending_joined_team_name'); } catch {}
 
       // ── PENDING JOIN GUARD (check BEFORE normal fetch) ─────────────────────
       const storedPendingId   = (() => { try { return localStorage.getItem('pending_joined_team_id'); } catch { return null; } })();
