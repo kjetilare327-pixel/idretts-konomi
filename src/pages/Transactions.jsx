@@ -155,11 +155,12 @@ export default function Transactions() {
   const openEdit = (t) => { setEditData(t); setShowForm(true); };
   const openNew = (mode = 'manual') => { setEditData(null); setFormMode(mode); setShowForm(true); };
 
-  if (!currentTeam?.id) {
+  if (!currentTeam?.id && !isLoading) {
     try { localStorage.removeItem('idrettsøkonomi_team_id'); } catch {}
     window.location.replace('/Onboarding');
     return null;
   }
+  if (!currentTeam?.id) return <div className="flex justify-center py-24"><Loader2 className="w-6 h-6 animate-spin text-emerald-500" /></div>;
   if (!isAdmin) return <NonAdminTransactionView currentTeam={currentTeam} />;
 
   return (

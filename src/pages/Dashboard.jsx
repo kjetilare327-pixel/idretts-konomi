@@ -88,13 +88,13 @@ export default function Dashboard() {
     [claims]
   );
 
-  // AuthGate guarantees teams exist before Dashboard renders — this is just a safety net
+  // Wait for TeamContext to finish loading before any guard
   if (teamLoading) {
     return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-8 h-8 animate-spin text-emerald-500" /></div>;
   }
 
-  // Hard guard: if no valid team after loading, force Onboarding
-  if (!currentTeam?.id) {
+  // Only redirect after loading is confirmed done and still no team
+  if (!teamLoading && !currentTeam?.id) {
     try { localStorage.removeItem('idrettsøkonomi_team_id'); } catch {}
     window.location.replace('/Onboarding');
     return null;
