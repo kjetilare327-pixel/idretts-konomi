@@ -403,12 +403,16 @@ function AuthGate({ children, currentPageName }) {
 
       const userEmail = user.email.toLowerCase();
 
-      // Always clear stale team selection at boot — will be re-set after valid membership check
-      try { localStorage.removeItem('idrettsøkonomi_team_id'); } catch {}
-      try { localStorage.removeItem('pending_joined_team_id'); } catch {}
-      try { localStorage.removeItem('pending_joined_team_name'); } catch {}
+      // If URL has ?is_new_user=true → force Onboarding immediately
+      const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      if (urlParams?.get('is_new_user') === 'true') {
+        console.log('[AuthGate] is_new_user=true → Onboarding');
+        try { localStorage.removeItem('idrettsøkonomi_team_id'); } catch {}
+        window.location.replace('/Onboarding');
+        return;
+      }
 
-      // ── PENDING JOIN GUARD (check BEFORE normal fetch) ─────────────────────
+      // ── PENDING JOIN GUARD — read BEFORE clearing localStorage ─────────────
       const storedPendingId   = (() => { try { return localStorage.getItem('pending_joined_team_id'); } catch { return null; } })();
       const storedPendingName = (() => { try { return localStorage.getItem('pending_joined_team_name'); } catch { return null; } })();
 
@@ -422,6 +426,9 @@ function AuthGate({ children, currentPageName }) {
         return;
       }
       // ── END PENDING JOIN GUARD ─────────────────────────────────────────────
+
+      // Clear stale team selection — will be re-set after valid membership check
+      try { localStorage.removeItem('idrettsøkonomi_team_id'); } catch {}
 
       const [createdTeams, memberRecords] = await Promise.all([
         base44.entities.Team.filter({ created_by: user.email }).catch(() => []),
