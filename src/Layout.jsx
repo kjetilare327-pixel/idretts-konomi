@@ -372,15 +372,12 @@ function AppLayout({ children, currentPageName }) {
 //   5. If no teams → Onboarding
 //
 function AuthGate({ children, currentPageName }) {
-  // Never use cache for auth — always re-verify on mount to catch new users with no teams
-  const cacheValid = false;
-
-  // status: 'loading' | 'join_activation' | 'authed'
-  const [status, setStatus]         = useState(() => 'loading');
-  const [bootData, setBootData]     = useState(() => cacheValid ? _sessionCache.bootData : null);
-  const [timedOut, setTimedOut]     = useState(false);
-  const [pendingUser, setPendingUser]   = useState(null);
-  const [pendingTeamId, setPendingTeamId]   = useState(null);
+  // status: 'loading' | 'join_activation' | 'no_team' | 'authed'
+  const [status, setStatus]       = useState('loading');
+  const [bootData, setBootData]   = useState(null);
+  const [timedOut, setTimedOut]   = useState(false);
+  const [pendingUser, setPendingUser]         = useState(null);
+  const [pendingTeamId, setPendingTeamId]     = useState(null);
   const [pendingTeamName, setPendingTeamName] = useState(null);
   const bootingRef = useRef(false);
 
@@ -390,34 +387,25 @@ function AuthGate({ children, currentPageName }) {
 
     try {
       const authenticated = await base44.auth.isAuthenticated().catch(() => false);
-      if (!authenticated) {
-        window.location.replace('/login');
-        return;
-      }
+      if (!authenticated) { window.location.replace('/login'); return; }
 
       const user = await base44.auth.me().catch(() => null);
-      if (!user) {
-        window.location.replace('/login');
-        return;
-      }
+      if (!user) { window.location.replace('/login'); return; }
 
       const userEmail = user.email.toLowerCase();
 
-      // If URL has ?is_new_user=true → force Onboarding immediately
-      const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-      if (urlParams?.get('is_new_user') === 'true') {
-        console.log('[AuthGate] is_new_user=true → Onboarding');
-        try { localStorage.removeItem('idrettsøkonomi_team_id'); } catch {}
-        window.location.replace('/Onboarding');
+      // ?is_new_user=true → always Onboarding
+      if (new URLSearchParams(window.location.search).get('is_new_user') === 'true') {
+        setStatus('no_team');
+        bootingRef.current = false;
         return;
       }
 
-      // ── PENDING JOIN GUARD — read BEFORE clearing localStorage ─────────────
+      // Check for pending join BEFORE clearing localStorage
       const storedPendingId   = (() => { try { return localStorage.getItem('pending_joined_team_id'); } catch { return null; } })();
       const storedPendingName = (() => { try { return localStorage.getItem('pending_joined_team_name'); } catch { return null; } })();
 
       if (storedPendingId) {
-        console.log(`[AuthGate] pending_joined_team_id=${storedPendingId} — entering JoinActivationScreen`);
         setPendingUser(user);
         setPendingTeamId(storedPendingId);
         setPendingTeamName(storedPendingName);
@@ -425,9 +413,8 @@ function AuthGate({ children, currentPageName }) {
         bootingRef.current = false;
         return;
       }
-      // ── END PENDING JOIN GUARD ─────────────────────────────────────────────
 
-      // Clear stale team selection — will be re-set after valid membership check
+      // Clear stale team selection
       try { localStorage.removeItem('idrettsøkonomi_team_id'); } catch {}
 
       const [createdTeams, memberRecords] = await Promise.all([
@@ -435,19 +422,14 @@ function AuthGate({ children, currentPageName }) {
         base44.entities.TeamMember.filter({ user_email: userEmail }).catch(() => []),
       ]);
 
-      // Auto-accept pending invites via backend function (avoids RLS restrictions on update)
+      // Auto-accept pending invites
       const pendingInvites = memberRecords.filter(m => m.status === 'invited');
       if (pendingInvites.length > 0) {
-        console.log(`[AuthGate] Auto-accepting ${pendingInvites.length} pending invite(s) for ${userEmail}`);
-        await base44.functions.invoke('acceptPendingInvites', { user_email: userEmail }).catch(e =>
-          console.warn('[AuthGate] acceptPendingInvites failed (non-blocking):', e?.message)
-        );
-        // Force re-fetch after activation to get fresh roles
+        await base44.functions.invoke('acceptPendingInvites', { user_email: userEmail }).catch(() => {});
         const refreshed = await base44.entities.TeamMember.filter({ user_email: userEmail }).catch(() => []);
         if (refreshed.length > 0) {
           memberRecords.length = 0;
           refreshed.forEach(r => memberRecords.push(r));
-          console.log(`[AuthGate] Re-fetched ${refreshed.length} member record(s) after activation`);
         }
       }
 
@@ -456,9 +438,7 @@ function AuthGate({ children, currentPageName }) {
 
       const missingIds = memberRecords.map(m => m.team_id).filter(id => id && !byId.has(id));
       if (missingIds.length > 0) {
-        const fetched = await Promise.all(
-          missingIds.map(id => base44.entities.Team.filter({ id }).catch(() => []))
-        );
+        const fetched = await Promise.all(missingIds.map(id => base44.entities.Team.filter({ id }).catch(() => [])));
         for (const arr of fetched) for (const t of arr) byId.set(t.id, t);
         if ([...byId.values()].length < memberRecords.length) {
           const allTeams = await base44.entities.Team.list().catch(() => []);
@@ -467,8 +447,14 @@ function AuthGate({ children, currentPageName }) {
       }
 
       const activeMemberships = memberRecords.filter(m => m.status === 'active');
-      // Pass only active memberships in bootData so TeamContext builds correct role map.
-      // De-duplicate by team_id — keep highest-priority role per team.
+      const hasAccess = activeMemberships.length > 0 || createdTeams.length > 0;
+
+      if (!hasAccess) {
+        setStatus('no_team');
+        bootingRef.current = false;
+        return;
+      }
+
       const ROLE_PRIORITY_BOOT = ['admin', 'kasserer', 'styreleder', 'revisor', 'forelder', 'player'];
       const deduped = {};
       for (const m of activeMemberships) {
@@ -477,25 +463,11 @@ function AuthGate({ children, currentPageName }) {
           deduped[m.team_id] = m;
         }
       }
-      const dedupedMemberships = Object.values(deduped);
-      console.log(`[AuthGate] dedupedMemberships:`, dedupedMemberships.map(m => `${m.team_id.slice(-6)}=${m.role}`));
-      const data = { user, teams: [...byId.values()], memberTeams: dedupedMemberships };
 
-      // Always redirect to Onboarding if user has no active memberships and no created teams
-      const hasActiveAccess = activeMemberships.length > 0 || data.teams.length > 0;
-      if (!hasActiveAccess) {
-        console.log(`[AuthGate] No teams or active memberships → Onboarding`);
-        try { localStorage.removeItem('idrettsøkonomi_team_id'); } catch {}
-        _sessionCache = null;
-        window.location.replace('/Onboarding');
-        return;
-      }
-
-      // Invalidate cache on fresh boot so TeamContext always gets fresh role data
+      const data = { user, teams: [...byId.values()], memberTeams: Object.values(deduped) };
       _sessionCache = { bootData: data, lastFetch: Date.now() };
       setBootData(data);
       setStatus('authed');
-      console.log(`[AuthGate] boot ok user=${user.email} teams=${data.teams.length} activeMemberships=${activeMemberships.length}`);
     } catch (err) {
       console.error('[AuthGate] boot error:', err?.message);
       _sessionCache = null;
@@ -505,10 +477,7 @@ function AuthGate({ children, currentPageName }) {
     }
   }, []);
 
-  useEffect(() => {
-    if (cacheValid) return;
-    boot();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { boot(); }, [boot]);
 
   useEffect(() => {
     if (status !== 'loading') return;
@@ -524,7 +493,16 @@ function AuthGate({ children, currentPageName }) {
     boot();
   };
 
-  // ── Join Activation Screen (retry loop) ────────────────────────────────────
+  // No team → render Onboarding inline (no redirect loop)
+  if (status === 'no_team') {
+    const OnboardingPage = React.lazy(() => import('./pages/Onboarding'));
+    return (
+      <React.Suspense fallback={<FullScreenLoader />}>
+        <OnboardingPage />
+      </React.Suspense>
+    );
+  }
+
   if (status === 'join_activation') {
     return (
       <JoinActivationScreen
@@ -536,10 +514,7 @@ function AuthGate({ children, currentPageName }) {
           setBootData(resolvedBootData);
           setStatus('authed');
         }}
-        onAbort={() => {
-          // User aborted — go to Onboarding so they can try again
-          window.location.replace('/Onboarding');
-        }}
+        onAbort={() => setStatus('no_team')}
       />
     );
   }
