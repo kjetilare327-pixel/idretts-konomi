@@ -115,7 +115,11 @@ export default function BudgetPage() {
     await queryClient.invalidateQueries({ queryKey: ['transactions', currentTeam?.id] });
   };
 
-  if (!currentTeam) return <p className="text-center py-12 text-slate-500">Velg et lag for å se budsjett.</p>;
+  if (!currentTeam?.id) {
+    try { localStorage.removeItem('idrettsøkonomi_team_id'); } catch {}
+    window.location.replace('/Onboarding');
+    return null;
+  }
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>

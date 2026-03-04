@@ -200,8 +200,10 @@ export default function Communications() {
     }
   };
 
-  if (!currentTeam) {
-    return <div className="p-6">Laster...</div>;
+  if (!currentTeam?.id) {
+    try { localStorage.removeItem('idrettsøkonomi_team_id'); } catch {}
+    window.location.replace('/Onboarding');
+    return null;
   }
 
   if (!isTeamAdmin()) {

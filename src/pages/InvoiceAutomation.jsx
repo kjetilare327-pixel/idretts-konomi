@@ -182,7 +182,11 @@ export default function InvoiceAutomation() {
     }
   };
 
-  if (!currentTeam) return <div className="p-6">Laster...</div>;
+  if (!currentTeam?.id) {
+    try { localStorage.removeItem('idrettsøkonomi_team_id'); } catch {}
+    window.location.replace('/Onboarding');
+    return null;
+  }
   if (!isAdmin) return <NonAdminInvoiceView currentTeam={currentTeam} user={user} />;
 
   const activeSchedules = schedules.filter(s => s.is_active);

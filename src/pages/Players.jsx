@@ -197,7 +197,11 @@ export default function Players() {
     setSendingReminder(null);
   };
 
-  if (!currentTeam) return <p className="text-center py-12 text-slate-500">Velg et lag for å se spillere.</p>;
+  if (!currentTeam?.id) {
+    try { localStorage.removeItem('idrettsøkonomi_team_id'); } catch {}
+    window.location.replace('/Onboarding');
+    return null;
+  }
   if (!roleReady) return <div className="flex items-center justify-center py-24"><Loader2 className="w-6 h-6 animate-spin text-emerald-500" /></div>;
 
   // Debug panel — only in development or when 0 players returned for admin

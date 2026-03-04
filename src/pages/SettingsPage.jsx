@@ -153,7 +153,11 @@ export default function SettingsPage() {
     queryClient.invalidateQueries({ queryKey: ['categories', currentTeam?.id] });
   };
 
-  if (!currentTeam) return <p className="text-center py-12 text-slate-500">Velg et lag for å se innstillinger.</p>;
+  if (!currentTeam?.id) {
+    try { localStorage.removeItem('idrettsøkonomi_team_id'); } catch {}
+    window.location.replace('/Onboarding');
+    return null;
+  }
 
   return (
     <div className="space-y-6 max-w-2xl">
