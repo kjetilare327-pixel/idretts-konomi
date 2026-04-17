@@ -1,8 +1,3 @@
-// iOS Safari/WebView polyfill
-if (typeof window !== 'undefined' && typeof window.Notification === 'undefined') {
-  try { window.Notification = undefined; } catch(e) {}
-}
-
 import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
