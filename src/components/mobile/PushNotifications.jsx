@@ -25,6 +25,9 @@ export default function PushNotifications() {
     isNotificationSupported() ? window.Notification.permission : 'unsupported'
   );
   const [enabled, setEnabled] = useState(false);
+  const [dismissed, setDismissed] = useState(() =>
+    localStorage.getItem('push_prompt_dismissed') === 'true'
+  );
 
   useEffect(() => {
     if (!isNotificationSupported()) return;
@@ -147,10 +150,6 @@ export default function PushNotifications() {
       </Card>
     );
   }
-
-  const [dismissed, setDismissed] = useState(() =>
-    localStorage.getItem('push_prompt_dismissed') === 'true'
-  );
 
   const dismiss = () => {
     setDismissed(true);
