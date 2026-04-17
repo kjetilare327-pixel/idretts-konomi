@@ -65,7 +65,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('viewer');
+  const [inviteRole, setInviteRole] = useState('kasserer');
   const [showDelete, setShowDelete] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -305,6 +305,20 @@ export default function SettingsPage() {
                 </Button>
               </div>
             </div>
+            {currentTeam.join_code && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-2 w-full"
+                onClick={() => {
+                  const url = `${window.location.origin}/Onboarding?code=${currentTeam.join_code}`;
+                  navigator.clipboard.writeText(url);
+                  toast.success('Lenke kopiert! Del denne med spillere/foreldre.');
+                }}
+              >
+                <Copy className="w-3.5 h-3.5" /> Kopier invitasjonslenke
+              </Button>
+            )}
             {!currentTeam.join_code && (
               <Button
                 className="bg-emerald-600 hover:bg-emerald-700 gap-2"

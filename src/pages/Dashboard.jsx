@@ -212,11 +212,17 @@ export default function Dashboard() {
 
       {/* KPI row – 4 cards */}
       {isAdmin && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard title="Total saldo" value={formatNOK(stats.balance)} icon={Wallet} variant={stats.balance >= 0 ? 'green' : 'red'} />
           <StatCard title="Inntekter denne mnd" value={formatNOK(stats.monthIncome)} icon={TrendingUp} variant="green" />
           <StatCard title="Utgifter denne mnd" value={formatNOK(stats.monthExpense)} icon={TrendingDown} variant="red" />
-
+          <StatCard
+            title="Utestående krav"
+            value={formatNOK(totalOutstanding)}
+            icon={AlertCircle}
+            variant={totalOutstanding > 0 ? 'red' : 'green'}
+            subtitle={`${unpaidClaims.length} åpne krav`}
+          />
         </div>
       )}
 

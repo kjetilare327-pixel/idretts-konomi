@@ -148,6 +148,7 @@ export default function Transactions() {
   };
 
   const handleDelete = async (id) => {
+    if (!window.confirm('Er du sikker på at du vil slette denne transaksjonen?')) return;
     await base44.entities.Transaction.delete(id);
     queryClient.invalidateQueries({ queryKey: ['transactions', currentTeam?.id] });
   };

@@ -12,21 +12,23 @@ export default function ReportExport({ data, reportType, teamName, startDate, en
 
   const exportToCSV = () => {
     let csv = '';
-    
-    if (reportType === 'budget_vs_actual') {
+
+    if (reportType === 'budget_vs_actual' && data) {
       csv = 'Kategori,Type,Budsjett,Faktisk,Avvik,Avvik %\n';
       data.forEach(row => {
         csv += `${row.category},${row.type === 'income' ? 'Inntekt' : 'Utgift'},${row.budgeted},${row.actual},${row.variance},${row.variancePercent.toFixed(1)}%\n`;
       });
-    } else if (reportType === 'transactions') {
-      csv = 'Dato,Kategori,Type,Beløp,Beskrivelse\n';
-      data.forEach(row => {
-        csv += `${row.date},${row.category},${row.type === 'income' ? 'Inntekt' : 'Utgift'},${row.amount},"${row.description || ''}"\n`;
-      });
-    } else if (reportType === 'cashflow') {
+    } else if (reportType === 'cashflow' && data) {
       csv = 'Måned,Inntekter,Utgifter,Netto,Saldo\n';
       data.forEach(row => {
         csv += `${row.month},${row.income},${row.expense},${row.net},${row.balance}\n`;
+      });
+    } else {
+      // Default: export transactions as CSV
+      csv = '\uFEFFDato,Kategori,Type,Beløp (NOK),Beskrivelse\n';
+      resolvedData.forEach(row => {
+        const desc = (row.description || '').replace(/"/g, '""');
+        csv += `${row.date},${row.category},${row.type === 'income' ? 'Inntekt' : 'Utgift'},${row.amount},"${desc}"\n`;
       });
     }
     

@@ -101,6 +101,7 @@ export default function BudgetPage() {
   };
 
   const handleDelete = async (id) => {
+    if (!window.confirm('Er du sikker på at du vil slette denne budsjettposten?')) return;
     await base44.entities.Budget.delete(id);
     queryClient.invalidateQueries({ queryKey: ['budgets', currentTeam?.id] });
   };

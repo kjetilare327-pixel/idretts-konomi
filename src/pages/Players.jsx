@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTeam } from '@/components/shared/TeamContext';
@@ -25,7 +25,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Users, Plus, Pencil, Trash2, Mail, Loader2, Bell, FileText, AlertCircle, ExternalLink } from 'lucide-react';
+import { Users, Plus, Pencil, Trash2, Mail, Loader2, Bell, FileText, AlertCircle, ExternalLink, CheckCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import PlayerProfileCard from '../components/players/PlayerProfileCard';
 import PlayerLedgerDetail from '../components/players/PlayerLedgerDetail';
 import VippsClaimActions from '../components/players/VippsClaimActions';
@@ -165,36 +166,42 @@ export default function Players() {
     queryClient.invalidateQueries({ queryKey: ['players', currentTeam?.id] });
   };
 
-  const handleDelete = async (id) => {
-    await base44.entities.Player.delete(id);
-    queryClient.invalidateQueries({ queryKey: ['players', currentTeam?.id] });
-  };
+
 
   const handleInvite = async (player) => {
+    if (!player.user_email) { toast.error('Spiller mangler e-postadresse'); return; }
     setInviting(true);
     try {
       await base44.users.inviteUser(player.user_email, 'user');
-      alert(`Invitasjon sendt til ${player.user_email}`);
+      toast.success(`Invitasjon sendt til ${player.user_email}`);
     } catch (e) {
-      alert('Feil ved invitasjon: ' + e.message);
+      toast.error('Feil ved invitasjon: ' + e.message);
     }
     setInviting(false);
   };
 
   const handleSendReminder = async (player) => {
+    if (!player.user_email) { toast.error('Spiller mangler e-postadresse'); return; }
     setSendingReminder(player.id);
     const ledger = getLedger(player);
     try {
       await base44.integrations.Core.SendEmail({
         to: player.user_email,
         subject: `Betalingspåminnelse – ${currentTeam.name}`,
-        body: `Hei ${player.full_name},\n\nDu har ${formatNOK(ledger.balance)} utestående for ${currentTeam.name}.\n\nVennligst betal til kasserer.\n\nMvh\n${currentTeam.name}`,
+        body: `Hei ${player.full_name},\n\nDu har ${formatNOK(ledger.balance)} utestående for ${currentTeam.name}.\n\nVennligst betal innen nærmeste fremtid.\n\nMvh\n${currentTeam.name}`,
       });
-      alert(`Påminnelse sendt til ${player.full_name}`);
+      toast.success(`Påminnelse sendt til ${player.full_name}`);
     } catch (e) {
-      alert('Feil ved sending: ' + e.message);
+      toast.error('Feil ved sending: ' + e.message);
     }
     setSendingReminder(null);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Er du sikker på at du vil slette denne spilleren?')) return;
+    await base44.entities.Player.delete(id);
+    queryClient.invalidateQueries({ queryKey: ['players', currentTeam?.id] });
+    toast.success('Spiller slettet');
   };
 
   if (!currentTeam?.id) {

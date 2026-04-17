@@ -1,11 +1,17 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { formatNOK } from '@/components/shared/FormatUtils';
 import { Progress } from '@/components/ui/progress';
 import { TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 
-export default function BudgetVsActualReport({ transactions, budgets, startDate, endDate }) {
+export default function BudgetVsActualReport({ transactions, budgets }) {
+  const currentYear = new Date().getFullYear();
+  const [startDate, setStartDate] = useState(`${currentYear}-01-01`);
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+
   const analysis = useMemo(() => {
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -69,6 +75,25 @@ export default function BudgetVsActualReport({ transactions, budgets, startDate,
 
   return (
     <div className="space-y-6">
+      {/* Period selector */}
+      <Card className="border-0 shadow-md dark:bg-slate-900">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Budsjett vs. Faktisk</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-4">
+            <div className="space-y-1">
+              <Label className="text-xs">Fra dato</Label>
+              <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-36 text-sm" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Til dato</Label>
+              <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-36 text-sm" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>

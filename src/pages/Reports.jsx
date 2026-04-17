@@ -40,20 +40,8 @@ export default function Reports() {
     return { totalIncome, totalExpense, balance: totalIncome - totalExpense };
   }, [transactions]);
 
-  if (txLoading && !currentTeam?.id) {
-    try { localStorage.removeItem('idrettsøkonomi_team_id'); } catch {}
-    window.location.replace('/Onboarding');
-    return null;
-  }
-
   if (txLoading) {
     return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="w-8 h-8 animate-spin text-emerald-500" /></div>;
-  }
-
-  if (!currentTeam?.id) {
-    try { localStorage.removeItem('idrettsøkonomi_team_id'); } catch {}
-    window.location.replace('/Onboarding');
-    return null;
   }
 
   return (
@@ -107,11 +95,11 @@ export default function Reports() {
       </div>
 
       {/* Income Statement */}
-      <IncomeStatement transactions={transactions} />
+      <IncomeStatement transactions={transactions} teamName={currentTeam?.name} />
 
       {/* Budget vs Actual */}
       {budgets.length > 0 && (
-        <BudgetVsActualReport transactions={transactions} budgets={budgets} />
+        <BudgetVsActualReport transactions={transactions} budgets={budgets} teamName={currentTeam?.name} />
       )}
     </div>
   );

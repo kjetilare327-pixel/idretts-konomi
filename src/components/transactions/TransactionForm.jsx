@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { nb } from 'date-fns/locale';
 import { CalendarIcon, Upload, Loader2, X } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { VAT_RATES, formatNOK } from '@/components/shared/FormatUtils';
 
 export default function TransactionForm({ teamId, editData, onClose, onSaved }) {
   const qc = useQueryClient();
@@ -21,7 +22,11 @@ export default function TransactionForm({ teamId, editData, onClose, onSaved }) 
     date: format(new Date(), 'yyyy-MM-dd'),
     description: '',
     attachment_url: '',
+    vat_rate: 0,
   });
+  const vatAmount = form.amount && form.vat_rate > 0
+    ? Math.round(Number(form.amount) * form.vat_rate / (1 + form.vat_rate))
+    : 0;
   const [uploading, setUploading] = useState(false);
 
   const saveMutation = useMutation({
@@ -139,6 +144,26 @@ export default function TransactionForm({ teamId, editData, onClose, onSaved }) 
               />
             </PopoverContent>
           </Popover>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label>MVA-sats</Label>
+          <Select value={String(form.vat_rate)} onValueChange={v => setForm({ ...form, vat_rate: Number(v) })}>
+            <SelectTrigger><SelectValue placeholder="Velg MVA" /></SelectTrigger>
+            <SelectContent>
+              {VAT_RATES.map(r => (
+                <SelectItem key={r.value} value={String(r.value)}>{r.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>MVA-beløp</Label>
+          <div className="flex h-9 items-center px-3 rounded-md border border-input bg-slate-50 dark:bg-slate-800 text-sm text-slate-500">
+            {vatAmount > 0 ? formatNOK(vatAmount) : '–'}
+          </div>
         </div>
       </div>
 
