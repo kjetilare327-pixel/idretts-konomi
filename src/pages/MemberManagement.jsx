@@ -235,7 +235,7 @@ export default function MemberManagement() {
                 <SelectItem value="all">Alle betalingsstatuser</SelectItem>
                 <SelectItem value="paid">Betalt</SelectItem>
                 <SelectItem value="unpaid">Ubetalt</SelectItem>
-                <SelectItem value="high_debt">Høy gjeld (>5000 kr)</SelectItem>
+                <SelectItem value="high_debt">{"Høy gjeld (>5000 kr)"}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterRole} onValueChange={setFilterRole}>

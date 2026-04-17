@@ -15,13 +15,6 @@ export default function AccountingIntegration() {
   const [exportFormat, setExportFormat] = useState('tripletex');
   const [exporting, setExporting] = useState(false);
 
-  // Guard: no team → Onboarding
-  if (!currentTeam?.id) {
-    try { localStorage.removeItem('idrettsøkonomi_team_id'); } catch {}
-    window.location.replace('/Onboarding');
-    return null;
-  }
-
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions', currentTeam?.id],
     queryFn: () => base44.entities.Transaction.filter({ team_id: currentTeam?.id }),
